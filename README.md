@@ -1,4 +1,4 @@
-**bxt**  -  ALPM  repository  manager
+# **bxt**  -  ALPM  repository  manager
 
 `bxt` (**B**o**x**I**t**)  is  a  repository  management  system  that  allows  you  to  create  repositories  in  a  declarative  way  and  operate  with  it  using a command line tool or a web-API.
 
