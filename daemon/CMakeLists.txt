@@ -32,6 +32,8 @@ target_link_libraries(${PROJECT_NAME}
     Boost::log 
     Boost::log_setup
     Boost::fiber
+    mailio::mailio
+    frozen::frozen
     tomlplusplus::tomlplusplus
 )
 
