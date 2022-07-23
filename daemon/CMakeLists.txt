@@ -3,10 +3,11 @@ project(bxtd LANGUAGES CXX)
 
 find_package(fmt REQUIRED)
 find_package(CURL REQUIRED)
-find_package(Boost 1.66.0 REQUIRED COMPONENTS fiber date_time filesystem system thread log log_setup)
-find_package(PkgConfig REQUIRED)
+find_package(Boost 1.66.0 REQUIRED)
+find_package(mailio REQUIRED)
+find_package(frozen REQUIRED)
+find_package(tomlplusplus REQUIRED)
 
-pkg_check_modules(SIGCXX REQUIRED sigc++-3.0)
 
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -fPIC -fopenmp -DBOOST_LOG_DYN_LINK -DBOOST")
 
