@@ -5,6 +5,7 @@ openssl/1.1.1o
 frozen/1.1.1
 yaml-cpp/0.7.0
 tomlplusplus/3.1.0
+libarchive/3.6.1
 
 [generators]
 CMakeDeps

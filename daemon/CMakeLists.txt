@@ -7,7 +7,7 @@ find_package(Boost 1.66.0 REQUIRED)
 find_package(mailio REQUIRED)
 find_package(frozen REQUIRED)
 find_package(tomlplusplus REQUIRED)
-
+find_package(LibArchive REQUIRED)
 
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -fPIC -fopenmp -DBOOST_LOG_DYN_LINK -DBOOST")
 
@@ -36,6 +36,7 @@ target_link_libraries(${PROJECT_NAME}
     mailio::mailio
     frozen::frozen
     tomlplusplus::tomlplusplus
+    LibArchive::LibArchive
 )
 
 
