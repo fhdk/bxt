@@ -15,10 +15,14 @@ class Header
 public:
     Header() = default;
     Header(const Header& lh)
-        : m_entry(
-            {archive_entry_clone(lh.m_entry.get()), &archive_entry_free}) {}
+        : m_entry({archive_entry_clone(lh.m_entry.get()),
+                   lh.m_entry.get_deleter()}) {}
     Header(Header&& lh)
-        : m_entry(std::move(lh.m_entry.release()), &archive_entry_free) {}
+        : m_entry(std::move(lh.m_entry.release()),
+                  std::move(lh.m_entry.get_deleter())) {}
+
+    explicit Header(archive_entry* entry)
+        : m_entry(std::move(entry), [](archive_entry*) {}) {}
 
     operator archive_entry*() { return m_entry.get(); }
     operator const archive_entry*() const { return m_entry.get(); }
@@ -27,7 +31,8 @@ public:
     const archive_entry* entry() const { return m_entry.get(); }
 
     void operator=(const Header& lh) {
-        m_entry = {archive_entry_clone(lh.m_entry.get()), &archive_entry_free};
+        m_entry = {archive_entry_clone(lh.m_entry.get()),
+                   lh.m_entry.get_deleter()};
     }
 
 private:

@@ -8,8 +8,9 @@
 
 #include "Exception.h"
 #include "Header.h"
-#include "Reader.h"
 
+#include <archive.h>
+#include <filesystem>
 #include <memory>
 #include <ostream>
 #include <vector>
