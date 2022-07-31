@@ -20,7 +20,6 @@ macro(setup_conan)
     include(${CMAKE_BINARY_DIR}/conan.cmake)
 
     conan_cmake_run(CONANFILE conanfile.txt
-                    BASIC_SETUP CMAKE_TARGETS
                     BUILD missing)
 
 endmacro(setup_conan)
