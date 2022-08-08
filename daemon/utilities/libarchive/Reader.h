@@ -10,6 +10,7 @@
 #include "Header.h"
 
 #include <archive.h>
+#include <array>
 #include <filesystem>
 #include <iostream>
 #include <memory>
@@ -26,7 +27,19 @@ public:
         friend class Reader;
 
     public:
-        std::vector<std::byte> read(std::size_t amount);
+        template<std::size_t amount>
+        void read_buffer(std::array<uint8_t, amount>& buffer,
+                         std::size_t& actual) {
+            if (!m_reader) { throw InvalidEntry(); }
+
+            actual = archive_read_data(m_reader, buffer.data(), amount);
+
+            if (actual < 0) {
+                throw LibException(actual, archive_error_string(m_reader));
+            }
+        }
+        std::vector<uint8_t> read_all();
+        std::vector<uint8_t> read(std::size_t amount);
         void skip() { archive_read_data_skip(m_reader); }
 
     private:
@@ -57,7 +70,7 @@ public:
             archive_entry* entry;
             auto status = archive_read_next_header(m_archive, &entry);
 
-            m_value.header = Header(entry);
+            m_value.header = std::move(Header(entry));
 
             if (status != ARCHIVE_OK) { m_value.header = std::nullopt; }
             return *this;
@@ -67,7 +80,7 @@ public:
             archive_entry* entry;
             auto status = archive_read_next_header(m_archive, &entry);
 
-            m_value.header = Header(entry);
+            m_value.header = std::move(Header(entry));
 
             if (status != ARCHIVE_OK) { m_value.header = std::nullopt; }
 
@@ -83,7 +96,7 @@ public:
             for (std::size_t i = 0; i < v; i++) {
                 auto status = archive_read_next_header(m_archive, &entry);
 
-                header = Header(entry);
+                header = std::move(Header(entry));
 
                 if (status != ARCHIVE_OK) {
                     return Iterator {m_archive, std::nullopt};
@@ -112,7 +125,7 @@ public:
     Reader() = default;
 
     void open_filename(const std::filesystem::path& path);
-    void open_memory(const std::vector<std::byte>& byte_array);
+    void open_memory(const std::vector<uint8_t>& byte_array);
 
     struct archive* archive() {
         return m_archive.get();

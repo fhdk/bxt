@@ -9,7 +9,11 @@
 namespace Archive {
 
 void Writer::open_filename(const std::filesystem::path &path) {
-    archive_write_open_filename(m_archive.get(), path.c_str());
+    int status = archive_write_open_filename(m_archive.get(), path.c_str());
+
+    if (status != ARCHIVE_OK) {
+        throw LibException(status, archive_error_string(m_archive.get()));
+    }
 }
 
 void Writer::open_memory(std::vector<std::byte> &byte_array,
@@ -27,11 +31,11 @@ Writer::Entry Writer::start_write(Header &header) {
     return entry;
 }
 
-void Writer::Entry::write(const std::vector<std::byte> &data) {
+void Writer::Entry::write(const std::vector<uint8_t> &data) {
     archive_write_data(m_writer, data.data(), data.size());
 }
 
-void Writer::Entry::operator>>(const std::vector<std::byte> &data) {
+void Writer::Entry::operator>>(const std::vector<uint8_t> &data) {
     write(data);
 }
 

@@ -3,11 +3,13 @@ project(bxtd LANGUAGES CXX)
 
 find_package(fmt REQUIRED)
 find_package(CURL REQUIRED)
-find_package(Boost COMPONENTS system date_time filesystem thread log log_setup fiber REQUIRED)
+find_package(Boost COMPONENTS system iostreams date_time regex REQUIRED)
 find_package(mailio REQUIRED)
 find_package(frozen REQUIRED)
 find_package(tomlplusplus REQUIRED)
 find_package(LibArchive REQUIRED)
+find_package(OpenSSL REQUIRED)
+find_package(phmap REQUIRED)
 
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -fPIC -fopenmp -DBOOST_LOG_DYN_LINK -DBOOST")
 
@@ -27,17 +29,14 @@ target_compile_options(${PROJECT_NAME} PUBLIC -fcoroutines)
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
     fmt::fmt
-    Boost::date_time 
-    Boost::filesystem 
-    Boost::system 
-    Boost::thread 
-    Boost::log 
-    Boost::log_setup
-    Boost::fiber
+    Boost::boost
+    Boost::iostreams
     mailio::mailio
     frozen::frozen
     tomlplusplus::tomlplusplus
     LibArchive::LibArchive
+    OpenSSL::Crypto
+    phmap
 )
 
 

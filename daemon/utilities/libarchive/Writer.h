@@ -26,8 +26,8 @@ public:
         friend class Writer;
 
     public:
-        void write(const std::vector<std::byte>& data);
-        void operator>>(const std::vector<std::byte>& data);
+        void write(const std::vector<uint8_t>& data);
+        void operator>>(const std::vector<uint8_t>& data);
 
         void finish() { archive_write_finish_entry(m_writer); }
 
