@@ -6,10 +6,8 @@ mailio/0.21.0
 frozen/1.1.1
 yaml-cpp/0.7.0
 tomlplusplus/3.1.0
-libarchive/3.6.1
-cmake/3.23.2
-parallel-hashmap/1.35
+jwt-cpp/0.6.0
+cpp-httplib/0.11.3
 
 [generators]
-CMakeDeps
-CMakeToolchain
+cmake
