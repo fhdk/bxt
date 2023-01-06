@@ -1,7 +1,8 @@
 [requires]
+openssl/1.1.1q
+boost/1.79.0
 fmt/8.1.1
 mailio/0.21.0
-openssl/1.1.1o
 frozen/1.1.1
 yaml-cpp/0.7.0
 tomlplusplus/3.1.0
