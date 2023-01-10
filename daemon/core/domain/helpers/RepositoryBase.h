@@ -7,6 +7,7 @@
 #pragma once
 
 #include <boost/uuid/uuid.hpp>
+#include <coro/task.hpp>
 #include <functional>
 #include <span>
 
@@ -30,6 +31,8 @@ struct RepositoryBase {
     virtual TEntity find_first(std::function<bool(const TEntity&)>) = 0;
     virtual std::span<TEntity>
         find(const std::function<bool(const TEntity&)>&) = 0;
+    virtual coro::task<std::span<TEntity>>
+        find_async(const std::function<bool(const TEntity&)>&) = 0;
     virtual void add(const TEntity& entity) = 0;
     virtual void remove(const TEntity& entity) = 0;
 };
