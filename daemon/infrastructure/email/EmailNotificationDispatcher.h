@@ -17,15 +17,12 @@ class EmailNotificationDispatcher
     : public Core::Application::NotificationDispatcherBase {
 public:
     EmailNotificationDispatcher();
+    virtual void
+        dispatch(const Core::Application::Notification& notification) override;
 
 private:
     EmailOptions options;
     mailio::smtps client;
-
-    // NotificationDispatcherBase interface
-public:
-    virtual void dispatch(
-        const Core::Application::Notification& notification) override;
 };
 
 } // namespace bxt::Infrastructure
