@@ -24,6 +24,14 @@ public:
 
     void add(const std::set<std::string>& files);
     void remove(const std::set<std::string>& packages);
+    std::set<std::string> packages() const {
+        std::set<std::string> packages;
+        std::ranges::transform(m_descriptions,
+                               std::inserter(packages, packages.begin()),
+                               [](const auto& value) { return value.first; });
+
+        return packages;
+    }
 
     void save() const;
     void load();
