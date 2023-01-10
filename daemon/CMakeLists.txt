@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(bxtd LANGUAGES CXX)
 
-set(CMAKE_CXX_FLAGS "-Wall -Wextra -fPIC -fopenmp -DBOOST_LOG_DYN_LINK -DBOOST")
+set(CMAKE_CXX_FLAGS "-Wall -Wextra -fPIC -fopenmp -DBOOST_LOG_DYN_LINK -DBOOST -fcoroutines")
 
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "*.cpp")
@@ -18,6 +18,9 @@ target_compile_options(${PROJECT_NAME} PUBLIC -fcoroutines)
 
 target_link_libraries(${PROJECT_NAME}
     ${CONAN_LIBS}
+    libcoro
+    ssl
+    crypto
 )
 
 
