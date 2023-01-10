@@ -126,6 +126,7 @@ public:
 
     void open_filename(const std::filesystem::path& path);
     void open_memory(const std::vector<uint8_t>& byte_array);
+    void open_memory(uint8_t* data, size_t length);
 
     struct archive* archive() {
         return m_archive.get();

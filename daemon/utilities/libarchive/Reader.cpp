@@ -30,6 +30,14 @@ void Reader::open_memory(const std::vector<uint8_t> &byte_array) {
     }
 }
 
+void Reader::open_memory(uint8_t *data, size_t length) {
+    int status = archive_read_open_memory(m_archive.get(), data, length);
+
+    if (status != ARCHIVE_OK) {
+        throw LibException(status, archive_error_string(m_archive.get()));
+    }
+}
+
 std::vector<uint8_t> Reader::Entry::read_all() {
     constexpr int block_size = 1024;
     std::array<uint8_t, block_size> buffer;
