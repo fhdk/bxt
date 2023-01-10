@@ -6,10 +6,12 @@
  */
 #pragma once
 
+#include "core/domain/repositories/PackageRepositoryBase.h"
+
 namespace bxt::Utilities {
 
-template<typename TFrom, typename TTo> struct SerializerBase {
-    virtual const TTo& map(const TFrom&) = 0;
+template<typename TTo, typename TFrom> struct Mapper {
+    TTo map(const TFrom& from);
 };
 
 } // namespace bxt::Utilities
