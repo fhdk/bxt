@@ -25,7 +25,6 @@ public:
 
     const std::set<Permission> &permissions() const { return m_permissions; }
 
-protected:
     void set_name(const std::string &new_name) { m_name = new_name; }
 
     void set_password(const std::string &new_password) { m_password = new_password; }

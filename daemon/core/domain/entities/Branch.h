@@ -21,7 +21,6 @@ class Branch : public AggregateRoot<Name>
 public:
     const std::set<Repo> &repos() const { return m_repos; }
 
-protected:
     void set_repos(const std::set<Repo> &new_repos) { m_repos = new_repos; }
 
 private:

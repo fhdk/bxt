@@ -18,7 +18,6 @@ class Repo : public AggregateRoot<Name>
 public:
     const std::set<Architecture> &architectures() const { return m_architectures; }
 
-protected:
     void set_architectures(const std::set<Architecture> &new_architectures)
     {
         m_architectures = new_architectures;

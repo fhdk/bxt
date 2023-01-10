@@ -19,7 +19,6 @@ class Architecture : public AggregateRoot<Name>
 public:
     const std::set<Name> &ignored_package_names() const { return m_ignored_package_names; }
 
-protected:
     void set_ignored_package_names(const std::set<Name> &new_ignored_package_names)
     {
         m_ignored_package_names = new_ignored_package_names;

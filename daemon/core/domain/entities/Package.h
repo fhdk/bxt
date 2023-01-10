@@ -53,7 +53,6 @@ public:
 
     Section section() const { return m_section; }
 
-protected:
     void set_name(const std::string& new_name) { m_name = new_name; }
 
     void set_version(const PackageVersion& new_version) { m_version = new_version; }
