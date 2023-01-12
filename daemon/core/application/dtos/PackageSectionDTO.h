@@ -20,6 +20,10 @@ struct PackageSectionDTO {
     std::string architecture;
 
     auto operator<=>(const PackageSectionDTO& other) const = default;
+
+    operator std::string() const {
+        return fmt::format("{}/{}/{}", branch, repository, architecture);
+    }
 };
 
 } // namespace bxt::Core::Application
