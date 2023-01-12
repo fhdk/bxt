@@ -7,24 +7,73 @@
 
 #pragma once
 
-#include "utilities/configuration/Configuration.h"
+#include "core/application/dtos/PackageSectionDTO.h"
+#include "infrastructure/alpm/ArchRepoSource.h"
+#include "utilities/repo-schema/SchemaExtension.h"
+
+#include <parallel_hashmap/phmap.h>
+#include <yaml-cpp/yaml.h>
 
 namespace bxt::Infrastructure {
 
-struct ArchRepoOptions : public Utilities::Configurable {
-    std::string repo_url = "cloudflaremirrors.com";
-    std::string repo_structure_template =
-        "/archlinux/{repository}/os/{architecture}";
+struct ArchRepoOptions : public Utilities::RepoSchema::Extension {
+    phmap::parallel_flat_hash_map<Core::Application::PackageSectionDTO,
+                                  ArchRepoSource>
+        sources;
 
-    virtual void serialize(Utilities::Configuration &config) override {
-        config.set("repo-url", repo_url);
-        config.set("repo-name", repo_structure_template);
-    }
-    virtual void deserialize(const Utilities::Configuration &config) override {
-        repo_url = config.get<std::string>("repo-url").value_or(repo_url);
-        repo_structure_template =
-            config.get<std::string>("repo-structure-template")
-                .value_or(repo_structure_template);
+    virtual void parse(const YAML::Node& root_node) override {
+        constexpr char Tag[] = "(alpm.sync)";
+
+        const auto& options_node = root_node[Tag];
+
+        for (const auto& branch :
+             options_node["sync-branches"].as<std::vector<std::string>>()) {
+            for (const auto& repo : root_node["repositories"]) {
+                const auto& key = repo.first;
+                const auto& value = repo.second;
+                if (!key || !value || !value.IsMap()) { continue; }
+
+                auto source_options = value[Tag];
+
+                auto architecture = value["architecture"].as<std::string>();
+
+                auto source = ArchRepoSource {
+                    source_options["repo-url"].as<std::string>(),
+                    source_options["repo-structure-template"].as<std::string>(),
+                    {}};
+
+                std::vector<std::string> source_repo_names;
+
+                if (source_options["repo-names"].IsSequence()) {
+                    source_repo_names = source_options["repo-names"]
+                                            .as<std::vector<std::string>>();
+                }
+
+                if (key.IsScalar()) {
+                    if (!source_repo_names.empty()) {
+                        source.repo_name = source_repo_names[0];
+                    }
+
+                    sources.emplace(PackageSectionDTO {branch,
+                                                       key.as<std::string>(),
+                                                       architecture},
+                                    std::move(source));
+                } else if (key.IsSequence()) {
+                    auto repos = key.as<std::vector<std::string>>();
+
+                    for (std::size_t i = 0; i < repos.size(); i++) {
+                        auto named_source = source;
+                        if (source_repo_names.size() > i) {
+                            named_source.repo_name = source_repo_names[i];
+                        }
+
+                        sources.emplace(
+                            PackageSectionDTO {branch, repos[i], architecture},
+                            named_source);
+                    }
+                }
+            }
+        }
     }
 };
 

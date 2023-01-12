@@ -16,14 +16,13 @@
 namespace bxt::Infrastructure {
 
 coro::task<void> ArchRepoSyncService::sync(const PackageSectionDTO& section) {
+    if (!m_options.sources.contains(section)) { co_return; }
     const auto remote_packages = co_await get_available_packages(section);
-    coro::thread_pool tp {coro::thread_pool::options {.thread_count = 4}};
 
     std::vector<coro::task<PackageFile>> tasks;
 
     auto task = [this,
                  section](const auto& pkgname) -> coro::task<PackageFile> {
-        //            co_await tp.schedule();
 
         co_return co_await download_package(section, pkgname);
     };
@@ -35,20 +34,34 @@ coro::task<void> ArchRepoSyncService::sync(const PackageSectionDTO& section) {
     auto files = coro::sync_wait(coro::when_all(std::move(tasks)));
 }
 
+coro::task<void> ArchRepoSyncService::sync_all() {
+    std::vector<coro::task<void>> tasks;
+    for (const auto& src : m_options.sources) {
+        tasks.emplace_back(sync(src.first));
+    }
+    co_await coro::when_all(std::move(tasks));
+}
+
 coro::task<std::vector<std::string>>
     ArchRepoSyncService::get_available_packages(
         const PackageSectionDTO& section) {
     std::vector<std::string> result;
 
+    auto client = co_await get_client(m_options.sources[section].repo_url);
+
+    auto repository_name =
+        m_options.sources[section].repo_name.value_or(section.repository);
+
     auto db_path_format =
-        fmt::format("{}/{{repository}}.db", options.repo_structure_template);
+        fmt::format("{}/{{repository}}.db",
+                    m_options.sources[section].repo_structure_template);
 
     auto path = fmt::format(fmt::runtime(db_path_format),
                             fmt::arg("branch", section.branch),
-                            fmt::arg("repository", section.repository),
+                            fmt::arg("repository", repository_name),
                             fmt::arg("architecture", section.architecture));
 
-    auto response = m_client.Get(
+    auto response = client->Get(
         path, httplib::Headers(), [](uint64_t current, uint64_t total) {
             std::cout << fmt::format("Downloading database... {}/{}\n", current,
                                      total);
@@ -84,31 +97,56 @@ coro::task<std::vector<std::string>>
 coro::task<PackageFile>
     ArchRepoSyncService::download_package(const PackageSectionDTO& section,
                                           const std::string& package_filename) {
-    auto path_format =
-        fmt::format("{}/{{pkgfname}}", options.repo_structure_template);
+    auto client = co_await get_client(m_options.sources[section].repo_url);
+
+    auto repository_name =
+        m_options.sources[section].repo_name.value_or(section.repository);
+
+    auto path_format = fmt::format(
+        "{}/{{pkgfname}}", m_options.sources[section].repo_structure_template);
 
     auto path = fmt::format(fmt::runtime(path_format),
                             fmt::arg("branch", section.branch),
-                            fmt::arg("repository", section.repository),
+                            fmt::arg("repository", repository_name),
                             fmt::arg("architecture", section.architecture),
                             fmt::arg("pkgfname", package_filename));
 
-    auto filepath = fmt::format("{}/bxtd/{}",
+    auto filepath = fmt::format("{}/bxtd/{}/",
                                 std::filesystem::temp_directory_path().string(),
-                                package_filename);
+                                std::string(section));
+
+    std::filesystem::create_directories(filepath);
+
+    auto full_filename = fmt::format("{}/{}", filepath, package_filename);
+
+    if (std::filesystem::exists(full_filename)) {
+        co_return PackageFile(section, full_filename);
+    }
 
     std::cout << fmt::format("Downloading {} as {}...\n", package_filename,
-                             filepath);
+                             full_filename);
 
-    std::ofstream stream(filepath);
+    std::ofstream stream(full_filename);
 
     auto response =
-        m_client.Get(path, [&](const char* data, size_t data_length) {
+        client->Get(path, [&](const char* data, size_t data_length) {
             stream.write(data, data_length);
             return true;
         });
 
-    co_return PackageFile(section, filepath);
+    co_return PackageFile(section, full_filename);
+}
+
+coro::task<std::unique_ptr<httplib::SSLClient>>
+    ArchRepoSyncService::get_client(const std::string& url) {
+    co_await tp.schedule();
+
+    auto client_ptr = std::make_unique<httplib::SSLClient>(url);
+
+    client_ptr->set_follow_location(true);
+    client_ptr->enable_server_certificate_verification(true);
+
+    co_return client_ptr;
 }
 
 } // namespace bxt::Infrastructure
