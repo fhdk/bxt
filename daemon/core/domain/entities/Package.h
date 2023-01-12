@@ -6,10 +6,8 @@
  */
 #pragma once
 
+#include "Section.h"
 #include "core/domain/entities/AggregateRoot.h"
-#include "core/domain/entities/Architecture.h"
-#include "core/domain/entities/Branch.h"
-#include "core/domain/entities/Repo.h"
 #include "core/domain/value_objects/Name.h"
 #include "core/domain/value_objects/PackageArchitecture.h"
 #include "core/domain/value_objects/PackageVersion.h"
@@ -21,12 +19,6 @@ namespace bxt::Core::Domain
 {
 class Package : public AggregateRoot<> {
 public:
-    struct Section
-    {
-        Branch m_branch;
-        Repo m_repo;
-        Architecture m_arch;
-    };
     const std::string& name() const { return m_name; }
     const PackageVersion& version() const  { return m_version; }
     const std::string& architecture() const { return m_architecture; }
@@ -48,7 +40,7 @@ public:
         return fmt::format("{}-{}-{}", name(), version().string(), architecture());
     }
 
-    static Package from_filename(const Package::Section& section,
+    static Package from_filename(const Section& section,
                                  const std::string& filename);
 
     Section section() const { return m_section; }

@@ -12,7 +12,7 @@
 
 namespace bxt::Core::Domain {
 struct PackageRepositoryBase : public RepositoryBase<Package> {
-    virtual coro::task<std::span<Package>>
-        find_by_section_async(const Package::Section& section) const = 0;
+    virtual coro::task<std::vector<Package>>
+        find_by_section_async(const Section& section) const = 0;
 };
 } // namespace bxt::Core::Domain

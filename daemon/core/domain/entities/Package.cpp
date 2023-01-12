@@ -16,7 +16,7 @@
 
 namespace bxt::Core::Domain {
 
-Package Package::from_filename(const Package::Section& section,
+Package Package::from_filename(const Section& section,
                                const std::string& filename) {
     std::vector<std::string> substrings;
 

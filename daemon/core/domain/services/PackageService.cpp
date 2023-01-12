@@ -13,14 +13,14 @@ PackageService::PackageService() {
 
 ArchitectureMatch
     PackageService::match_architectures(const PackageArchitecture &arch,
-                                        const Architecture &arch_section) {
-  if (std::string(arch) == "any") { return ArchitectureMatch::Any; }
+                                        const Name &arch_section) {
+    if (std::string(arch) == "any") { return ArchitectureMatch::Any; }
 
-  if (std::string(arch_section.id()) == std::string(arch)) {
-    return ArchitectureMatch::Matches;
-  } else {
-    return ArchitectureMatch::NotMatches;
-  }
+    if (std::string(arch_section) == std::string(arch)) {
+        return ArchitectureMatch::Matches;
+    } else {
+        return ArchitectureMatch::NotMatches;
+    }
 }
 
 } // namespace bxt::Core::Domain

@@ -19,8 +19,9 @@ class PackageService
 public:
     PackageService();
 
-    static ArchitectureMatch match_architectures(const PackageArchitecture& arch,
-                                                 const Architecture& arch_section);
+    static ArchitectureMatch
+        match_architectures(const PackageArchitecture& arch,
+                            const Name& arch_section);
 
 private:
     RepositoryBase<Package, std::vector<Package>>* m_package_repository;

@@ -8,7 +8,7 @@
 
 namespace bxt::Core::Application {
 
-coro::task<std::span<Package>>
+coro::task<std::vector<Package>>
     PackageService::get_packages(const PackageSectionDTO& section_dto) const {
     auto section = m_section_dto_mapper.map(section_dto);
 

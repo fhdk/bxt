@@ -20,7 +20,8 @@ struct ReadOnlyRepositoryBase {
 
     virtual TEntity find_by_id(const TId& id) = 0;
     virtual TEntity find_first(std::function<bool(const TEntity&)>) = 0;
-    virtual std::span<TEntity> find(std::function<bool(const TEntity&)>) = 0;
+    virtual std::vector<TEntity> find(std::function<bool(const TEntity&)>) = 0;
+    virtual coro::task<std::vector<TEntity>> all_async() = 0;
 };
 
 template<typename TEntity, typename TId = boost::uuids::uuid>
@@ -29,9 +30,9 @@ struct RepositoryBase {
 
     virtual TEntity find_by_id(const TId& id) = 0;
     virtual TEntity find_first(std::function<bool(const TEntity&)>) = 0;
-    virtual std::span<TEntity>
+    virtual std::vector<TEntity>
         find(const std::function<bool(const TEntity&)>&) = 0;
-    virtual coro::task<std::span<TEntity>>
+    virtual coro::task<std::vector<TEntity>>
         find_async(const std::function<bool(const TEntity&)>&) = 0;
     virtual void add(const TEntity& entity) = 0;
     virtual void remove(const TEntity& entity) = 0;
