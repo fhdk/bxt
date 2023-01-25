@@ -37,10 +37,7 @@ struct ArchRepoOptions : public Utilities::RepoSchema::Extension {
 
                 auto architecture = value["architecture"].as<std::string>();
 
-                auto source = ArchRepoSource {
-                    source_options["repo-url"].as<std::string>(),
-                    source_options["repo-structure-template"].as<std::string>(),
-                    {}};
+                auto source = ArchRepoSource::from_node(source_options);
 
                 std::vector<std::string> source_repo_names;
 
