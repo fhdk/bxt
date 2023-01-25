@@ -34,7 +34,7 @@ using namespace bxt::Core::Application;
 } // namespace
 
 template<> struct bxt::Utilities::Mapper<PackageSectionDTO, Section> {
-    PackageSectionDTO map(const Section& from) {
+    PackageSectionDTO map(const Section& from) const {
         return Core::Application::PackageSectionDTO {
             .branch = from.branch(),
             .repository = from.repository(),
@@ -43,7 +43,7 @@ template<> struct bxt::Utilities::Mapper<PackageSectionDTO, Section> {
 };
 
 template<> struct bxt::Utilities::Mapper<Section, PackageSectionDTO> {
-    Section map(const PackageSectionDTO& from) {
+    Section map(const PackageSectionDTO& from) const {
         return Core::Domain::Section(from.branch, from.repository,
                                      from.architecture);
     }
