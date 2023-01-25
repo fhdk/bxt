@@ -128,9 +128,7 @@ coro::task<PackageFile>
                             fmt::arg("architecture", section.architecture),
                             fmt::arg("pkgfname", package_filename));
 
-    auto filepath = fmt::format("{}/bxtd/{}/",
-                                std::filesystem::temp_directory_path().string(),
-                                std::string(section));
+    auto filepath = m_options.sources[section].pool_path;
 
     std::filesystem::create_directories(filepath);
 
