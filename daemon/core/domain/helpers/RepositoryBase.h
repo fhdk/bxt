@@ -6,6 +6,8 @@
  */
 #pragma once
 
+#include "coro/when_all.hpp"
+
 #include <boost/uuid/uuid.hpp>
 #include <coro/task.hpp>
 #include <functional>
@@ -35,7 +37,21 @@ struct RepositoryBase {
     virtual coro::task<std::vector<TEntity>>
         find_async(const std::function<bool(const TEntity&)>&) = 0;
     virtual void add(const TEntity& entity) = 0;
+    virtual coro::task<void> add_async(const TEntity& entity) = 0;
+    virtual coro::task<void> add_async(const std::span<TEntity>& entities) {
+        auto make_add_task = [this](TEntity entity) -> coro::task<void> {
+            co_return co_await add_async(entity);
+        };
+        std::vector<coro::task<void>> add_tasks;
+        for (const auto& entity : entities) {
+            add_tasks.emplace_back(make_add_task(entity));
+        }
+
+        co_await coro::when_all(std::move(add_tasks));
+        co_return;
+    };
     virtual void remove(const TEntity& entity) = 0;
+    virtual coro::task<void> remove_async(const TEntity& entity) = 0;
 };
 
 } // namespace bxt::Core::Domain
