@@ -48,16 +48,29 @@ Package Package::from_filename(const Section& section,
         return std::isdigit(ch);
     };
 
+    static const auto release_tag_validator = [](const char& ch) {
+        return std::isalnum(ch) || ch == '.';
+    };
+
     auto valid_epoch =
         std::ranges::all_of(epoch.begin(), epoch.end(), digit_validator);
-    auto valid_release =
-        std::ranges::all_of(release.begin(), release.end(), digit_validator);
+
+    auto valid_version = std::ranges::all_of(release.begin(), release.end(),
+                                             release_tag_validator);
+
+    auto valid_release = std::ranges::all_of(release.begin(), release.end(),
+                                             release_tag_validator);
 
     auto valid_name =
-        std::ranges::all_of(name.begin(), name.end(),
-                            [](const char& ch) { return std::isalnum(ch); });
+        std::ranges::all_of(name.begin(), name.end(), [](const char& ch) {
+            static std::string valid = "@._+-";
+            return (std::isalpha(ch) && std::islower(ch)) || std::isdigit(ch)
+                   || (valid.find(ch) != std::string::npos);
+        });
 
-    if (!(valid_epoch && valid_release && valid_name)) {
+    valid_name = valid_name && !name.starts_with("-") && !name.starts_with(".");
+
+    if (!(valid_epoch && valid_release && valid_name && valid_version)) {
         throw std::invalid_argument("Invalid package filename");
     }
 
