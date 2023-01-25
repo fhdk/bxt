@@ -55,6 +55,8 @@ coro::task<void> ArchRepoSyncService::sync_all() {
         tasks.emplace_back(sync(src.first));
     }
     co_await coro::when_all(std::move(tasks));
+
+    co_return;
 }
 
 coro::task<std::vector<std::string>>
