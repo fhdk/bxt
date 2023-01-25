@@ -14,14 +14,10 @@ namespace bxt::Core::Application {
 
 class SyncService {
 public:
-    //    SyncService(PackageRepositoryBase& repository) :
-    //    m_repository(repository) {}
     virtual ~SyncService() = default;
 
     virtual coro::task<void> sync(const PackageSectionDTO& section) = 0;
-
-private:
-    //    PackageRepositoryBase& m_repository;
+    virtual coro::task<void> sync_all() = 0;
 };
 
 } // namespace bxt::Core::Application
