@@ -10,6 +10,7 @@
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/regex.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <coro/latch.hpp>
 #include <execution>
 #include <fmt/format.h>
 #include <iterator>
@@ -18,17 +19,49 @@
 
 namespace bxt::Utilities::AlpmDb {
 
-void Database::add(const std::set<std::string>& packages) {
+coro::task<void> Database::add(const std::set<std::string>& packages) {
+    coro::latch latch {static_cast<ptrdiff_t>(packages.size())};
+
     for (const auto& package : packages) {
         auto description = Desc::parse_package(package);
-        m_descriptions[description.get("NAME")] = description;
+
+        auto name = description.get("NAME");
+        auto version = description.get("VERSION");
+
+        m_descriptions.lazy_emplace_l(
+            fmt::format("{}-{}", name, version),
+            [description, &latch, name](auto& value) {
+                value.second = description;
+                latch.count_down();
+            },
+            [description, &latch, name, version](const auto& ctor) {
+                ctor(fmt::format("{}-{}", name, version), description);
+                latch.count_down();
+            });
     }
+
+    co_await latch;
+
+    co_await save_async();
+
+    co_return;
 }
 
-void Database::remove(const std::set<std::string>& packages) {
+coro::task<void> Database::remove(const std::set<std::string>& packages) {
+    coro::latch latch {static_cast<ptrdiff_t>(packages.size())};
+
     for (const auto& pkgname : packages) {
-        m_descriptions.erase(pkgname);
+        m_descriptions.erase_if(pkgname, [&latch](const auto& value) {
+            latch.count_down();
+            return true;
+        });
     }
+
+    co_await latch;
+
+    co_await save_async();
+
+    co_return;
 }
 
 template<typename TBuffer>
@@ -45,8 +78,13 @@ void write_buffer_to_archive(Archive::Writer& writer,
     entry.finish();
 }
 
-void Database::save() const {
+coro::task<void> Database::save_async() {
+    auto lock = co_await m_file_lock->lock();
+
     Archive::Writer db_writer, files_writer;
+
+    std::cout << fmt::format("Adding new entries to {}.db.tar.zst...\n",
+                             (m_path / m_name).string());
 
     archive_write_add_filter_zstd(db_writer);
     archive_write_set_format_pax_restricted(db_writer);
@@ -59,6 +97,9 @@ void Database::save() const {
                                / fmt::format("{}.files.tar.zst", m_name));
 
     for (const auto& [name, description] : m_descriptions) {
+        std::cout << fmt::format("Description for {} is being added...\n",
+                                 name);
+
         write_buffer_to_archive(db_writer, fmt::format("{}/desc", name),
                                 description.string());
 
@@ -79,12 +120,18 @@ void Database::create_symlinks() const {
         m_path / fmt::format("{}.files.tar.zst", m_name),
         m_path / fmt::format("{}.files", m_name), ec);
 }
+
+coro::task<void> Database::load() {
+    auto lock = co_await m_file_lock->lock();
+
     Archive::Reader db_reader;
 
     archive_read_support_format_all(db_reader);
     archive_read_support_filter_all(db_reader);
 
-    db_reader.open_filename(m_path / fmt::format("{}.db.tar.zst", m_name));
+    try {
+        db_reader.open_filename(m_path / fmt::format("{}.db.tar.zst", m_name));
+    } catch (const Archive::LibException& exception) { co_return; }
 
     for (auto& [header, data] : db_reader) {
         std::filesystem::path path = archive_entry_pathname(*header);
@@ -104,6 +151,8 @@ void Database::create_symlinks() const {
 
         m_descriptions[parts[0]] = desc;
     }
+
+    co_return;
 }
 
 } // namespace bxt::Utilities::AlpmDb

@@ -7,6 +7,11 @@
 #pragma once
 #include "utilities/alpmdb/Desc.h"
 
+#include <coro/event.hpp>
+#include <coro/io_scheduler.hpp>
+#include <coro/mutex.hpp>
+#include <coro/sync_wait.hpp>
+#include <coro/task.hpp>
 #include <filesystem>
 #include <frozen/set.h>
 #include <frozen/string.h>
@@ -20,10 +25,12 @@ public:
                       const std::string& name = "")
         : m_path(std::filesystem::absolute(path)), m_name(name) {
         if (name == "") { m_name = m_path.parent_path().filename(); }
+
+        coro::sync_wait(load());
     }
 
-    void add(const std::set<std::string>& files);
-    void remove(const std::set<std::string>& packages);
+    coro::task<void> add(const std::set<std::string>& files);
+    coro::task<void> remove(const std::set<std::string>& packages);
     std::set<std::string> packages() const {
         std::set<std::string> packages;
         std::ranges::transform(m_descriptions,
@@ -33,10 +40,12 @@ public:
         return packages;
     }
 
-    void save() const;
-    void load();
+    coro::task<void> load();
 
 private:
+
+    coro::task<void> save_async();
+
     bool package_exists(const std::string& package_name) const;
     void create_symlinks() const;
 
@@ -45,7 +54,9 @@ private:
                                         "pkg.tar.zst"};
 
     std::filesystem::path m_path;
+    std::unique_ptr<coro::mutex> m_file_lock = std::make_unique<coro::mutex>();
+
     std::string m_name;
-    phmap::node_hash_map<std::string, Desc> m_descriptions;
+    phmap::parallel_node_hash_map<std::string, Desc> m_descriptions;
 };
 } // namespace bxt::Utilities::AlpmDb
