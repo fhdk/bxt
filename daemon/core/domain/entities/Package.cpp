@@ -69,7 +69,14 @@ Package Package::from_filename(const Section& section,
     }
     return Package(section, name,
                    {.epoch = epoch_int, .version = version, .release = release},
-                   PackageArchitecture());
+                   PackageArchitecture(), filename);
+}
+
+Package Package::from_filepath(const Section& section,
+                               const std::filesystem::path& filepath) {
+    auto result = from_filename(section, filepath.filename());
+    result.set_filepath(filepath);
+    return result;
 }
 
 } // namespace bxt::Core::Domain

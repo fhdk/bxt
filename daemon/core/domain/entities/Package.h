@@ -27,11 +27,13 @@ public:
     Package(const Section& section,
             const std::string& name,
             const PackageVersion& version,
-            const PackageArchitecture& arch)
+            const PackageArchitecture& arch,
+            const std::filesystem::path& path)
         : m_section(section),
           m_name(name),
           m_version(version),
-          m_architecture(arch) {}
+          m_architecture(arch),
+          m_filepath(path) {}
 
     virtual ~Package() = default;
 
@@ -42,6 +44,8 @@ public:
 
     static Package from_filename(const Section& section,
                                  const std::string& filename);
+    static Package from_filepath(const Section& section,
+                                 const std::filesystem::path& filepath);
 
     Section section() const { return m_section; }
 
