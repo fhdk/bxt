@@ -20,6 +20,10 @@ public:
 
     PackageFile() = default;
 
+    Core::Application::PackageSectionDTO section() const { return m_section; }
+
+    std::filesystem::path file_path() const { return m_file_path; }
+
 private:
     Core::Application::PackageSectionDTO m_section;
     std::filesystem::path m_file_path;
