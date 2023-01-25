@@ -11,7 +11,7 @@
 namespace bxt::Utilities {
 
 template<typename TTo, typename TFrom> struct Mapper {
-    TTo map(const TFrom& from);
+    TTo map(const TFrom& from) const;
 };
 
 } // namespace bxt::Utilities
