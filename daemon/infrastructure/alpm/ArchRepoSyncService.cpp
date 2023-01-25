@@ -31,7 +31,22 @@ coro::task<void> ArchRepoSyncService::sync(const PackageSectionDTO& section) {
         tasks.emplace_back(task(pkgname));
     }
 
-    auto files = coro::sync_wait(coro::when_all(std::move(tasks)));
+    auto files = co_await coro::when_all(std::move(tasks));
+
+    std::vector<Package> packages_to_add;
+    packages_to_add.reserve(tasks.size());
+
+    std::ranges::transform(files, std::back_inserter(packages_to_add),
+                           [this](const auto& file_task) {
+                               auto file = file_task.return_value();
+                               return Package::from_filepath(
+                                   m_section_dto_mapper.map(file.section()),
+                                   file.file_path());
+                           });
+
+    co_await m_package_repository.add_async(packages_to_add);
+
+    co_return;
 }
 
 coro::task<void> ArchRepoSyncService::sync_all() {

@@ -19,7 +19,9 @@ namespace bxt::Infrastructure {
 
 class ArchRepoSyncService : public bxt::Core::Application::SyncService {
 public:
-    ArchRepoSyncService(ArchRepoOptions& options) : m_options(options) {}
+    ArchRepoSyncService(PackageRepositoryBase& package_repository,
+                        ArchRepoOptions& options)
+        : m_package_repository(package_repository), m_options(options) {}
 
     virtual coro::task<void> sync(const PackageSectionDTO& section) override;
     virtual coro::task<void> sync_all() override;
@@ -34,6 +36,9 @@ protected:
         get_client(const std::string& url);
 
 private:
+    PackageRepositoryBase& m_package_repository;
+    Utilities::Mapper<Section, PackageSectionDTO> m_section_dto_mapper;
+
     ArchRepoOptions& m_options;
     coro::thread_pool tp {coro::thread_pool::options {.thread_count = 4}};
 };
