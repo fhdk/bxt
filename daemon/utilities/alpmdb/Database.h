@@ -38,6 +38,7 @@ public:
 
 private:
     bool package_exists(const std::string& package_name) const;
+    void create_symlinks() const;
 
     constexpr static frozen::set<frozen::string, 3>
         supported_package_extensions = {"pkg.tar.gz", "pkg.tar.xz",

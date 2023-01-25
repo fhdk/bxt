@@ -65,9 +65,20 @@ void Database::save() const {
         write_buffer_to_archive(files_writer, fmt::format("{}/files", name),
                                 description.files());
     }
+
+    create_symlinks();
 }
 
-void Database::load() {
+void Database::create_symlinks() const {
+    std::error_code ec;
+    std::filesystem::create_symlink(m_path
+                                        / fmt::format("{}.db.tar.zst", m_name),
+                                    m_path / fmt::format("{}.db", m_name), ec);
+
+    std::filesystem::create_symlink(
+        m_path / fmt::format("{}.files.tar.zst", m_name),
+        m_path / fmt::format("{}.files", m_name), ec);
+}
     Archive::Reader db_reader;
 
     archive_read_support_format_all(db_reader);
