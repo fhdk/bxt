@@ -13,6 +13,11 @@
 
 namespace bxt::Utilities::AlpmDb {
 
+struct DescParseException : public std::runtime_error {
+    explicit DescParseException(const std::string& what)
+        : std::runtime_error(what) {};
+};
+
 class Desc {
 public:
     Desc() = default;

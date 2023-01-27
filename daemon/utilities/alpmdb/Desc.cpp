@@ -83,10 +83,17 @@ Desc Desc::parse_package(const std::filesystem::path &filepath) {
 
     archive_read_support_filter_all(file_reader);
     archive_read_support_format_all(file_reader);
-
-    file_reader.open_filename(filepath);
+    try {
+        file_reader.open_filename(filepath);
+    } catch (Archive::LibException &e) {
+        throw DescParseException(fmt::format(
+            "The file '{}' is not a valid archive.\nLibArchive error: {}",
+            std::filesystem::absolute(filepath).string(), e.what()));
+    }
 
     PkgInfo infoObj;
+
+    bool found = false;
     for (auto &[a, b] : file_reader) {
         if (!std::string(archive_entry_pathname(*a)).ends_with(".PKGINFO")) {
             if (!std::string(archive_entry_pathname(*a)).starts_with("/.")) {
@@ -95,12 +102,19 @@ Desc Desc::parse_package(const std::filesystem::path &filepath) {
 
             files << archive_entry_pathname(*a) << "\n";
         }
+        found = true;
 
         auto data = b.read_all();
 
         std::string info(data.begin(), data.end());
 
         infoObj.parse(info);
+    }
+
+    if (!found) {
+        throw DescParseException(
+            fmt::format("No package info is available in '{}' archive",
+                        std::filesystem::absolute(filepath).string()));
     }
 
     constexpr static char format_string[] = "%{}%\n{}\n\n";

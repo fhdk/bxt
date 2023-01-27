@@ -19,6 +19,11 @@
 
 namespace bxt::Utilities::AlpmDb {
 
+struct DatabaseParseException : public std::runtime_error {
+    explicit DatabaseParseException(const std::string& what)
+        : std::runtime_error(what) {}
+};
+
 class Database {
 public:
     explicit Database(const std::filesystem::path& path = "./",

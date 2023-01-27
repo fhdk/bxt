@@ -131,7 +131,11 @@ coro::task<void> Database::load() {
 
     try {
         db_reader.open_filename(m_path / fmt::format("{}.db.tar.zst", m_name));
-    } catch (const Archive::LibException& exception) { co_return; }
+    } catch (const Archive::LibException& exception) {
+        throw DatabaseParseException(
+            fmt::format("Cannot parse database. LibArchive exception: {}",
+                        exception.what()));
+    }
 
     for (auto& [header, data] : db_reader) {
         std::filesystem::path path = archive_entry_pathname(*header);
