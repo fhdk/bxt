@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(bxtd LANGUAGES CXX)
 
-set(CMAKE_CXX_FLAGS "-Wall -Wextra -fPIC -fopenmp -DBOOST_LOG_DYN_LINK -DBOOST -fcoroutines")
+set(CMAKE_CXX_FLAGS "-Wall -Wextra -fPIC -fopenmp -DBOOST -fcoroutines")
 
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "*.cpp")
@@ -13,7 +13,11 @@ include_directories(
     ${CURL_INCLUDE_DIR}
 )
 
-add_compile_definitions(${PROJECT_NAME} PUBLIC BOOST_ASIO_HAS_CO_AWAIT=1 BOOST_ASIO_HAS_STD_COROUTINE=1)
+add_compile_definitions(${PROJECT_NAME} PUBLIC
+    BOOST_ASIO_HAS_CO_AWAIT=1
+    BOOST_ASIO_HAS_STD_COROUTINE=1
+    BOOST_LOG_DYN_LINK=1)
+
 target_compile_options(${PROJECT_NAME} PUBLIC -fcoroutines)
 
 target_link_libraries(${PROJECT_NAME}

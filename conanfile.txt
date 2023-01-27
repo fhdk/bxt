@@ -14,3 +14,6 @@ tbb/2020.3
 
 [generators]
 cmake
+
+[options]
+boost:shared=True

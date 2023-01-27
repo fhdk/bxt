@@ -4,6 +4,22 @@
  *   SPDX-License-Identifier: GPL-3.0-or-later
  *
  */
+#include <boost/log/trivial.hpp>
+#include <boost/log/utility/setup.hpp>
+
+void setup_logger() {
+    boost::log::add_common_attributes();
+    boost::log::add_console_log(std::cout,
+                                boost::log::keywords::format =
+                                    "[%TimeStamp%][%Severity%]: %Message%",
+                                boost::log::keywords::auto_flush = true);
+    boost::log::add_file_log("journal.log",
+                             boost::log::keywords::format =
+                                 "[%TimeStamp%][%Severity%]: %Message%",
+                             boost::log::keywords::auto_flush = true);
+}
+
 int main() {
-  return 0;
+    setup_logger();
+    return 0;
 }
