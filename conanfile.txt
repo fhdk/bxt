@@ -12,6 +12,7 @@ parallel-hashmap/1.37
 libarchive/3.6.2
 onetbb/2021.7.0
 drogon/1.8.2
+kangaru/4.3.0
 
 [generators]
 cmake
