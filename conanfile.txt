@@ -11,6 +11,7 @@ cpp-httplib/0.11.3
 parallel-hashmap/1.37
 libarchive/3.6.2
 onetbb/2021.7.0
+drogon/1.8.2
 
 [generators]
 cmake
