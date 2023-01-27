@@ -6,8 +6,6 @@
  */
 #pragma once
 
-#include "core/domain/repositories/PackageRepositoryBase.h"
-
 namespace bxt::Utilities {
 
 template<typename TTo, typename TFrom> struct Mapper {

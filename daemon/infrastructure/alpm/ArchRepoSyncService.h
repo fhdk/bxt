@@ -8,6 +8,7 @@
 
 #include "ArchRepoOptions.h"
 #include "core/application/services/SyncService.h"
+#include "core/domain/repositories/PackageRepositoryBase.h"
 #include "infrastructure/PackageFile.h"
 
 #include <coro/thread_pool.hpp>
