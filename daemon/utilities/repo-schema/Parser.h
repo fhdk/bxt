@@ -10,6 +10,7 @@
 #include "utilities/repo-schema/SchemaExtension.h"
 
 #include <filesystem>
+#include <kangaru/kangaru.hpp>
 #include <parallel_hashmap/phmap.h>
 #include <string>
 #include <vector>
@@ -26,6 +27,9 @@ public:
 
     void extend(Extension* extension);
     void parse(const std::filesystem::path& filename);
+
+    friend auto service_map(bxt::Utilities::RepoSchema::Parser const&)
+        -> kgr::autowire_single;
 
 private:
     void parse(const YAML::Node& root_node);

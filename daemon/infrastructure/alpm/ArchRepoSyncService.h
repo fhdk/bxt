@@ -40,7 +40,7 @@ private:
     PackageRepositoryBase& m_package_repository;
     Utilities::Mapper<Section, PackageSectionDTO> m_section_dto_mapper;
 
-    ArchRepoOptions& m_options;
+    ArchRepoOptions m_options;
     coro::thread_pool tp {coro::thread_pool::options {.thread_count = 4}};
 };
 
