@@ -7,12 +7,14 @@
 #pragma once
 #include "utilities/alpmdb/Desc.h"
 
+#include <boost/log/trivial.hpp>
 #include <coro/event.hpp>
 #include <coro/io_scheduler.hpp>
 #include <coro/mutex.hpp>
 #include <coro/sync_wait.hpp>
 #include <coro/task.hpp>
 #include <filesystem>
+#include <fmt/format.h>
 #include <frozen/set.h>
 #include <frozen/string.h>
 #include <parallel_hashmap/phmap.h>
@@ -30,8 +32,13 @@ public:
                       const std::string& name = "")
         : m_path(std::filesystem::absolute(path)), m_name(name) {
         if (name == "") { m_name = m_path.parent_path().filename(); }
-
-        coro::sync_wait(load());
+        try {
+            coro::sync_wait(load());
+        } catch (DatabaseParseException& e) {
+            BOOST_LOG_TRIVIAL(warning)
+                << fmt::format("Database '{}' is not readable or doesn't exist",
+                               m_path.string());
+        }
     }
 
     coro::task<void> add(const std::set<std::string>& files);
