@@ -4,8 +4,17 @@
  *   SPDX-License-Identifier: GPL-3.0-or-later
  *
  */
+#include "infrastructure/DeploymentService.di.h"
+#include "infrastructure/alpm/ArchRepoSyncService.di.h"
+#include "persistence/alpm/Box.di.h"
+#include "persistence/config/SectionRepository.di.h"
+#include "ui/web-controllers/PackageController.h"
+#include "utilities/repo-schema/Parser.h"
+
 #include <boost/log/trivial.hpp>
 #include <boost/log/utility/setup.hpp>
+#include <drogon/HttpAppFramework.h>
+#include <kangaru/debug.hpp>
 
 void setup_logger() {
     using namespace boost::log;
@@ -21,7 +30,36 @@ void setup_logger() {
                  boost::log::keywords::auto_flush = true);
 }
 
+void setup_di_container(kgr::container& ctr) {
+    ctr.invoke([](bxt::Utilities::RepoSchema::Parser& parser,
+                  bxt::Infrastructure::ArchRepoOptions& options) {
+        parser.extend(&options);
+
+        parser.parse("./box.yml");
+    });
+
+    ctr.service<bxt::Persistence::di::SectionRepository>();
+
+    ctr.service<bxt::Persistence::di::Box>();
+    ctr.service<bxt::Infrastructure::di::DeploymentService>();
+
+    ctr.service<bxt::Infrastructure::di::ArchRepoSyncService>();
+}
+
 int main() {
     setup_logger();
+
+    kgr::container ctr;
+
+    setup_di_container(ctr);
+
+    drogon::app()
+        .addListener("0.0.0.0", 8080)
+        .setUploadPath("/tmp/bxt/")
+        .setClientMaxBodySize(256 * 1024 * 1024)
+        .setClientMaxMemoryBodySize(1024 * 1024)
+        .registerController(ctr.service<PackageControllerService>())
+        .run();
+
     return 0;
 }
