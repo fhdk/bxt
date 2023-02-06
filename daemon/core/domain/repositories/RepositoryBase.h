@@ -28,7 +28,8 @@ template<typename TEntity> struct ReadOnlyRepositoryBase {
      * @typedef TId
      * @brief The type of the identifier of the entity.
      */
-    using TId = std::result_of_t<decltype (&TEntity::id)()>();
+    using TId = std::remove_cvref_t<
+        std::invoke_result_t<decltype(&TEntity::id), TEntity>>;
 
     /**
      * @typedef TResult
@@ -174,11 +175,12 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity> {
      */
     virtual coro::task<void> add_async(const TResults entities) {
         std::vector<coro::task<void>> tasks;
-        for (auto& entity : entities) {
+        for (const auto& entity : entities) {
             tasks.push_back(add_async(entity));
         }
 
-        co_return coro::when_all(std::move(tasks));
+        co_await coro::when_all(std::move(tasks));
+        co_return;
     }
 
     /**
@@ -222,7 +224,8 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity> {
             tasks.push_back(update_async(entity));
         }
 
-        co_return coro::when_all(std::move(tasks));
+        co_await coro::when_all(std::move(tasks));
+        co_return;
     }
 
     /**
@@ -249,7 +252,9 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity> {
      *
      * @param id The ID of the entity to be removed.
      */
-    virtual void remove(const TId& id) { coro::sync_wait(remove_async(id)); }
+    virtual void remove(const TId& id) {
+        coro::sync_wait(remove_async(TId(id)));
+    }
 
     /**
      * @brief Asynchronously removes a list of entities from the repository.
@@ -264,7 +269,8 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity> {
             tasks.push_back(remove_async(id));
         }
 
-        co_return coro::when_all(std::move(tasks));
+        co_await coro::when_all(std::move(tasks));
+        co_return;
     }
 
     /**

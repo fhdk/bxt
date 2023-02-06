@@ -17,8 +17,14 @@
 
 namespace bxt::Core::Domain
 {
-class Package : public AggregateRoot<> {
+class Package {
 public:
+    struct TId {
+        Section section;
+        Name package_name;
+    };
+
+    const TId id() const { return {m_section, m_name}; }
     const std::string& name() const { return m_name; }
     const PackageVersion& version() const  { return m_version; }
     const std::string& architecture() const { return m_architecture; }

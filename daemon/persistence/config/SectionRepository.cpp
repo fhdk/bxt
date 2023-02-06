@@ -10,16 +10,18 @@
 
 namespace bxt::Persistence {
 
-bxt::Core::Domain::Section bxt::Persistence::SectionRepository::find_by_id(
-    const bxt::Core::Domain::Name& id) {
+coro::task<SectionRepository::TResult>
+    bxt::Persistence::SectionRepository::find_by_id_async(TId id) {
 }
 
-bxt::Core::Domain::Section bxt::Persistence::SectionRepository::find_first(
-    std::function<bool(const bxt::Core::Domain::Section&)>) {
+coro::task<SectionRepository::TResult>
+    bxt::Persistence::SectionRepository::find_first_async(
+        std::function<bool(const Section&)>) {
 }
 
-std::vector<bxt::Core::Domain::Section> SectionRepository::find(
-    std::function<bool(const bxt::Core::Domain::Section&)>) {
+coro::task<SectionRepository::TResults>
+    bxt::Persistence::SectionRepository::find_async(
+        std::function<bool(const Section&)> condition) {
 }
 
 coro::task<std::vector<Section>> SectionRepository::all_async() {

@@ -6,11 +6,11 @@
  */
 #pragma once
 #include "core/domain/entities/Section.h"
-#include "core/domain/helpers/RepositoryBase.h"
+#include "core/domain/repositories/RepositoryBase.h"
 
 #include <kangaru/service.hpp>
 
 namespace bxt::Core::Domain::di {
 struct SectionReadOnlyRepositoryBase
-    : kgr::abstract_service<ReadOnlyRepositoryBase<Section, Name>> {};
+    : kgr::abstract_service<ReadOnlyRepositoryBase<Section>> {};
 } // namespace bxt::Core::Domain::di

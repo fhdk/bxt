@@ -6,11 +6,12 @@
  */
 #pragma once
 
+#include "AggregateRoot.h"
 #include "core/domain/value_objects/Name.h"
 
 namespace bxt::Core::Domain {
 
-class Section {
+class Section : public AggregateRoot<> {
 public:
     Section(const Name& branch,
             const Name& repository,

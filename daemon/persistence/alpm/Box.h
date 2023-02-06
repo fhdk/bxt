@@ -17,7 +17,7 @@ namespace bxt::Persistence {
 
 class Box : public Core::Domain::PackageRepositoryBase {
 public:
-    Box(ReadOnlyRepositoryBase<Section, Name> &section_repository)
+    Box(ReadOnlyRepositoryBase<Section> &section_repository)
         : m_section_repository(section_repository) {
         auto sections = coro::sync_wait(m_section_repository.all_async());
 
@@ -34,32 +34,26 @@ public:
         }
     };
 
-    virtual Core::Domain::Package
-        find_by_id(const boost::uuids::uuid &id) override;
-    virtual Core::Domain::Package
-        find_first(std::function<bool(const Core::Domain::Package &)>) override;
-    virtual std::vector<Core::Domain::Package> find(
-        const std::function<bool(const Core::Domain::Package &)> &) override;
-    virtual coro::task<std::vector<Core::Domain::Package>> find_async(
-        const std::function<bool(const Core::Domain::Package &)> &) override;
-    virtual void add(const Core::Domain::Package &entity) override;
-    virtual void remove(const Core::Domain::Package &entity) override;
+    virtual coro::task<TResult> find_by_id_async(TId id) override;
+    virtual coro::task<TResult>
+        find_first_async(std::function<bool(const Package &)>) override;
+    virtual coro::task<TResults>
+        find_async(std::function<bool(const Package &)> condition) override;
+    virtual coro::task<TResults> all_async() override;
 
+    virtual coro::task<void> add_async(const Package entity) override;
     virtual coro::task<void>
-        add_async(const bxt::Core::Domain::Package &entity) override;
-    virtual coro::task<void>
-        remove_async(const bxt::Core::Domain::Package &entity) override;
+        add_async(const std::vector<Package> entity) override;
 
-    virtual coro::task<void> add_async(
-        const std::span<bxt::Core::Domain::Package> &entities) override;
+    virtual coro::task<void> update_async(const Package entity) override;
+    virtual coro::task<void> remove_async(const TId id) override;
 
-    virtual coro::task<std::vector<Core::Domain::Package>>
-        find_by_section_async(
-            const Core::Domain::Section &section) const override;
+    virtual coro::task<std::vector<Package>>
+        find_by_section_async(const Section section) const override;
 
 private:
     BoxOptions m_options;
-    ReadOnlyRepositoryBase<Section, Name> &m_section_repository;
+    ReadOnlyRepositoryBase<Section> &m_section_repository;
     Utilities::Mapper<PackageSectionDTO, Section> m_section_dto_mapper;
 
     phmap::parallel_flat_hash_map<Core::Application::PackageSectionDTO,

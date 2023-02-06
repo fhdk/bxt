@@ -12,30 +12,21 @@
 
 namespace bxt::Persistence {
 
-Core::Domain::Package Box::find_by_id(const boost::uuids::uuid &id) {
+coro::task<Box::TResult> Box::find_by_id_async(TId id) {
 }
 
-Core::Domain::Package
-    Box::find_first(std::function<bool(const Core::Domain::Package &)>) {
+coro::task<Box::TResult>
+    Box::find_first_async(std::function<bool(const Package &)>) {
 }
 
-std::vector<Core::Domain::Package>
-    Box::find(const std::function<bool(const Core::Domain::Package &)> &) {
+coro::task<Box::TResults>
+    Box::find_async(std::function<bool(const Package &)> condition) {
 }
 
-coro::task<std::vector<Core::Domain::Package>> Box::find_async(
-    const std::function<bool(const Core::Domain::Package &)> &) {
+coro::task<Box::TResults> Box::all_async() {
 }
 
-void Box::add(const Core::Domain::Package &entity) {
-    coro::sync_wait(add_async(entity));
-}
-
-void Box::remove(const Core::Domain::Package &entity) {
-    coro::sync_wait(remove_async(entity));
-}
-
-coro::task<void> Box::add_async(const Package &entity) {
+coro::task<void> Box::add_async(const Package entity) {
     auto section_dto = m_section_dto_mapper.map(entity.section());
 
     std::cout << fmt::format("Adding {}/{}\n", std::string(section_dto),
@@ -57,15 +48,15 @@ coro::task<void> Box::add_async(const Package &entity) {
     co_return;
 }
 
-coro::task<void> Box::remove_async(const Package &entity) {
-    auto section_dto = m_section_dto_mapper.map(entity.section());
+coro::task<void> Box::remove_async(const TId entity) {
+    auto section_dto = m_section_dto_mapper.map(entity.section);
 
     std::filesystem::remove(
         fmt::format("{}/{}", m_options.location, std::string(section_dto)));
 
-    std::set<std::string> names_to_remove = {entity.name()};
+    std::set<std::string> names_to_remove = {entity.package_name};
 
-    auto task = m_map.at(m_section_dto_mapper.map(entity.section()))
+    auto task = m_map.at(m_section_dto_mapper.map(entity.section))
                     .remove(names_to_remove);
 
     co_await task;
@@ -73,7 +64,7 @@ coro::task<void> Box::remove_async(const Package &entity) {
     co_return;
 }
 
-coro::task<void> Box::add_async(const std::span<Package> &entities) {
+coro::task<void> Box::add_async(const std::vector<Package> entities) {
     phmap::node_hash_map<PackageSectionDTO, std::set<std::string>> paths_to_add;
 
     for (const auto &entity : entities) {
@@ -108,8 +99,11 @@ coro::task<void> Box::add_async(const std::span<Package> &entities) {
     co_return;
 }
 
-coro::task<std::vector<Core::Domain::Package>> Box::find_by_section_async(
-    const Core::Domain::Section &section) const {
+coro::task<void> Box::update_async(const Package entity) {
+}
+
+coro::task<std::vector<Core::Domain::Package>>
+    Box::find_by_section_async(const Core::Domain::Section section) const {
     auto packages = m_map.at(m_section_dto_mapper.map(section)).packages();
 
     std::vector<Core::Domain::Package> result;
