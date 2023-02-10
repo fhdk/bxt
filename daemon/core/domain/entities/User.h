@@ -6,9 +6,8 @@
  */
 #pragma once
 
-#include "core/domain/entities/AggregateRoot.h"
-#include "core/domain/entities/Permission.h"
 #include "core/domain/value_objects/Name.h"
+#include "core/domain/value_objects/Permission.h"
 
 #include <set>
 #include <string>
@@ -16,9 +15,11 @@
 namespace bxt::Core::Domain
 {
 
-class User : public AggregateRoot<>
-{
+class User {
 public:
+    User() : m_name("Unnamed") {}
+
+    const Name &id() const { return m_name; }
     const Name &name() const { return m_name; }
 
     const std::string &password() const { return m_password; }

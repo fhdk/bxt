@@ -11,6 +11,7 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 include_directories(
     ./
     ${CURL_INCLUDE_DIR}
+    ${lmdbxx_SOURCE_DIR}/include
 )
 
 add_compile_definitions(${PROJECT_NAME} PUBLIC

@@ -12,6 +12,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(libcoro)
 
+FetchContent_Declare(
+    lmdbxx
+    GIT_REPOSITORY https://github.com/hoytech/lmdbxx
+    GIT_TAG        b12d1b12f4c9793aef8bed03d07ecbf789e810b4
+)
+FetchContent_MakeAvailable(lmdbxx)
+
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
 
