@@ -17,6 +17,8 @@ public:
     virtual ~DeploymentService() = default;
 
     virtual coro::task<void> deploy(PackageDTO package) = 0;
+
+    virtual coro::task<bool> verify_token(const std::string& token) = 0;
 };
 
 } // namespace bxt::Core::Application

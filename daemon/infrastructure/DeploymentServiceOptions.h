@@ -20,12 +20,15 @@ public:
 
     virtual void parse(const YAML::Node& root_node) override;
 
+    std::string token() const { return m_token; }
+
 private:
     phmap::flat_hash_map<Core::Application::PackageSectionDTO,
                          std::filesystem::path>
         m_pool_path_overrides;
 
     std::filesystem::path m_default_pool_path = "box/pool/overlay/";
+    std::string m_token = "CHANGEME";
 };
 
 } // namespace bxt::Infrastructure

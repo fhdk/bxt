@@ -42,4 +42,8 @@ coro::task<void> DeploymentService::deploy(PackageDTO package) {
     co_return;
 }
 
+coro::task<bool> DeploymentService::verify_token(const std::string &token) {
+    co_return token == m_options.token();
+}
+
 } // namespace bxt::Infrastructure

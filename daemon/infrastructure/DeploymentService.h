@@ -20,6 +20,7 @@ public:
         : m_repository(repository) {}
 
     virtual coro::task<void> deploy(PackageDTO package) override;
+    virtual coro::task<bool> verify_token(const std::string& token) override;
 
 private:
     DeploymentServiceOptions m_options;
