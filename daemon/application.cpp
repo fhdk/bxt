@@ -9,7 +9,6 @@
 #include "infrastructure/alpm/ArchRepoSyncService.di.h"
 #include "persistence/alpm/Box.di.h"
 #include "persistence/config/SectionRepository.di.h"
-#include "persistence/lmdb/lmdbenv.di.h"
 #include "ui/web-controllers/AuthController.h"
 #include "ui/web-controllers/PackageController.h"
 #include "ui/web-controllers/UserController.h"
