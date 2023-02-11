@@ -7,9 +7,8 @@
 #pragma once
 
 #include "core/domain/entities/Package.h"
-#include "core/domain/helpers/RepositoryBase.h"
-
 #include "core/domain/enums/ArchitectureMatch.h"
+#include "core/domain/repositories/RepositoryBase.h"
 
 namespace bxt::Core::Domain
 {
@@ -22,9 +21,6 @@ public:
     static ArchitectureMatch
         match_architectures(const PackageArchitecture& arch,
                             const Name& arch_section);
-
-private:
-    RepositoryBase<Package, std::vector<Package>>* m_package_repository;
 };
 
 } // namespace bxt::Core::Domain
