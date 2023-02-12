@@ -106,9 +106,7 @@ Desc Desc::parse_package(const std::filesystem::path &filepath) {
 
         auto data = b.read_all();
 
-        std::string info(data.begin(), data.end());
-
-        infoObj.parse(info);
+        infoObj.parse(reinterpret_cast<char *>(data.data()));
     }
 
     if (!found) {

@@ -15,7 +15,7 @@ namespace bxt::Utilities::AlpmDb {
 class PkgInfo {
 public:
     PkgInfo() = default;
-    void parse(const std::string& contents);
+    void parse(std::string_view contents);
 
     std::set<std::string> values(const std::string& key);
 

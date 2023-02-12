@@ -14,18 +14,23 @@
 
 namespace bxt::Utilities::AlpmDb {
 
-void PkgInfo::parse(const std::string &contents) {
-    std::istringstream stream(contents);
-    std::string line;
-    while (std::getline(stream, line)) {
+void PkgInfo::parse(std::string_view contents) {
+    std::string_view line;
+    std::size_t pos = 0, prev_pos = 0;
+
+    while ((pos = contents.find('\n', prev_pos)) != std::string_view::npos) {
+        line = contents.substr(prev_pos, pos - prev_pos);
+        prev_pos = pos + 1;
+
         if (line.starts_with("#")) { continue; }
 
-        std::vector<std::string> result;
-        boost::algorithm::split_regex(result, line, boost::regex(" = "));
+        std::size_t delim_pos = line.find(" = ");
+        if (delim_pos == std::string_view::npos) { continue; }
 
-        if (result.size() != 2) { continue; }
+        std::string_view key = line.substr(0, delim_pos);
+        std::string_view value = line.substr(delim_pos + 3);
 
-        m_values.insert({result[0], result[1]});
+        m_values.insert({std::string(key), std::string(value)});
     }
 }
 
