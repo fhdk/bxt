@@ -27,9 +27,6 @@ public:
 
     lmdb::env& env() { return m_env; }
 
-    friend auto service_map(bxt::Utilities::LMDB::Environment const&)
-        -> kgr::autowire_single;
-
 private:
     lmdb::env m_env;
     coro::mutex m_mutex;

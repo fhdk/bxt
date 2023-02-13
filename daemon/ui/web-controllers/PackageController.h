@@ -34,8 +34,3 @@ private:
 };
 
 } // namespace bxt::UI
-
-struct PackageControllerService
-    : kgr::shared_service<
-          bxt::UI::PackageController,
-          kgr::dependency<bxt::Core::Application::di::DeploymentService>> {};

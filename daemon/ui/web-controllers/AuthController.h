@@ -6,7 +6,6 @@
  */
 #pragma once
 
-#include "core/application/services/AuthService.di.h"
 #include "core/application/services/AuthService.h"
 
 #include <drogon/HttpController.h>
@@ -34,8 +33,3 @@ private:
 };
 
 } // namespace bxt::UI
-
-struct AuthControllerService
-    : kgr::shared_service<
-          bxt::UI::AuthController,
-          kgr::dependency<bxt::Core::Application::di::AuthService>> {};

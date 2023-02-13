@@ -27,7 +27,7 @@ namespace bxt::Persistence {
 
 coro::task<UserRepository::TResult>
     UserRepository::find_by_id_async(const TId id) {
-    auto rotxn = lmdb::txn::begin(m_environment.env(), nullptr, MDB_RDONLY);
+    auto rotxn = lmdb::txn::begin(m_environment->env(), nullptr, MDB_RDONLY);
 
     std::string_view entity_string_view;
 
@@ -54,7 +54,7 @@ coro::task<UserRepository::TResults>
 
 coro::task<UserRepository::TResults> UserRepository::all_async() {
     UserRepository::TResults results;
-    auto rotxn = lmdb::txn::begin(m_environment.env(), nullptr, MDB_RDONLY);
+    auto rotxn = lmdb::txn::begin(m_environment->env(), nullptr, MDB_RDONLY);
 
     {
         auto cursor = lmdb::cursor::open(rotxn, m_db);
@@ -79,7 +79,7 @@ coro::task<UserRepository::TResults> UserRepository::all_async() {
 }
 
 coro::task<void> UserRepository::add_async(const User entity) {
-    auto txn = co_await m_environment.begin_rw_txn();
+    auto txn = co_await m_environment->begin_rw_txn();
 
     std::stringstream entity_stream;
     boost::archive::text_oarchive entity_archive(entity_stream);
@@ -92,7 +92,7 @@ coro::task<void> UserRepository::add_async(const User entity) {
 }
 
 coro::task<void> UserRepository::remove_async(const TId id) {
-    auto txn = co_await m_environment.begin_rw_txn();
+    auto txn = co_await m_environment->begin_rw_txn();
     m_db.del(txn->value, std::string(id));
     txn->value.commit();
     co_return;

@@ -9,7 +9,6 @@
 
 #include "core/application/dtos/PackageSectionDTO.h"
 #include "infrastructure/alpm/ArchRepoSource.h"
-#include "kangaru/autowire.hpp"
 #include "utilities/repo-schema/SchemaExtension.h"
 
 #include <parallel_hashmap/phmap.h>
@@ -22,7 +21,6 @@ struct ArchRepoOptions : public Utilities::RepoSchema::Extension {
                                   ArchRepoSource>
         sources;
 
-    friend auto service_map(ArchRepoOptions const&) -> kgr::autowire_single;
 
     virtual void parse(const YAML::Node& root_node) override {
         constexpr char Tag[] = "(alpm.sync)";

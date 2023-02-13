@@ -17,10 +17,10 @@ class UserRepository : public bxt::Core::Domain::UserRepository {
     using User = bxt::Core::Domain::User;
 
 public:
-    UserRepository(bxt::Utilities::LMDB::Environment &env)
+    UserRepository(std::shared_ptr<bxt::Utilities::LMDB::Environment> env)
         : m_environment(env) {
         coro::sync_wait([&env, this]() -> coro::task<void> {
-            auto txn = co_await env.begin_rw_txn();
+            auto txn = co_await env->begin_rw_txn();
 
             m_db = lmdb::dbi::open(txn->value, "users", MDB_CREATE);
 
@@ -44,7 +44,7 @@ public:
     virtual coro::task<void> update_async(const User entity) override;
 
 private:
-    bxt::Utilities::LMDB::Environment &m_environment;
+    std::shared_ptr<bxt::Utilities::LMDB::Environment> m_environment;
     lmdb::dbi m_db;
 };
 

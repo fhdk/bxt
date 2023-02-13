@@ -21,8 +21,6 @@ public:
 
     coro::task<bool> auth(const std::string& name, const std::string& password);
 
-    friend auto service_map(AuthService const&) -> kgr::autowire_single;
-
 private:
     Domain::UserRepository& m_user_repository;
 };
