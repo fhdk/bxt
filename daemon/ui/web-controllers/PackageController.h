@@ -6,7 +6,6 @@
  */
 #pragma once
 
-#include "core/application/services/DeploymentService.di.h"
 #include "core/application/services/DeploymentService.h"
 
 #include <drogon/drogon.h>
