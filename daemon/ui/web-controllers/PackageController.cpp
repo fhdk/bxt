@@ -54,4 +54,8 @@ drogon::Task<HttpResponsePtr> PackageController::deploy(HttpRequestPtr req) {
     co_return resp;
 }
 
+drogon::Task<HttpResponsePtr>
+    PackageController::sync(drogon::HttpRequestPtr req) {
+}
+
 } // namespace bxt::UI
