@@ -19,6 +19,18 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(lmdbxx)
 
+FetchContent_Declare(
+    event-bus
+    GIT_REPOSITORY https://github.com/gelldur/EventBus.git
+    GIT_TAG        v3.0.3
+)
+
+FetchContent_GetProperties(event-bus)
+if(NOT event-bus_POPULATED)
+    FetchContent_Populate(event-bus)
+    add_subdirectory(${event-bus_SOURCE_DIR}/lib ${event-bus_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif(NOT event-bus_POPULATED)
+
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
 
