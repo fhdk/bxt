@@ -15,4 +15,7 @@ coro::task<bool> AuthService::auth(const std::string &name,
     co_return entity.has_value() && entity->password() == password;
 }
 
+coro::task<bool> AuthService::verify(const std::string &token) const {
+}
+
 } // namespace bxt::Core::Application

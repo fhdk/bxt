@@ -21,6 +21,8 @@ public:
 
     coro::task<bool> auth(const std::string& name, const std::string& password);
 
+    coro::task<bool> verify(const std::string& token) const;
+
 private:
     Domain::UserRepository& m_user_repository;
 };

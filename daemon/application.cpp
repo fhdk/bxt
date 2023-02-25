@@ -54,6 +54,7 @@ void setup_di_container(kgr::container& ctr) {
 
     ctr.service<di::Core::Application::AuthService>();
     ctr.service<di::Core::Application::PackageService>();
+    ctr.service<di::Core::Application::PermissionService>();
 
     ctr.service<di::Infrastructure::DeploymentService>();
     ctr.service<di::Infrastructure::ArchRepoSyncService>();
@@ -64,7 +65,8 @@ void setup_controllers(auto& app, kgr::container& ctr) {
 
     app.registerController(ctr.service<PackageController>())
         .registerController(ctr.service<AuthController>())
-        .registerController(ctr.service<UserController>());
+        .registerController(ctr.service<UserController>())
+        .registerController(ctr.service<PermissionController>())
 }
 
 int main() {

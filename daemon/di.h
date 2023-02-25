@@ -8,6 +8,7 @@
 
 #include "core/application/services/AuthService.h"
 #include "core/application/services/PackageService.h"
+#include "core/application/services/PermissionService.h"
 #include "core/application/services/UserService.h"
 #include "infrastructure/DeploymentService.h"
 #include "infrastructure/alpm/ArchRepoOptions.h"
@@ -17,6 +18,7 @@
 #include "persistence/lmdb/UserRepository.h"
 #include "ui/web-controllers/AuthController.h"
 #include "ui/web-controllers/PackageController.h"
+#include "ui/web-controllers/PermissionController.h"
 #include "ui/web-controllers/UserController.h"
 #include "utilities/lmdb/Environment.h"
 #include "utilities/repo-schema/Parser.h"
@@ -60,6 +62,9 @@ namespace Core {
             : kgr::abstract_service<
                   bxt::Core::Domain::ReadOnlyRepositoryBase<Section>> {};
 
+        struct PermissionMatcher
+            : kgr::single_service<bxt::Core::Domain::PermissionMatcher> {};
+
     } // namespace Domain
 
     namespace Application {
@@ -85,6 +90,12 @@ namespace Core {
             : kgr::single_service<
                   bxt::Core::Application::UserService,
                   kgr::dependency<di::Core::Domain::UserRepository>> {};
+
+        struct PermissionService
+            : kgr::single_service<
+                  bxt::Core::Application::PermissionService,
+                  kgr::dependency<di::Core::Domain::UserRepository,
+                                  di::Core::Domain::PermissionMatcher>> {};
 
     } // namespace Application
 
@@ -149,6 +160,11 @@ namespace UI {
         : kgr::shared_service<
               bxt::UI::UserController,
               kgr::dependency<di::Core::Application::UserService>> {};
+
+    struct PermissionController
+        : kgr::shared_service<
+              bxt::UI::PermissionController,
+              kgr::dependency<di::Core::Application::PermissionService>> {};
 
 } // namespace UI
 

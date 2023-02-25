@@ -22,6 +22,8 @@ public:
         return boost::join(m_permission_tags, ".");
     }
 
+    std::vector<std::string> tags() const { return m_permission_tags; }
+
     auto operator<=>(const Permission& other) const = default;
 
 private:
