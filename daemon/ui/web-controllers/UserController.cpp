@@ -31,6 +31,19 @@ drogon::Task<drogon::HttpResponsePtr>
 
 drogon::Task<drogon::HttpResponsePtr>
     UserController::remove_user(drogon::HttpRequestPtr req) {
+    auto json = *req->getJsonObject();
+
+    const auto id = json["id"].asString();
+
+    if (!co_await m_service.remove_user(id)) {
+        auto response = drogon::HttpResponse::newHttpResponse();
+        response->setStatusCode(drogon::k400BadRequest);
+        co_return response;
+    }
+
+    Json::Value result;
+    result["status"] = "ok";
+    co_return drogon::HttpResponse::newHttpJsonResponse(result);
 }
 
 drogon::Task<drogon::HttpResponsePtr>
