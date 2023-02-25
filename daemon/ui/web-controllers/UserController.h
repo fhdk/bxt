@@ -10,15 +10,22 @@
 #include <drogon/HttpController.h>
 #include <kangaru/service.hpp>
 
+#define BXT_JWT_ADD_METHOD_TO(...) \
+    ADD_METHOD_TO(__VA_ARGS__, "bxt::UI::JwtFilter")
+
 namespace bxt::UI {
 
 class UserController : public drogon::HttpController<UserController, false> {
 public:
     METHOD_LIST_BEGIN
 
-    ADD_METHOD_TO(UserController::add_user, "/users/add", drogon::Post);
-    ADD_METHOD_TO(UserController::remove_user, "/users/remove", drogon::Post);
-    ADD_METHOD_TO(UserController::get_users, "/users", drogon::Get);
+    BXT_JWT_ADD_METHOD_TO(UserController::add_user, "/users/add", drogon::Post);
+
+    BXT_JWT_ADD_METHOD_TO(UserController::remove_user,
+                          "/users/remove",
+                          drogon::Post);
+
+    BXT_JWT_ADD_METHOD_TO(UserController::get_users, "/users", drogon::Get);
 
     METHOD_LIST_END
 

@@ -20,6 +20,7 @@
 #include "ui/web-controllers/PackageController.h"
 #include "ui/web-controllers/PermissionController.h"
 #include "ui/web-controllers/UserController.h"
+#include "ui/web-filters/JwtFilter.h"
 #include "utilities/lmdb/Environment.h"
 #include "utilities/repo-schema/Parser.h"
 
@@ -165,6 +166,11 @@ namespace UI {
         : kgr::shared_service<
               bxt::UI::PermissionController,
               kgr::dependency<di::Core::Application::PermissionService>> {};
+
+    struct JwtFilter
+        : kgr::shared_service<
+              bxt::UI::JwtFilter,
+              kgr::dependency<di::Core::Application::AuthService>> {};
 
 } // namespace UI
 

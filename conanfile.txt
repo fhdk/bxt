@@ -14,6 +14,7 @@ onetbb/2021.7.0
 drogon/1.8.2
 kangaru/4.3.0
 lmdb/0.9.29
+nlohmann_json/3.11.2
 
 [generators]
 cmake
