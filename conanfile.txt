@@ -18,6 +18,8 @@ nlohmann_json/3.11.2
 
 [generators]
 cmake
+CMakeDeps
+CMakeToolchain
 
 [options]
 boost:shared=True

@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.23)
 project(bxt CXX)
 
+list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
+list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR})
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -31,7 +35,18 @@ if(NOT event-bus_POPULATED)
     add_subdirectory(${event-bus_SOURCE_DIR}/lib ${event-bus_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif(NOT event-bus_POPULATED)
 
-include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-conan_basic_setup()
+
+if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
+  message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
+  file(DOWNLOAD "https://raw.githubusercontent.com/conan-io/cmake-conan/0.18.1/conan.cmake"
+                "${CMAKE_BINARY_DIR}/conan.cmake"
+                TLS_VERIFY ON)
+endif()
+
+include("${CMAKE_BINARY_DIR}/conan.cmake")
+conan_cmake_run(CONANFILE conanfile.txt
+    BASIC_SETUP
+    BUILD missing)
 
 add_subdirectory(daemon)
+add_subdirectory(frontend)
