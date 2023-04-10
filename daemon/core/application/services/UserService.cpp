@@ -9,7 +9,7 @@
 coro::task<bool>
     bxt::Core::Application::UserService::add_user(const UserDTO user) {
     try {
-        auto user_entity = m_entity_mapper.map(user);
+        auto user_entity = UserDTOMapper::to_entity(user);
 
         co_await m_repository.add_async(user_entity);
     } catch (...) { co_return false; }
@@ -32,9 +32,8 @@ coro::task<std::vector<bxt::Core::Application::UserDTO>>
     std::vector<bxt::Core::Application::UserDTO> result;
     result.reserve(values.size());
 
-    std::ranges::transform(
-        values, std::back_inserter(result),
-        [this](const auto &user) { return m_dto_mapper.map(user); });
+    std::ranges::transform(values, std::back_inserter(result),
+                           UserDTOMapper::to_dto);
 
     co_return result;
 }

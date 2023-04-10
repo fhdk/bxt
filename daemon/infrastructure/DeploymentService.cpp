@@ -38,7 +38,8 @@ coro::task<void> DeploymentService::deploy(PackageDTO package) {
     renamed_package.filepath =
         m_options.pool(package.section) / package.filepath.filename();
 
-    co_await m_repository.add_async(m_dto_mapper.map(renamed_package));
+    co_await m_repository.add_async(
+        PackageDTOMapper::to_entity(renamed_package));
     co_return;
 }
 

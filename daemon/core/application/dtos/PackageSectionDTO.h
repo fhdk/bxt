@@ -8,7 +8,7 @@
 
 #include "core/domain/entities/Package.h"
 #include "core/domain/value_objects/Name.h"
-#include "utilities/Mapper.h"
+#include "utilities/StaticDTOMapper.h"
 
 #include <boost/functional/hash.hpp>
 #include <string>
@@ -26,6 +26,10 @@ struct PackageSectionDTO {
     }
 };
 
+using SectionDTOMapper =
+    bxt::Utilities::StaticDTOMapper<bxt::Core::Domain::Section,
+                                    PackageSectionDTO>;
+
 } // namespace bxt::Core::Application
 
 namespace {
@@ -33,17 +37,14 @@ using namespace bxt::Core::Domain;
 using namespace bxt::Core::Application;
 } // namespace
 
-template<> struct bxt::Utilities::Mapper<PackageSectionDTO, Section> {
-    PackageSectionDTO map(const Section& from) const {
+template<> struct bxt::Utilities::StaticDTOMapper<Section, PackageSectionDTO> {
+    static PackageSectionDTO to_dto(const Section& from) {
         return Core::Application::PackageSectionDTO {
             .branch = from.branch(),
             .repository = from.repository(),
             .architecture = from.architecture()};
     }
-};
-
-template<> struct bxt::Utilities::Mapper<Section, PackageSectionDTO> {
-    Section map(const PackageSectionDTO& from) const {
+    static Section to_entity(const PackageSectionDTO& from) {
         return Core::Domain::Section(from.branch, from.repository,
                                      from.architecture);
     }

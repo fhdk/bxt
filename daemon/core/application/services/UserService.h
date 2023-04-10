@@ -23,8 +23,6 @@ public:
 
 private:
     bxt::Core::Domain::UserRepository& m_repository;
-    Utilities::Mapper<UserDTO, Domain::User> m_dto_mapper;
-    Utilities::Mapper<Domain::User, UserDTO> m_entity_mapper;
 };
 
 } // namespace bxt::Core::Application

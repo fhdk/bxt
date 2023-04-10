@@ -10,7 +10,7 @@
 #include "core/application/dtos/PackageDTO.h"
 #include "core/application/services/DeploymentService.h"
 #include "core/domain/repositories/PackageRepositoryBase.h"
-#include "utilities/Mapper.h"
+#include "utilities/StaticDTOMapper.h"
 
 namespace bxt::Infrastructure {
 
@@ -25,7 +25,6 @@ public:
 private:
     DeploymentServiceOptions m_options;
     PackageRepositoryBase& m_repository;
-    Utilities::Mapper<Package, PackageDTO> m_dto_mapper;
 };
 
 } // namespace bxt::Infrastructure

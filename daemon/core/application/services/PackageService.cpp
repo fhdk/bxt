@@ -10,7 +10,7 @@ namespace bxt::Core::Application {
 
 coro::task<std::vector<Package>>
     PackageService::get_packages(const PackageSectionDTO& section_dto) const {
-    auto section = m_section_dto_mapper.map(section_dto);
+    auto section = SectionDTOMapper::to_entity(section_dto);
 
     return m_repository.find_by_section_async(section);
 }

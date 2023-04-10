@@ -7,7 +7,7 @@
 #pragma once
 
 #include "core/domain/entities/User.h"
-#include "utilities/Mapper.h"
+#include "utilities/StaticDTOMapper.h"
 
 #include <ranges>
 
@@ -17,6 +17,10 @@ struct UserDTO {
     std::string password;
     std::set<std::string> permissions;
 };
+
+using UserDTOMapper =
+    bxt::Utilities::StaticDTOMapper<bxt::Core::Domain::User, UserDTO>;
+
 } // namespace bxt::Core::Application
 
 namespace bxt::Utilities {
@@ -26,8 +30,8 @@ namespace {
     using namespace bxt::Core::Application;
 } // namespace
 
-template<> struct Mapper<User, UserDTO> {
-    User map(const UserDTO& from) const {
+template<> struct StaticDTOMapper<User, UserDTO> {
+    static User to_entity(const UserDTO& from) {
         User to;
         to.set_name(from.name);
         to.set_password(from.password);
@@ -43,10 +47,8 @@ template<> struct Mapper<User, UserDTO> {
         to.set_permissions(mapped_permissions);
         return to;
     }
-};
 
-template<> struct Mapper<UserDTO, User> {
-    UserDTO map(const User& from) const {
+    static UserDTO to_dto(const User& from) {
         UserDTO to;
         to.name = std::string(from.name());
         to.password = from.password();

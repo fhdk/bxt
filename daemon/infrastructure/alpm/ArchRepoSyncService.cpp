@@ -36,13 +36,12 @@ coro::task<void> ArchRepoSyncService::sync(const PackageSectionDTO& section) {
     std::vector<Package> packages_to_add;
     packages_to_add.reserve(tasks.size());
 
-    std::ranges::transform(files, std::back_inserter(packages_to_add),
-                           [this](const auto& file_task) {
-                               auto file = file_task.return_value();
-                               return Package::from_filepath(
-                                   m_section_dto_mapper.map(file.section()),
-                                   file.file_path());
-                           });
+    std::ranges::transform(
+        files, std::back_inserter(packages_to_add), [](const auto& file_task) {
+            auto file = file_task.return_value();
+            return Package::from_filepath(
+                SectionDTOMapper::to_entity(file.section()), file.file_path());
+        });
 
     co_await m_package_repository.add_async(packages_to_add);
 

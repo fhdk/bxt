@@ -8,7 +8,7 @@
 
 #include "PackageSectionDTO.h"
 #include "core/domain/entities/Package.h"
-#include "utilities/Mapper.h"
+#include "utilities/StaticDTOMapper.h"
 
 #include <filesystem>
 #include <string>
@@ -21,6 +21,10 @@ struct PackageDTO {
 
     auto operator<=>(const PackageDTO& other) const = default;
 };
+
+using PackageDTOMapper =
+    bxt::Utilities::StaticDTOMapper<bxt::Core::Domain::Package, PackageDTO>;
+
 } // namespace bxt::Core::Application
 
 namespace {
@@ -28,20 +32,15 @@ using namespace bxt::Core::Domain;
 using namespace bxt::Core::Application;
 } // namespace
 
-template<> struct bxt::Utilities::Mapper<PackageDTO, Package> {
-    PackageDTO map(const Package& from) const {
+template<> struct bxt::Utilities::StaticDTOMapper<Package, PackageDTO> {
+    static PackageDTO to_dto(const Package& from) {
         return Core::Application::PackageDTO {
-            .section = m_section_mapper.map(from.section()),
+            .section = SectionDTOMapper::to_dto(from.section()),
             .name = from.name(),
             .filepath = from.filepath()};
     }
-    Mapper<PackageSectionDTO, Section> m_section_mapper;
-};
-
-template<> struct bxt::Utilities::Mapper<Package, PackageDTO> {
-    Package map(const PackageDTO& from) const {
-        auto section = m_section_mapper.map(from.section);
+    static Package to_entity(const PackageDTO& from) {
+        auto section = SectionDTOMapper::to_entity(from.section);
         return Package::from_filepath(section, from.filepath);
     }
-    Mapper<Section, PackageSectionDTO> m_section_mapper;
 };

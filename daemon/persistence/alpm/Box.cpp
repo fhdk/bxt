@@ -27,7 +27,7 @@ coro::task<Box::TResults> Box::all_async() {
 }
 
 coro::task<void> Box::add_async(const Package entity) {
-    auto section_dto = m_section_dto_mapper.map(entity.section());
+    auto section_dto = SectionDTOMapper::to_dto(entity.section());
 
     std::cout << fmt::format("Adding {}/{}\n", std::string(section_dto),
                              entity.filepath().filename().string());
@@ -49,14 +49,14 @@ coro::task<void> Box::add_async(const Package entity) {
 }
 
 coro::task<void> Box::remove_async(const TId entity) {
-    auto section_dto = m_section_dto_mapper.map(entity.section);
+    auto section_dto = SectionDTOMapper::to_dto(entity.section);
 
     std::filesystem::remove(
         fmt::format("{}/{}", m_options.location, std::string(section_dto)));
 
     std::set<std::string> names_to_remove = {entity.package_name};
 
-    auto task = m_map.at(m_section_dto_mapper.map(entity.section))
+    auto task = m_map.at(SectionDTOMapper::to_dto(entity.section))
                     .remove(names_to_remove);
 
     co_await task;
@@ -68,7 +68,7 @@ coro::task<void> Box::add_async(const std::vector<Package> entities) {
     phmap::node_hash_map<PackageSectionDTO, std::set<std::string>> paths_to_add;
 
     for (const auto &entity : entities) {
-        auto section_dto = m_section_dto_mapper.map(entity.section());
+        auto section_dto = SectionDTOMapper::to_dto(entity.section());
 
         std::cout << fmt::format("Symlinking {}/{}\n", std::string(section_dto),
                                  entity.filepath().filename().string());
@@ -104,7 +104,7 @@ coro::task<void> Box::update_async(const Package entity) {
 
 coro::task<std::vector<Core::Domain::Package>>
     Box::find_by_section_async(const Core::Domain::Section section) const {
-    auto packages = m_map.at(m_section_dto_mapper.map(section)).packages();
+    auto packages = m_map.at(SectionDTOMapper::to_dto(section)).packages();
 
     std::vector<Core::Domain::Package> result;
     result.reserve(packages.size());

@@ -22,7 +22,7 @@ public:
         auto sections = coro::sync_wait(m_section_repository.all_async());
 
         for (const auto &section : sections) {
-            auto dto = m_section_dto_mapper.map(section);
+            auto dto = SectionDTOMapper::to_dto(section);
 
             auto path_for_section =
                 fmt::format("{}/{}", m_options.location, std::string(dto));
@@ -54,7 +54,6 @@ public:
 private:
     BoxOptions m_options;
     ReadOnlyRepositoryBase<Section> &m_section_repository;
-    Utilities::Mapper<PackageSectionDTO, Section> m_section_dto_mapper;
 
     phmap::parallel_flat_hash_map<Core::Application::PackageSectionDTO,
                                   Utilities::AlpmDb::Database>

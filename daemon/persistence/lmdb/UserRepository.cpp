@@ -41,7 +41,7 @@ coro::task<UserRepository::TResult>
     Core::Application::UserDTO usr;
     entity_archive >> usr;
 
-    co_return Utilities::Mapper<User, Core::Application::UserDTO>().map(usr);
+    co_return Core::Application::UserDTOMapper::to_entity(usr);
 }
 
 coro::task<UserRepository::TResult>
@@ -69,8 +69,7 @@ coro::task<UserRepository::TResults> UserRepository::all_async() {
                 entity_archive >> usr;
 
                 results.emplace_back(
-                    Utilities::Mapper<User, Core::Application::UserDTO>().map(
-                        usr));
+                    Core::Application::UserDTOMapper::to_entity(usr));
             } while (cursor.get(key, value, MDB_NEXT));
         }
     }
@@ -83,8 +82,7 @@ coro::task<void> UserRepository::add_async(const User entity) {
 
     std::stringstream entity_stream;
     boost::archive::text_oarchive entity_archive(entity_stream);
-    entity_archive << Utilities::Mapper<Core::Application::UserDTO, User>().map(
-        entity);
+    entity_archive << Core::Application::UserDTOMapper::to_dto(entity);
 
     m_db.put(txn->value, std::string(entity.id()), entity_stream.str());
     txn->value.commit();

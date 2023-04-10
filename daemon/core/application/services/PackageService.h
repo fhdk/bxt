@@ -20,10 +20,11 @@ public:
 
     coro::task<std::vector<Domain::Package>>
         get_packages(const PackageSectionDTO& section_dto) const;
+    
+    
 
 private:
     Domain::PackageRepositoryBase& m_repository;
-    Utilities::Mapper<Section, PackageSectionDTO> m_section_dto_mapper;
 };
 
 } // namespace bxt::Core::Application

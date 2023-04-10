@@ -8,8 +8,9 @@
 
 namespace bxt::Utilities {
 
-template<typename TTo, typename TFrom> struct Mapper {
-    TTo map(const TFrom& from) const;
+template<typename TEntity, typename TDTO> struct StaticDTOMapper {
+    static TDTO to_dto(const TEntity& from);
+    static TEntity to_entity(const TDTO& from);
 };
 
 } // namespace bxt::Utilities
