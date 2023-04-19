@@ -6,10 +6,13 @@
  */
 #pragma once
 
+#include "coro/io_scheduler.hpp"
+
 #include <coro/mutex.hpp>
+#include <coro/shared_mutex.hpp>
 namespace bxt::Utilities {
 template<typename T> struct locked {
-    coro::scoped_lock lock;
+    coro::shared_scoped_lock<coro::io_scheduler> lock;
 
     T value;
 };

@@ -6,10 +6,13 @@
  */
 #pragma once
 
+#include "core/application/dtos/UserDTO.h"
 #include "core/domain/repositories/UserRepository.h"
-#include "coro/sync_wait.hpp"
-#include "lmdbxx/lmdb++.h"
+#include "utilities/lmdb/Database.h"
 #include "utilities/lmdb/Environment.h"
+
+#include <coro/sync_wait.hpp>
+#include <lmdbxx/lmdb++.h>
 
 namespace bxt::Persistence {
 
@@ -18,15 +21,7 @@ class UserRepository : public bxt::Core::Domain::UserRepository {
 
 public:
     UserRepository(std::shared_ptr<bxt::Utilities::LMDB::Environment> env)
-        : m_environment(env) {
-        coro::sync_wait([&env, this]() -> coro::task<void> {
-            auto txn = co_await env->begin_rw_txn();
-
-            m_db = lmdb::dbi::open(txn->value, "users", MDB_CREATE);
-
-            txn->value.commit();
-        }());
-    }
+        : m_environment(env), m_db(env) {}
 
     virtual coro::task<TResult> find_by_id_async(const TId id) override;
     virtual coro::task<TResult>
@@ -45,7 +40,7 @@ public:
 
 private:
     std::shared_ptr<bxt::Utilities::LMDB::Environment> m_environment;
-    lmdb::dbi m_db;
+    Utilities::LMDB::Database<Core::Application::UserDTO> m_db;
 };
 
 } // namespace bxt::Persistence

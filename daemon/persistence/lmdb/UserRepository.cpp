@@ -8,40 +8,17 @@
 
 #include "core/application/dtos/UserDTO.h"
 
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/serialization/set.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <iostream>
-
-template<class Archive>
-void boost::serialization::serialize(Archive &ar,
-                                     bxt::Core::Application::UserDTO &user,
-                                     const unsigned int version) {
-    ar &user.name;
-    ar &user.password;
-    ar &user.permissions;
-}
 
 namespace bxt::Persistence {
 
 coro::task<UserRepository::TResult>
     UserRepository::find_by_id_async(const TId id) {
-    auto rotxn = lmdb::txn::begin(m_environment->env(), nullptr, MDB_RDONLY);
+    auto usr = co_await m_db.get(std::string(id));
+    if (!usr) co_return {};
 
-    std::string_view entity_string_view;
-
-    auto id_str = std::string(id);
-
-    if (!m_db.get(rotxn, id_str, entity_string_view)) { co_return {}; }
-
-    std::stringstream entity_stream((std::string(entity_string_view)));
-    boost::archive::text_iarchive entity_archive(entity_stream);
-
-    Core::Application::UserDTO usr;
-    entity_archive >> usr;
-
-    co_return Core::Application::UserDTOMapper::to_entity(usr);
+    co_return Core::Application::UserDTOMapper::to_entity(*usr);
 }
 
 coro::task<UserRepository::TResult>
@@ -57,7 +34,7 @@ coro::task<UserRepository::TResults> UserRepository::all_async() {
     auto rotxn = lmdb::txn::begin(m_environment->env(), nullptr, MDB_RDONLY);
 
     {
-        auto cursor = lmdb::cursor::open(rotxn, m_db);
+        auto cursor = lmdb::cursor::open(rotxn, m_db.dbi());
 
         std::string_view key, value;
         if (cursor.get(key, value, MDB_FIRST)) {
@@ -78,21 +55,15 @@ coro::task<UserRepository::TResults> UserRepository::all_async() {
 }
 
 coro::task<void> UserRepository::add_async(const User entity) {
-    auto txn = co_await m_environment->begin_rw_txn();
+    co_await m_db.put(std::string(entity.id()),
+                      Core::Application::UserDTOMapper::to_dto(entity));
 
-    std::stringstream entity_stream;
-    boost::archive::text_oarchive entity_archive(entity_stream);
-    entity_archive << Core::Application::UserDTOMapper::to_dto(entity);
-
-    m_db.put(txn->value, std::string(entity.id()), entity_stream.str());
-    txn->value.commit();
     co_return;
 }
 
 coro::task<void> UserRepository::remove_async(const TId id) {
-    auto txn = co_await m_environment->begin_rw_txn();
-    m_db.del(txn->value, std::string(id));
-    txn->value.commit();
+    co_await m_db.del(std::string(id));
+
     co_return;
 }
 

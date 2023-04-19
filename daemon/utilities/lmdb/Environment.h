@@ -8,7 +8,9 @@
 
 #include "utilities/locked.h"
 
+#include <coro/io_scheduler.hpp>
 #include <coro/mutex.hpp>
+#include <coro/shared_mutex.hpp>
 #include <coro/task.hpp>
 #include <kangaru/autowire.hpp>
 #include <lmdbxx/lmdb++.h>
@@ -16,7 +18,9 @@
 namespace bxt::Utilities::LMDB {
 class Environment {
 public:
-    Environment() : m_env(lmdb::env::create()) {}
+    Environment()
+        : m_env(lmdb::env::create()),
+          m_mutex(std::make_shared<coro::io_scheduler>()) {}
 
     coro::task<std::unique_ptr<locked<lmdb::txn>>> begin_rw_txn() {
         auto result = std::make_unique<locked<lmdb::txn>>(
@@ -25,11 +29,19 @@ public:
         co_return result;
     }
 
+    coro::task<std::unique_ptr<locked<lmdb::txn>>> begin_ro_txn() {
+        auto result = std::make_unique<locked<lmdb::txn>>(
+            co_await m_mutex.lock_shared(),
+            lmdb::txn::begin(m_env, nullptr, MDB_RDONLY));
+
+        co_return result;
+    }
+
     lmdb::env& env() { return m_env; }
 
 private:
     lmdb::env m_env;
-    coro::mutex m_mutex;
+    coro::shared_mutex<coro::io_scheduler> m_mutex;
 };
 
 } // namespace bxt::Utilities::LMDB
