@@ -17,36 +17,12 @@ namespace bxt::Core::Domain {
 
 struct PackageVersion
 {
-    static int compare(const PackageVersion& lh, const PackageVersion& rh);
+    static std::strong_ordering compare(const PackageVersion& lh,
+                                        const PackageVersion& rh);
 
-    bool operator<(const PackageVersion& other) const
-    {
-        return compare(*this, other) == -1;
-    }
-
-    bool operator>(const PackageVersion& other) const
-    {
-        return compare(*this, other) == 1;
-    }
-
-    bool operator==(const PackageVersion& other) const
-    {
-        return compare(*this, other) == 0;
-    }
-
-    bool operator<=(const PackageVersion& other) const
-    {
-        auto ret = compare(*this, other);
-
-        return ret == -1 || ret == 0;
-    }
-    bool operator>=(const PackageVersion& other) const
-    {
-        auto ret = compare(*this, other);
-
-        return ret == 1 || ret == 0;
-    }
-
+    auto operator<=>(const PackageVersion& rh) const {
+        return compare(*this, rh);
+    };
     std::string string() const;
 
     std::optional<int> epoch;

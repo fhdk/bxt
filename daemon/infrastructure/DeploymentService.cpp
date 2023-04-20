@@ -17,6 +17,16 @@ coro::task<void> DeploymentService::deploy(PackageDTO package) {
 
     std::filesystem::create_directories(m_options.pool(package.section));
 
+    auto deployed_entity = PackageDTOMapper::to_entity(package);
+
+    auto current_entitites = m_repository.find_by_section(
+        SectionDTOMapper::to_entity(package.section));
+
+    auto current_entity =
+        std::ranges::find(current_entitites, package.name, &Package::name);
+
+    if (deployed_entity.version() <= current_entity->version()) { co_return; }
+
     std::error_code ec;
 
     std::filesystem::rename(
