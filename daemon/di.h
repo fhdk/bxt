@@ -13,7 +13,6 @@
 #include "infrastructure/DeploymentService.h"
 #include "infrastructure/alpm/ArchRepoOptions.h"
 #include "infrastructure/alpm/ArchRepoSyncService.h"
-#include "persistence/alpm/Box.h"
 #include "persistence/config/SectionRepository.h"
 #include "persistence/lmdb/UserRepository.h"
 #include "ui/web-controllers/AuthController.h"
@@ -112,7 +111,7 @@ namespace Persistence {
 
     struct Box
         : kgr::single_service<
-              bxt::Persistence::Box,
+              bxt::Persistence::PackageRepository,
               kgr::dependency<di::Core::Domain::ReadOnlySectionRepository>>,
           kgr::overrides<di::Core::Domain::PackageRepositoryBase> {};
 

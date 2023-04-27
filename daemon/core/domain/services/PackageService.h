@@ -8,7 +8,12 @@
 
 #include "core/domain/entities/Package.h"
 #include "core/domain/enums/ArchitectureMatch.h"
+#include "core/domain/repositories/PackageRepositoryBase.h"
 #include "core/domain/repositories/RepositoryBase.h"
+
+#include <coro/task.hpp>
+#include <dexode/EventBus.hpp>
+#include <vector>
 
 namespace bxt::Core::Domain
 {
@@ -16,11 +21,19 @@ namespace bxt::Core::Domain
 class PackageService
 {
 public:
-    PackageService();
+    PackageService(std::shared_ptr<dexode::EventBus> evbus,
+                   PackageRepositoryBase& repository)
+        : m_evbus(evbus), m_repository(repository) {}
 
-    static ArchitectureMatch
-        match_architectures(const PackageArchitecture& arch,
-                            const Name& arch_section);
+    coro::task<void> add_package(Package pkg);
+
+    coro::task<void> remove_package(Package pkg);
+
+    coro::task<void> update_package(Package pkg, bool enable_downgrade = false);
+
+private:
+    std::shared_ptr<dexode::EventBus> m_evbus;
+    PackageRepositoryBase& m_repository;
 };
 
 } // namespace bxt::Core::Domain

@@ -8,19 +8,14 @@
 
 namespace bxt::Core::Domain {
 
-PackageService::PackageService() {
+coro::task<void> PackageService::add_package(Package pkg) {
 }
 
-ArchitectureMatch
-    PackageService::match_architectures(const PackageArchitecture &arch,
-                                        const Name &arch_section) {
-    if (std::string(arch) == "any") { return ArchitectureMatch::Any; }
+coro::task<void> PackageService::remove_package(Package pkg) {
+}
 
-    if (std::string(arch_section) == std::string(arch)) {
-        return ArchitectureMatch::Matches;
-    } else {
-        return ArchitectureMatch::NotMatches;
-    }
+coro::task<void> PackageService::update_package(Package pkg,
+                                                bool enable_downgrade) {
 }
 
 } // namespace bxt::Core::Domain

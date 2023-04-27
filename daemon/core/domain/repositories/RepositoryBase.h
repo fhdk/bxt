@@ -6,6 +6,8 @@
  */
 #pragma once
 
+#include "UnitOfWorkBase.h"
+
 #include <coro/sync_wait.hpp>
 #include <coro/task.hpp>
 #include <coro/when_all.hpp>
@@ -140,7 +142,8 @@ template<typename TEntity> struct ReadOnlyRepositoryBase {
  * @tparam TEntity The type of the entities stored in the repository.
  */
 template<typename TEntity>
-struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity> {
+struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity>,
+                                 public UnitOfWorkBase {
     using TId = typename ReadOnlyRepositoryBase<TEntity>::TId;
     using TResult = typename ReadOnlyRepositoryBase<TEntity>::TResult;
     using TResults = typename ReadOnlyRepositoryBase<TEntity>::TResults;
