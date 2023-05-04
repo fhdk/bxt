@@ -8,7 +8,7 @@
 
 #include <jwt-cpp/traits/nlohmann-json/defaults.h>
 
-namespace bxt::UI {
+namespace bxt::Presentation {
 
 void JwtFilter::doFilter(const drogon::HttpRequestPtr &request,
                          drogon::FilterCallback &&fcb,
@@ -61,4 +61,4 @@ void JwtFilter::doFilter(const drogon::HttpRequestPtr &request,
     return fccb();
 }
 
-} // namespace bxt::UI
+} // namespace bxt::Presentation

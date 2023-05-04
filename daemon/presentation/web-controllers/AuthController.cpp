@@ -10,8 +10,10 @@
 #include <jwt-cpp/jwt.h>
 #include <jwt-cpp/traits/nlohmann-json/defaults.h>
 
+namespace bxt::Presentation {
+
 drogon::Task<drogon::HttpResponsePtr>
-    bxt::UI::AuthController::auth(drogon::HttpRequestPtr req) {
+    AuthController::auth(drogon::HttpRequestPtr req) {
     auto json = *req->getJsonObject();
 
     const std::string name = json["name"].asString();
@@ -34,7 +36,7 @@ drogon::Task<drogon::HttpResponsePtr>
 }
 
 drogon::Task<drogon::HttpResponsePtr>
-    bxt::UI::AuthController::verify(drogon::HttpRequestPtr req) {
+    AuthController::verify(drogon::HttpRequestPtr req) {
     auto header = req->getHeader("Authorization");
     if (header.empty()) {
         auto error_resp = drogon::HttpResponse::newHttpResponse();
@@ -58,3 +60,4 @@ drogon::Task<drogon::HttpResponsePtr>
         co_return error_resp;
     }
 }
+} // namespace bxt::Presentation

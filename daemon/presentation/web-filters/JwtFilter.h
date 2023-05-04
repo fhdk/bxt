@@ -9,7 +9,7 @@
 
 #include <drogon/HttpFilter.h>
 
-namespace bxt::UI {
+namespace bxt::Presentation {
 
 class JwtFilter : public drogon::HttpFilter<JwtFilter, false> {
 public:
@@ -23,4 +23,4 @@ private:
     Core::Application::AuthService &m_service;
 };
 
-} // namespace bxt::UI
+} // namespace bxt::Presentation

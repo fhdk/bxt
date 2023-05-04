@@ -8,7 +8,7 @@
 
 #include <drogon/MultiPart.h>
 
-namespace bxt::UI {
+namespace bxt::Presentation {
 using namespace drogon;
 
 drogon::Task<HttpResponsePtr> PackageController::deploy(HttpRequestPtr req) {
@@ -58,4 +58,4 @@ drogon::Task<HttpResponsePtr>
     PackageController::sync(drogon::HttpRequestPtr req) {
 }
 
-} // namespace bxt::UI
+} // namespace bxt::Presentation

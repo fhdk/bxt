@@ -6,7 +6,7 @@
  */
 #include "PermissionController.h"
 
-namespace bxt::UI {
+namespace bxt::Presentation {
 drogon::Task<drogon::HttpResponsePtr>
     PermissionController::add_permission(drogon::HttpRequestPtr req) {
     auto json = *req->getJsonObject();
@@ -46,4 +46,4 @@ drogon::Task<drogon::HttpResponsePtr>
     co_return drogon::HttpResponse::newHttpJsonResponse(result);
 }
 
-} // namespace bxt::UI
+} // namespace bxt::Presentation

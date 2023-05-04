@@ -8,7 +8,7 @@
 
 #include "core/application/dtos/UserDTO.h"
 
-namespace bxt::UI {
+namespace bxt::Presentation {
 
 drogon::Task<drogon::HttpResponsePtr>
     UserController::add_user(drogon::HttpRequestPtr req) {
@@ -61,4 +61,4 @@ drogon::Task<drogon::HttpResponsePtr>
     co_return drogon::HttpResponse::newHttpJsonResponse(result);
 }
 
-} // namespace bxt::UI
+} // namespace bxt::Presentation

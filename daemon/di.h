@@ -17,11 +17,11 @@
 #include "persistence/alpm/Box.h"
 #include "persistence/config/SectionRepository.h"
 #include "persistence/lmdb/UserRepository.h"
-#include "ui/web-controllers/AuthController.h"
-#include "ui/web-controllers/PackageController.h"
-#include "ui/web-controllers/PermissionController.h"
-#include "ui/web-controllers/UserController.h"
-#include "ui/web-filters/JwtFilter.h"
+#include "presentation/web-controllers/AuthController.h"
+#include "presentation/web-controllers/PackageController.h"
+#include "presentation/web-controllers/PermissionController.h"
+#include "presentation/web-controllers/UserController.h"
+#include "presentation/web-filters/JwtFilter.h"
 #include "utilities/lmdb/Environment.h"
 #include "utilities/repo-schema/Parser.h"
 
@@ -162,34 +162,34 @@ namespace Persistence {
 
 } // namespace Persistence
 
-namespace UI {
+namespace Presentation {
 
     struct PackageController
         : kgr::shared_service<
-              bxt::UI::PackageController,
+              bxt::Presentation::PackageController,
               kgr::dependency<di::Core::Application::DeploymentService,
                               di::Core::Application::PackageService>> {};
 
     struct AuthController
         : kgr::shared_service<
-              bxt::UI::AuthController,
+              bxt::Presentation::AuthController,
               kgr::dependency<di::Core::Application::AuthService>> {};
 
     struct UserController
         : kgr::shared_service<
-              bxt::UI::UserController,
+              bxt::Presentation::UserController,
               kgr::dependency<di::Core::Application::UserService>> {};
 
     struct PermissionController
         : kgr::shared_service<
-              bxt::UI::PermissionController,
+              bxt::Presentation::PermissionController,
               kgr::dependency<di::Core::Application::PermissionService>> {};
 
     struct JwtFilter
         : kgr::shared_service<
-              bxt::UI::JwtFilter,
+              bxt::Presentation::JwtFilter,
               kgr::dependency<di::Core::Application::AuthService>> {};
 
-} // namespace UI
+} // namespace Presentation
 
 } // namespace bxt::di

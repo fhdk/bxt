@@ -7,21 +7,21 @@
 #pragma once
 
 #include "core/application/services/AuthService.h"
+#include "utilities/drogon/Macros.h"
 
 #include <drogon/HttpController.h>
 
-namespace bxt::UI {
+namespace bxt::Presentation {
 
 class AuthController : public drogon::HttpController<AuthController, false> {
 public:
     AuthController(Core::Application::AuthService& service)
         : m_service(service) {}
 
-public:
     METHOD_LIST_BEGIN
 
-    ADD_METHOD_TO(AuthController::auth, "/auth", drogon::Post);
-    ADD_METHOD_TO(AuthController::verify, "/verify", drogon::Get);
+    BXT_ADD_METHOD_TO(AuthController::auth, "/auth", drogon::Post);
+    BXT_JWT_ADD_METHOD_TO(AuthController::verify, "/verify", drogon::Get);
 
     METHOD_LIST_END
 
@@ -32,4 +32,4 @@ private:
     Core::Application::AuthService& m_service;
 };
 
-} // namespace bxt::UI
+} // namespace bxt::Presentation

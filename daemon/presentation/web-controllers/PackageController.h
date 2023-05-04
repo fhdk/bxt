@@ -8,11 +8,12 @@
 
 #include "core/application/services/DeploymentService.h"
 #include "core/application/services/PackageService.h"
+#include "utilities/drogon/Macros.h"
 
 #include <drogon/drogon.h>
 #include <kangaru/autowire.hpp>
 
-namespace bxt::UI {
+namespace bxt::Presentation {
 
 class PackageController
     : public drogon::HttpController<PackageController, false> {
@@ -21,11 +22,10 @@ public:
                       Core::Application::PackageService &package_service)
         : m_service(service), m_package_service(package_service) {};
 
-public:
     METHOD_LIST_BEGIN
 
-    ADD_METHOD_TO(PackageController::deploy, "/deploy", drogon::Post);
-    ADD_METHOD_TO(PackageController::sync, "/sync", drogon::Post);
+    BXT_ADD_METHOD_TO(PackageController::deploy, "/deploy", drogon::Post);
+    BXT_ADD_METHOD_TO(PackageController::sync, "/sync", drogon::Post);
 
     METHOD_LIST_END
 
@@ -37,4 +37,4 @@ private:
     Core::Application::PackageService &m_package_service;
 };
 
-} // namespace bxt::UI
+} // namespace bxt::Presentation

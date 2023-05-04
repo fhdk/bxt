@@ -34,7 +34,7 @@ void setup_di_container(kgr::container& ctr) {
 
     ctr.emplace<di::Infrastructure::EventLogger>();
 
-    auto dispatcher = ctr.service<di::Utilities::EventBusDispatcher>();
+    ctr.service<di::Utilities::EventBusDispatcher>();
 
     ctr.invoke<di::Utilities::RepoSchema::Parser,
                di::Infrastructure::ArchRepoOptions>(
@@ -68,7 +68,7 @@ void setup_di_container(kgr::container& ctr) {
 }
 
 void setup_controllers(auto& app, kgr::container& ctr) {
-    using namespace bxt::di::UI;
+    using namespace bxt::di::Presentation;
 
     app.registerController(ctr.service<PackageController>())
         .registerController(ctr.service<AuthController>())
