@@ -11,8 +11,10 @@
 #include "core/application/services/PermissionService.h"
 #include "core/application/services/UserService.h"
 #include "infrastructure/DeploymentService.h"
+#include "infrastructure/DispatchingUnitOfWork.h"
 #include "infrastructure/alpm/ArchRepoOptions.h"
 #include "infrastructure/alpm/ArchRepoSyncService.h"
+#include "persistence/alpm/Box.h"
 #include "persistence/config/SectionRepository.h"
 #include "persistence/lmdb/UserRepository.h"
 #include "ui/web-controllers/AuthController.h"
@@ -23,12 +25,21 @@
 #include "utilities/lmdb/Environment.h"
 #include "utilities/repo-schema/Parser.h"
 
+#include <infrastructure/EventLogger.h>
 #include <kangaru/debug.hpp>
 #include <kangaru/kangaru.hpp>
+
+template<auto m> using method = kgr::method<decltype(m), m>;
 
 namespace bxt::di {
 
 namespace Utilities {
+
+    struct EventBus : kgr::shared_service<dexode::EventBus>, kgr::supplied {};
+
+    struct EventBusDispatcher
+        : kgr::single_service<bxt::Utilities::EventBusDispatcher,
+                              kgr::dependency<di::Utilities::EventBus>> {};
 
     namespace LMDB {
 
@@ -101,29 +112,11 @@ namespace Core {
 
 } // namespace Core
 
-namespace Persistence {
-
-    struct UserRepository
-        : kgr::single_service<
-              bxt::Persistence::UserRepository,
-              kgr::dependency<di::Utilities::LMDB::Environment>>,
-          kgr::overrides<di::Core::Domain::UserRepository> {};
-
-    struct Box
-        : kgr::single_service<
-              bxt::Persistence::PackageRepository,
-              kgr::dependency<di::Core::Domain::ReadOnlySectionRepository>>,
-          kgr::overrides<di::Core::Domain::PackageRepositoryBase> {};
-
-    struct SectionRepository
-        : kgr::single_service<
-              bxt::Persistence::SectionRepository,
-              kgr::dependency<di::Utilities::RepoSchema::Parser>>,
-          kgr::overrides<di::Core::Domain::ReadOnlySectionRepository> {};
-
-} // namespace Persistence
-
 namespace Infrastructure {
+
+    struct EventLogger
+        : kgr::single_service<bxt::Infrastructure::EventLogger,
+                              kgr::dependency<di::Utilities::EventBus>> {};
 
     struct DeploymentService
         : kgr::single_service<
@@ -142,6 +135,32 @@ namespace Infrastructure {
           kgr::overrides<di::Core::Application::SyncService> {};
 
 } // namespace Infrastructure
+
+namespace Persistence {
+
+    struct UserRepository
+        : kgr::single_service<
+              bxt::Persistence::UserRepository,
+              kgr::dependency<di::Utilities::LMDB::Environment>>,
+          kgr::overrides<di::Core::Domain::UserRepository> {};
+
+    struct Box
+        : kgr::single_service<
+              bxt::Infrastructure::DispatchingUnitOfWork<bxt::Persistence::Box>,
+              kgr::dependency<di::Core::Domain::ReadOnlySectionRepository>>,
+          kgr::overrides<di::Core::Domain::PackageRepositoryBase>,
+          kgr::autocall<
+              kgr::invoke<method<&bxt::Infrastructure::DispatchingUnitOfWork<
+                              bxt::Persistence::Box>::init_dispatcher>,
+                          di::Utilities::EventBusDispatcher>> {};
+
+    struct SectionRepository
+        : kgr::single_service<
+              bxt::Persistence::SectionRepository,
+              kgr::dependency<di::Utilities::RepoSchema::Parser>>,
+          kgr::overrides<di::Core::Domain::ReadOnlySectionRepository> {};
+
+} // namespace Persistence
 
 namespace UI {
 

@@ -6,6 +6,7 @@
  */
 
 #include "di.h"
+#include "events.h"
 
 #include <boost/log/trivial.hpp>
 #include <boost/log/utility/setup.hpp>
@@ -28,6 +29,12 @@ void setup_logger() {
 
 void setup_di_container(kgr::container& ctr) {
     using namespace bxt;
+
+    ctr.emplace<di::Utilities::EventBus>();
+
+    ctr.emplace<di::Infrastructure::EventLogger>();
+
+    auto dispatcher = ctr.service<di::Utilities::EventBusDispatcher>();
 
     ctr.invoke<di::Utilities::RepoSchema::Parser,
                di::Infrastructure::ArchRepoOptions>(

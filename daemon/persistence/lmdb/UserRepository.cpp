@@ -7,6 +7,7 @@
 #include "UserRepository.h"
 
 #include "core/application/dtos/UserDTO.h"
+#include "core/domain/events/UserEvents.h"
 
 #include <boost/uuid/uuid_io.hpp>
 #include <iostream>
@@ -55,18 +56,52 @@ coro::task<UserRepository::TResults> UserRepository::all_async() {
 }
 
 coro::task<void> UserRepository::add_async(const User entity) {
-    co_await m_db.put(std::string(entity.id()),
-                      Core::Application::UserDTOMapper::to_dto(entity));
-
+    m_to_add.emplace_back(entity);
     co_return;
 }
 
 coro::task<void> UserRepository::remove_async(const TId id) {
-    co_await m_db.del(std::string(id));
+    m_to_remove.emplace_back(id);
 
     co_return;
 }
 
 coro::task<void> UserRepository::update_async(const User entity) {
 }
+
+coro::task<void> UserRepository::commit_async() {
+    std::vector<coro::task<bool>> tasks;
+
+    for (const auto& entity : m_to_add) {
+        tasks.emplace_back(
+            m_db.put(std::string(entity.id()),
+                     Core::Application::UserDTOMapper::to_dto(entity)));
+
+        m_event_store.emplace_back(
+            std::shared_ptr<Core::Domain::Events::UserAdded>(
+                new Core::Domain::Events::UserAdded {.user = entity}));
+    }
+
+    for (const auto& entity : m_to_remove) {
+        tasks.emplace_back(m_db.del(std::string(entity)));
+
+        m_event_store.emplace_back(
+            std::shared_ptr<Core::Domain::Events::UserRemoved>(
+                new Core::Domain::Events::UserRemoved {.id = entity}));
+    }
+
+    co_await coro::when_all(std::move(tasks));
+}
+
+coro::task<void> UserRepository::rollback_async() {
+    m_to_add.clear();
+    m_to_remove.clear();
+    m_to_update.clear();
+}
+
+std::vector<Core::Domain::Events::EventPtr>
+    UserRepository::event_store() const {
+    return m_event_store;
+}
+
 } // namespace bxt::Persistence

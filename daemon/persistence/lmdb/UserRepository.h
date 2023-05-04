@@ -7,6 +7,7 @@
 #pragma once
 
 #include "core/application/dtos/UserDTO.h"
+#include "core/domain/events/EventBase.h"
 #include "core/domain/repositories/UserRepository.h"
 #include "utilities/lmdb/Database.h"
 #include "utilities/lmdb/Environment.h"
@@ -38,9 +39,22 @@ public:
 
     virtual coro::task<void> update_async(const User entity) override;
 
+    virtual coro::task<void> commit_async() override;
+
+    virtual coro::task<void> rollback_async() override;
+
+    virtual std::vector<Core::Domain::Events::EventPtr>
+        event_store() const override;
+
 private:
     std::shared_ptr<bxt::Utilities::LMDB::Environment> m_environment;
     Utilities::LMDB::Database<Core::Application::UserDTO> m_db;
+
+    std::vector<Core::Domain::User> m_to_add;
+    std::vector<TId> m_to_remove;
+    std::vector<Core::Domain::User> m_to_update;
+
+    std::vector<Core::Domain::Events::EventPtr> m_event_store;
 };
 
 } // namespace bxt::Persistence

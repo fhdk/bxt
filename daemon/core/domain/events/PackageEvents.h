@@ -6,21 +6,23 @@
  */
 #pragma once
 
+#include "EventBase.h"
 #include "core/domain/entities/Package.h"
+
 namespace bxt::Core::Domain::Events {
 
-struct PackageAdded {
+struct PackageAdded : public EventBase {
     Package package;
 };
 
-struct PackageRemoved {
-    Package package;
+struct PackageRemoved : public EventBase {
+    Package::TId id;
 };
 
-struct PackageUpdated {
-    Package package;
+struct PackageUpdated : public EventBase {
+    Package new_package;
 
-    PackageVersion previous_version;
+    Package old_package;
 };
 
 } // namespace bxt::Core::Domain::Events

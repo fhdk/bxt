@@ -7,7 +7,9 @@
 #pragma once
 
 #include "UnitOfWorkBase.h"
+#include "core/domain/events/EventBase.h"
 
+#include <any>
 #include <coro/sync_wait.hpp>
 #include <coro/task.hpp>
 #include <coro/when_all.hpp>
@@ -284,5 +286,7 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity>,
     virtual void remove(const std::vector<TId>& ids) {
         coro::sync_wait(remove_async(ids));
     }
+
+    virtual std::vector<Events::EventPtr> event_store() const = 0;
 };
 } // namespace bxt::Core::Domain
