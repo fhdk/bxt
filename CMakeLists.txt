@@ -45,6 +45,8 @@ endif()
 
 include("${CMAKE_BINARY_DIR}/conan.cmake")
 conan_cmake_run(CONANFILE conanfile.txt
+    BUILD_TYPE "Debug"
+    PROFILE default
     BASIC_SETUP
     BUILD missing)
 
