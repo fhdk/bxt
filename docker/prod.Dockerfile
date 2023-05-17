@@ -1,4 +1,4 @@
-FROM manjaro/bxt:dev
+FROM bxt:dev
 
 COPY ./ /src
 
