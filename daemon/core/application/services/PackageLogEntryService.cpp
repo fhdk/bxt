@@ -34,4 +34,17 @@ void PackageLogEntryService::init()
         });
 }
 
+coro::task<std::vector<PackageLogEntryDTO>> PackageLogEntryService::events()
+{
+    std::vector<PackageLogEntryDTO> result;
+
+    auto entities = co_await m_repository.all_async();
+
+    std::ranges::transform(entities,
+                           std::back_inserter(result),
+                           Utilities::StaticDTOMapper<PackageLogEntry, PackageLogEntryDTO>::to_dto);
+
+    co_return result;
+}
+
 } // namespace bxt::Core::Application

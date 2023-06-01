@@ -6,6 +6,7 @@
  */
 #pragma once
 
+#include "core/application/dtos/PackageLogEntryDTO.h"
 #include "dexode/EventBus.hpp"
 
 #include <memory>
@@ -27,6 +28,8 @@ public:
     }
 
     void init();
+
+    coro::task<std::vector<PackageLogEntryDTO>> events();
 
 private:
     std::shared_ptr<dexode::EventBus> m_evbus;
