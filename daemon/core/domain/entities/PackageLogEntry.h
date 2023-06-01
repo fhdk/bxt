@@ -11,6 +11,7 @@
 
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_io.hpp>
 #include <chrono>
 
 namespace bxt::Core::Domain {
@@ -20,12 +21,12 @@ public:
     PackageLogEntry(
         Package package,
         LogEntryType type,
-        const boost::uuids::uuid& uuid = boost::uuids::random_generator()(),
-        std::chrono::time_point<std::chrono::system_clock> time =
-            std::chrono::system_clock::now())
-        : m_id(uuid), m_time(time), m_type(type), m_package(package) {}
+        const boost::uuids::uuid &uuid = boost::uuids::random_generator()(),
+        std::chrono::time_point<std::chrono::system_clock> time = std::chrono::system_clock::now())
+        : m_id(uuid), m_time(time), m_type(type), m_package(package)
+    {}
 
-    boost::uuids::uuid id() const { return m_id; }
+    std::string id() const { return boost::uuids::to_string(m_id); }
 
     std::chrono::time_point<std::chrono::system_clock> time() const {
         return m_time;

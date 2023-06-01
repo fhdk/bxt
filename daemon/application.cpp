@@ -57,6 +57,8 @@ void setup_di_container(kgr::container& ctr) {
 
     ctr.service<di::Persistence::SectionRepository>();
     ctr.service<di::Persistence::UserRepository>();
+    ctr.service<di::Persistence::PackageLogEntryRepository>();
+
     ctr.service<di::Persistence::Box>();
 
     ctr.service<di::Core::Application::AuthService>();
