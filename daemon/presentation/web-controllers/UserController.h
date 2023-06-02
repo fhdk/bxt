@@ -20,10 +20,8 @@ public:
 
     METHOD_LIST_BEGIN
 
-    BXT_JWT_ADD_METHOD_TO(UserController::add_user, "/users/add", drogon::Post);
-    BXT_JWT_ADD_METHOD_TO(UserController::remove_user,
-                          "/users/remove",
-                          drogon::Post);
+    BXT_JWT_ADD_METHOD_TO(UserController::add_user, "/api/users/add", drogon::Post);
+    BXT_JWT_ADD_METHOD_TO(UserController::remove_user, "/api/users/remove", drogon::Post);
 
     BXT_JWT_ADD_METHOD_TO(UserController::get_users, "/users", drogon::Get);
 

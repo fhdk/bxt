@@ -23,14 +23,12 @@ public:
     METHOD_LIST_BEGIN
 
     BXT_JWT_ADD_METHOD_TO(PermissionController::add_permission,
-                          "/permissions/add",
+                          "/api/permissions/add",
                           drogon::Post);
     BXT_JWT_ADD_METHOD_TO(PermissionController::remove_permission,
-                          "/permissions/remove",
+                          "/api/permissions/remove",
                           drogon::Post);
-    BXT_JWT_ADD_METHOD_TO(PermissionController::get_permissions,
-                          "/permissions",
-                          drogon::Get);
+    BXT_JWT_ADD_METHOD_TO(PermissionController::get_permissions, "/api/permissions", drogon::Get);
 
     METHOD_LIST_END
 

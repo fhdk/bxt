@@ -24,8 +24,8 @@ public:
 
     METHOD_LIST_BEGIN
 
-    BXT_ADD_METHOD_TO(PackageController::deploy, "/deploy", drogon::Post);
-    BXT_ADD_METHOD_TO(PackageController::sync, "/sync", drogon::Post);
+    BXT_ADD_METHOD_TO(PackageController::deploy, "/api/deploy", drogon::Post);
+    BXT_ADD_METHOD_TO(PackageController::sync, "/api/sync", drogon::Post);
 
     METHOD_LIST_END
 
