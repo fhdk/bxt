@@ -29,18 +29,22 @@ coro::task<Box::TResults> Box::all_async() {
 
 coro::task<void> Box::add_async(const Package entity) {
     m_to_add.emplace_back(entity);
+    co_return;
 }
 
 coro::task<void> Box::remove_async(const TId entity) {
     m_to_remove.emplace_back(entity);
+    co_return;
 }
 
 coro::task<void> Box::add_async(const std::vector<Package> entities) {
     m_to_add.insert(m_to_add.end(), entities.begin(), entities.end());
+    co_return;
 }
 
 coro::task<void> Box::update_async(const Package entity) {
     m_to_update.emplace_back(entity);
+    co_return;
 }
 
 coro::task<std::vector<Core::Domain::Package>>
@@ -119,12 +123,16 @@ coro::task<void> Box::commit_async() {
     // TODO: Implement update
 
     co_await coro::when_all(std::move(tasks));
+
+    co_return;
 }
 
 coro::task<void> Box::rollback_async() {
     m_to_add.clear();
     m_to_remove.clear();
     m_to_update.clear();
+
+    co_return;
 }
 
 std::vector<Events::EventPtr> Box::event_store() const {

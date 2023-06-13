@@ -16,9 +16,11 @@ class DeploymentService {
 public:
     virtual ~DeploymentService() = default;
 
-    virtual coro::task<void> deploy(PackageDTO package) = 0;
+    virtual coro::task<uint64_t> deploy_start() = 0;
+    virtual coro::task<void> deploy_push(PackageDTO package, uint64_t session_id) = 0;
+    virtual coro::task<void> deploy_end(uint64_t session_id) = 0;
 
-    virtual coro::task<bool> verify_token(const std::string& token) = 0;
+    virtual coro::task<bool> verify_session(uint64_t session_id) = 0;
 };
 
 } // namespace bxt::Core::Application

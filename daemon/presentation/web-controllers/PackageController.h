@@ -24,15 +24,22 @@ public:
 
     METHOD_LIST_BEGIN
 
-    BXT_ADD_METHOD_TO(PackageController::deploy, "/api/deploy", drogon::Post);
+    BXT_ADD_METHOD_TO(PackageController::deploy_start, "/api/deploy/start", drogon::Post);
+    BXT_ADD_METHOD_TO(PackageController::deploy_push, "/api/deploy/push", drogon::Post);
+    BXT_ADD_METHOD_TO(PackageController::deploy_end, "/api/deploy/end", drogon::Post);
+
     BXT_ADD_METHOD_TO(PackageController::sync, "/api/sync", drogon::Post);
 
     METHOD_LIST_END
 
-    drogon::Task<drogon::HttpResponsePtr> deploy(drogon::HttpRequestPtr req);
+    drogon::Task<drogon::HttpResponsePtr> deploy_start(drogon::HttpRequestPtr req);
+    drogon::Task<drogon::HttpResponsePtr> deploy_push(drogon::HttpRequestPtr req);
+    drogon::Task<drogon::HttpResponsePtr> deploy_end(drogon::HttpRequestPtr req);
+
     drogon::Task<drogon::HttpResponsePtr> sync(drogon::HttpRequestPtr req);
 
 private:
+    std::string m_key = "KEY0";
     Core::Application::DeploymentService &m_service;
     Core::Application::PackageService &m_package_service;
 };

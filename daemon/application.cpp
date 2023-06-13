@@ -76,6 +76,7 @@ void setup_controllers(auto& app, kgr::container& ctr) {
         .registerController(ctr.service<AuthController>())
         .registerController(ctr.service<UserController>())
         .registerController(ctr.service<PermissionController>())
+        .registerController(ctr.service<LogController>())
         .registerFilter(ctr.service<JwtFilter>());
 }
 
