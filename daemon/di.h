@@ -7,6 +7,7 @@
 #pragma once
 
 #include "core/application/services/AuthService.h"
+#include "core/application/services/PackageLogEntryService.h"
 #include "core/application/services/PackageService.h"
 #include "core/application/services/PermissionService.h"
 #include "core/application/services/UserService.h"
@@ -20,6 +21,7 @@
 #include "persistence/lmdb/PackageLogEntryRepository.h"
 #include "persistence/lmdb/UserRepository.h"
 #include "presentation/web-controllers/AuthController.h"
+#include "presentation/web-controllers/LogController.h"
 #include "presentation/web-controllers/PackageController.h"
 #include "presentation/web-controllers/PermissionController.h"
 #include "presentation/web-controllers/UserController.h"
@@ -109,10 +111,16 @@ namespace Core {
                   kgr::dependency<di::Core::Domain::UserRepository>> {};
 
         struct PermissionService
-            : kgr::single_service<
-                  bxt::Core::Application::PermissionService,
-                  kgr::dependency<di::Core::Domain::UserRepository,
-                                  di::Core::Domain::PermissionMatcher>> {};
+            : kgr::single_service<bxt::Core::Application::PermissionService,
+                                  kgr::dependency<di::Core::Domain::UserRepository,
+                                                  di::Core::Domain::PermissionMatcher>>
+        {};
+
+        struct PackageLogEntryService
+            : kgr::single_service<bxt::Core::Application::PackageLogEntryService,
+                                  kgr::dependency<di::Utilities::EventBus,
+                                                  di::Core::Domain::PackageLogEntryRepository>>
+        {};
 
     } // namespace Application
 
@@ -193,6 +201,11 @@ namespace Presentation {
         : kgr::shared_service<
               bxt::Presentation::PermissionController,
               kgr::dependency<di::Core::Application::PermissionService>> {};
+
+    struct LogController
+        : kgr::shared_service<bxt::Presentation::LogController,
+                              kgr::dependency<di::Core::Application::PackageLogEntryService>>
+    {};
 
     struct JwtFilter
         : kgr::shared_service<
