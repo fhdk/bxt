@@ -23,7 +23,7 @@ public:
         txn->value.commit();
     }
 
-    coro::task<bool> put(std::string_view key, const T& value) {
+    coro::task<bool> put(std::string_view key, const T value) {
         auto value_string = TSerializer::serialize(value);
 
         auto txn = co_await m_env->begin_rw_txn();

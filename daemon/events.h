@@ -29,7 +29,6 @@ std::pair<std::type_index, eventbus_visitor> to_eventbus_visitor() {
 }
 
 static inline std::unordered_map<std::type_index, eventbus_visitor> event_map {
-    to_eventbus_visitor<bxt::Core::Domain::Events::EmptyEvent>(),
     to_eventbus_visitor<bxt::Core::Domain::Events::PackageAdded>(),
     to_eventbus_visitor<bxt::Core::Domain::Events::PackageRemoved>(),
     to_eventbus_visitor<bxt::Core::Domain::Events::PackageUpdated>()};

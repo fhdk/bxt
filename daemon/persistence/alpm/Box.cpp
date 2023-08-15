@@ -85,8 +85,7 @@ coro::task<void> Box::commit_async() {
 
         paths_to_add[section_dto].emplace(entity.filepath().string());
 
-        auto event = std::shared_ptr<Events::PackageAdded>(
-            new Events::PackageAdded {.package = entity});
+        auto event = std::make_shared<Events::PackageAdded>(entity);
 
         m_event_store.emplace_back(event);
     }
@@ -108,8 +107,7 @@ coro::task<void> Box::commit_async() {
 
         names_to_remove[section_dto].emplace(entity.package_name);
 
-        auto event = std::shared_ptr<Events::PackageRemoved>(
-            new Events::PackageRemoved {.id = entity});
+        auto event = std::make_shared<Events::PackageRemoved>(entity);
 
         m_event_store.emplace_back(event);
     }

@@ -30,9 +30,9 @@ void setup_logger() {
 void setup_di_container(kgr::container& ctr) {
     using namespace bxt;
 
-    ctr.emplace<di::Utilities::EventBus>();
+    ctr.service<di::Utilities::EventBus>();
 
-    ctr.emplace<di::Infrastructure::EventLogger>();
+    ctr.service<di::Infrastructure::EventLogger>();
 
     ctr.service<di::Utilities::EventBusDispatcher>();
 

@@ -24,6 +24,8 @@ public:
         if (const auto it =
                 bxt::events::event_map.find(std::type_index(typeid(*eptr)));
             it != bxt::events::event_map.cend()) {
+            auto tindex = std::type_index(typeid(*eptr));
+            auto str = tindex.name();
             it->second(eptr, *m_evbus);
         }
     }

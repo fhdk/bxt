@@ -78,16 +78,14 @@ coro::task<void> UserRepository::commit_async() {
                      Core::Application::UserDTOMapper::to_dto(entity)));
 
         m_event_store.emplace_back(
-            std::shared_ptr<Core::Domain::Events::UserAdded>(
-                new Core::Domain::Events::UserAdded {.user = entity}));
+            std::make_shared<Core::Domain::Events::UserAdded>(entity));
     }
 
     for (const auto& entity : m_to_remove) {
         tasks.emplace_back(m_db.del(std::string(entity)));
 
         m_event_store.emplace_back(
-            std::shared_ptr<Core::Domain::Events::UserRemoved>(
-                new Core::Domain::Events::UserRemoved {.id = entity}));
+            std::make_shared<Core::Domain::Events::UserRemoved>(entity));
     }
 
     co_await coro::when_all(std::move(tasks));

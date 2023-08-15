@@ -22,6 +22,9 @@ struct PackageLogEntryDTO
     PackageDTO package;
 };
 
+using PackageLogEntryDTOMapper =
+    bxt::Utilities::StaticDTOMapper<bxt::Core::Domain::PackageLogEntry, PackageLogEntryDTO>;
+
 } // namespace bxt::Core::Application
 
 template<>

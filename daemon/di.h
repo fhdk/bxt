@@ -39,7 +39,7 @@ namespace bxt::di {
 
 namespace Utilities {
 
-    struct EventBus : kgr::shared_service<dexode::EventBus>, kgr::supplied {};
+    struct EventBus : kgr::shared_service<dexode::EventBus> {};
 
     struct EventBusDispatcher
         : kgr::single_service<bxt::Utilities::EventBusDispatcher,
@@ -74,15 +74,16 @@ namespace Core {
         };
 
         struct ReadOnlySectionRepository
-            : kgr::abstract_service<bxt::Core::Domain::ReadOnlyRepositoryBase<Section>>
-        {};
+            : kgr::abstract_service<
+                  bxt::Core::Domain::ReadOnlyRepositoryBase<Section>> {};
 
         struct PackageLogEntryRepository
-            : kgr::abstract_service<bxt::Core::Domain::ReadWriteRepositoryBase<PackageLogEntry>>
-        {};
+            : kgr::abstract_service<
+                  bxt::Core::Domain::ReadWriteRepositoryBase<PackageLogEntry>> {
+        };
 
-        struct PermissionMatcher : kgr::single_service<bxt::Core::Domain::PermissionMatcher>
-        {};
+        struct PermissionMatcher
+            : kgr::single_service<bxt::Core::Domain::PermissionMatcher> {};
 
     } // namespace Domain
 
@@ -111,16 +112,18 @@ namespace Core {
                   kgr::dependency<di::Core::Domain::UserRepository>> {};
 
         struct PermissionService
-            : kgr::single_service<bxt::Core::Application::PermissionService,
-                                  kgr::dependency<di::Core::Domain::UserRepository,
-                                                  di::Core::Domain::PermissionMatcher>>
-        {};
+            : kgr::single_service<
+                  bxt::Core::Application::PermissionService,
+                  kgr::dependency<di::Core::Domain::UserRepository,
+                                  di::Core::Domain::PermissionMatcher>> {};
 
         struct PackageLogEntryService
-            : kgr::single_service<bxt::Core::Application::PackageLogEntryService,
-                                  kgr::dependency<di::Utilities::EventBus,
-                                                  di::Core::Domain::PackageLogEntryRepository>>
-        {};
+            : kgr::single_service<
+                  bxt::Core::Application::PackageLogEntryService,
+                  kgr::dependency<di::Utilities::EventBus,
+                                  di::Core::Domain::PackageLogEntryRepository>>,
+              kgr::autocall<kgr::invoke<method<
+                  &bxt::Core::Application::PackageLogEntryService::init>>> {};
 
     } // namespace Application
 
@@ -152,30 +155,33 @@ namespace Infrastructure {
 
 namespace Persistence {
 
-struct UserRepository : kgr::single_service<bxt::Persistence::UserRepository,
-                                            kgr::dependency<di::Utilities::LMDB::Environment>>,
-                        kgr::overrides<di::Core::Domain::UserRepository>
-{};
+    struct UserRepository
+        : kgr::single_service<
+              bxt::Persistence::UserRepository,
+              kgr::dependency<di::Utilities::LMDB::Environment>>,
+          kgr::overrides<di::Core::Domain::UserRepository> {};
 
-struct PackageLogEntryRepository
-    : kgr::single_service<bxt::Persistence::LMDB::PackageLogEntryRepository,
-                          kgr::dependency<di::Utilities::LMDB::Environment>>,
-      kgr::overrides<di::Core::Domain::PackageLogEntryRepository>
-{};
+    struct PackageLogEntryRepository
+        : kgr::single_service<
+              bxt::Persistence::LMDB::PackageLogEntryRepository,
+              kgr::dependency<di::Utilities::LMDB::Environment>>,
+          kgr::overrides<di::Core::Domain::PackageLogEntryRepository> {};
 
-struct Box
-    : kgr::single_service<bxt::Infrastructure::DispatchingUnitOfWork<bxt::Persistence::Box>,
-                          kgr::dependency<di::Core::Domain::ReadOnlySectionRepository>>,
-      kgr::overrides<di::Core::Domain::PackageRepositoryBase>,
-      kgr::autocall<kgr::invoke<
-          method<&bxt::Infrastructure::DispatchingUnitOfWork<bxt::Persistence::Box>::init_dispatcher>,
-          di::Utilities::EventBusDispatcher>>
-{};
+    struct Box
+        : kgr::single_service<
+              bxt::Infrastructure::DispatchingUnitOfWork<bxt::Persistence::Box>,
+              kgr::dependency<di::Core::Domain::ReadOnlySectionRepository>>,
+          kgr::overrides<di::Core::Domain::PackageRepositoryBase>,
+          kgr::autocall<
+              kgr::invoke<method<&bxt::Infrastructure::DispatchingUnitOfWork<
+                              bxt::Persistence::Box>::init_dispatcher>,
+                          di::Utilities::EventBusDispatcher>> {};
 
-struct SectionRepository : kgr::single_service<bxt::Persistence::SectionRepository,
-                                               kgr::dependency<di::Utilities::RepoSchema::Parser>>,
-                           kgr::overrides<di::Core::Domain::ReadOnlySectionRepository>
-{};
+    struct SectionRepository
+        : kgr::single_service<
+              bxt::Persistence::SectionRepository,
+              kgr::dependency<di::Utilities::RepoSchema::Parser>>,
+          kgr::overrides<di::Core::Domain::ReadOnlySectionRepository> {};
 
 } // namespace Persistence
 
@@ -203,9 +209,10 @@ namespace Presentation {
               kgr::dependency<di::Core::Application::PermissionService>> {};
 
     struct LogController
-        : kgr::shared_service<bxt::Presentation::LogController,
-                              kgr::dependency<di::Core::Application::PackageLogEntryService>>
-    {};
+        : kgr::shared_service<
+              bxt::Presentation::LogController,
+              kgr::dependency<di::Core::Application::PackageLogEntryService>> {
+    };
 
     struct JwtFilter
         : kgr::shared_service<

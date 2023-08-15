@@ -6,9 +6,10 @@
  */
 #pragma once
 
+#include "core/application/dtos/PackageLogEntryDTO.h"
 #include "core/domain/entities/PackageLogEntry.h"
 #include "persistence/lmdb/LmdbRepository.h"
 
 namespace bxt::Persistence::LMDB {
-using PackageLogEntryRepository = LmdbRepositoryBase<Core::Domain::PackageLogEntry>;
+using PackageLogEntryRepository = LmdbRepositoryBase<Core::Domain::PackageLogEntry, Core::Application::PackageLogEntryDTO>;
 }

@@ -22,9 +22,8 @@ public:
     PackageLogEntryService(
         std::shared_ptr<dexode::EventBus> evbus,
         bxt::Core::Domain::ReadWriteRepositoryBase<Domain::PackageLogEntry> &repository)
-        : m_evbus(evbus), m_repository(repository)
+        : m_evbus(evbus), m_listener(dexode::EventBus::Listener::createNotOwning(*m_evbus)), m_repository(repository)
     {
-        init();
     }
 
     void init();
@@ -33,6 +32,7 @@ public:
 
 private:
     std::shared_ptr<dexode::EventBus> m_evbus;
+    dexode::EventBus::Listener m_listener;
     bxt::Core::Domain::ReadWriteRepositoryBase<Domain::PackageLogEntry> &m_repository;
 };
 

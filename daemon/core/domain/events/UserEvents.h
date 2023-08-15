@@ -11,14 +11,18 @@
 namespace bxt::Core::Domain::Events {
 
 struct UserAdded : public EventBase {
+    UserAdded(const User& user): user(user){}
     User user;
 };
 
 struct UserRemoved : public EventBase {
+    UserRemoved(const Name& id): id(id) {}
     Name id;
 };
 
 struct UserUpdated : public EventBase {
+    UserUpdated(const User& new_user, const User& old_user): new_user(new_user), old_user(old_user){}
+
     User new_user;
 
     User old_user;

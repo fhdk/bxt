@@ -14,7 +14,7 @@ namespace bxt::Presentation {
 
 class LogController : public drogon::HttpController<LogController, false> {
 public:
-    LogController(Core::Application::PackageLogEntryService &service);
+    LogController(Core::Application::PackageLogEntryService &service): m_service(service){}
 
     METHOD_LIST_BEGIN
 

@@ -26,6 +26,7 @@ public:
         : m_id(uuid), m_time(time), m_type(type), m_package(package)
     {}
 
+
     std::string id() const { return boost::uuids::to_string(m_id); }
 
     std::chrono::time_point<std::chrono::system_clock> time() const {
