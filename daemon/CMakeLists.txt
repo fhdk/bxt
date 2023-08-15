@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.16)
 project(bxtd LANGUAGES CXX)
 
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -fPIC -fopenmp -DBOOST -fcoroutines")
-
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath='$ORIGIN'")
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "*.cpp")
 
@@ -21,11 +22,9 @@ add_compile_definitions(${PROJECT_NAME} PUBLIC
 
 target_compile_options(${PROJECT_NAME} PUBLIC -fcoroutines)
 
+target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/bin)
 target_link_libraries(${PROJECT_NAME}
     ${CONAN_LIBS}
-    libcoro
-    ssl
-    crypto
     Dexode::EventBus
 )
 

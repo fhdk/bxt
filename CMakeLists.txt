@@ -9,12 +9,6 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(FetchContent)
-FetchContent_Declare(
-    libcoro
-    GIT_REPOSITORY https://github.com/jbaldwin/libcoro.git
-    GIT_TAG        v0.6
-)
-FetchContent_MakeAvailable(libcoro)
 
 FetchContent_Declare(
     lmdbxx
@@ -45,10 +39,7 @@ endif()
 
 include("${CMAKE_BINARY_DIR}/conan.cmake")
 conan_cmake_run(CONANFILE conanfile.txt
-    BUILD_TYPE "Debug"
-    PROFILE default
     BASIC_SETUP
     BUILD missing)
 
 add_subdirectory(daemon)
-add_subdirectory(frontend)
