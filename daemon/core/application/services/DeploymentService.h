@@ -9,6 +9,7 @@
 #include "core/application/dtos/PackageDTO.h"
 
 #include <coro/task.hpp>
+#include <filesystem>
 
 namespace bxt::Core::Application {
 
@@ -17,7 +18,9 @@ public:
     virtual ~DeploymentService() = default;
 
     virtual coro::task<uint64_t> deploy_start() = 0;
-    virtual coro::task<void> deploy_push(PackageDTO package, uint64_t session_id) = 0;
+    virtual coro::task<void> deploy_push(PackageDTO package,
+                                         const std::filesystem::path& signature,
+                                         uint64_t session_id) = 0;
     virtual coro::task<void> deploy_end(uint64_t session_id) = 0;
 
     virtual coro::task<bool> verify_session(uint64_t session_id) = 0;

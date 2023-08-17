@@ -15,8 +15,7 @@
 #include <filesystem>
 #include <string>
 
-namespace bxt::Core::Domain
-{
+namespace bxt::Core::Domain {
 class Package {
 public:
     struct TId {
@@ -26,7 +25,7 @@ public:
 
     const TId id() const { return {m_section, m_name}; }
     const std::string& name() const { return m_name; }
-    const PackageVersion& version() const  { return m_version; }
+    const PackageVersion& version() const { return m_version; }
     const std::string& architecture() const { return m_architecture; }
     const std::filesystem::path& filepath() const { return m_filepath; }
 
@@ -43,9 +42,9 @@ public:
 
     virtual ~Package() = default;
 
-    std::string string() const
-    {
-        return fmt::format("{}-{}-{}", name(), version().string(), architecture());
+    std::string string() const {
+        return fmt::format("{}-{}-{}", name(), version().string(),
+                           architecture());
     }
 
     static Package from_filename(const Section& section,
@@ -57,10 +56,11 @@ public:
 
     void set_name(const std::string& new_name) { m_name = new_name; }
 
-    void set_version(const PackageVersion& new_version) { m_version = new_version; }
+    void set_version(const PackageVersion& new_version) {
+        m_version = new_version;
+    }
 
-    void set_architecture(const std::string& new_architecture)
-    {
+    void set_architecture(const std::string& new_architecture) {
         m_architecture = new_architecture;
     }
 
@@ -70,6 +70,12 @@ public:
 
     void set_section(const Section& new_section) { m_section = new_section; }
 
+    void set_has_signature(bool has_signature) {
+        m_has_signature = has_signature;
+    }
+
+    bool has_signature() const { return m_has_signature; }
+
 private:
     Section m_section;
 
@@ -77,6 +83,7 @@ private:
     PackageVersion m_version;
     PackageArchitecture m_architecture;
     std::filesystem::path m_filepath;
+    bool m_has_signature;
 };
 
 } // namespace bxt::Core::Domain

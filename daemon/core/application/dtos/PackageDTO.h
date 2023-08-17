@@ -18,6 +18,7 @@ struct PackageDTO {
     PackageSectionDTO section;
     std::string name;
     std::filesystem::path filepath;
+    bool has_signature;
 
     auto operator<=>(const PackageDTO& other) const = default;
 };
@@ -37,10 +38,13 @@ template<> struct bxt::Utilities::StaticDTOMapper<Package, PackageDTO> {
         return Core::Application::PackageDTO {
             .section = SectionDTOMapper::to_dto(from.section()),
             .name = from.name(),
-            .filepath = from.filepath()};
+            .filepath = from.filepath(),
+            .has_signature = from.has_signature()};
     }
     static Package to_entity(const PackageDTO& from) {
         auto section = SectionDTOMapper::to_entity(from.section);
-        return Package::from_filepath(section, from.filepath);
+        auto result = Package::from_filepath(section, from.filepath);
+        result.set_has_signature(from.has_signature);
+        return result;
     }
 };

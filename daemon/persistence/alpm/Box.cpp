@@ -9,6 +9,7 @@
 #include "core/domain/events/PackageEvents.h"
 #include "coro/sync_wait.hpp"
 
+#include <fmt/format.h>
 #include <infrastructure/PackageFile.h>
 
 namespace bxt::Persistence {
@@ -83,6 +84,12 @@ coro::task<void> Box::commit_async() {
 
         std::filesystem::create_symlink(source_path, target_path, ec);
 
+        if (entity.has_signature()) {
+            std::filesystem::create_symlink(
+                fmt::format("{}.sig", source_path.string()),
+                fmt::format("{}.sig", target_path.string()), ec);
+        }
+
         paths_to_add[section_dto].emplace(entity.filepath().string());
 
         auto event = std::make_shared<Events::PackageAdded>(entity);
@@ -99,26 +106,7 @@ coro::task<void> Box::commit_async() {
     phmap::node_hash_map<PackageSectionDTO, std::set<std::string>>
         names_to_remove;
 
-    for (const auto &entity : m_to_remove) {
-        auto section_dto = SectionDTOMapper::to_dto(entity.section);
-
-        std::filesystem::remove(
-            fmt::format("{}/{}", m_options.location, std::string(section_dto)));
-
-        names_to_remove[section_dto].emplace(entity.package_name);
-
-        auto event = std::make_shared<Events::PackageRemoved>(entity);
-
-        m_event_store.emplace_back(event);
-    }
-
-    tasks.reserve(tasks.size() + names_to_remove.size());
-
-    for (const auto &[section, values] : names_to_remove) {
-        tasks.emplace_back(m_map.at(section).remove(values));
-    }
-
-    // TODO: Implement update
+    /// TODO: Implement update and remove
 
     co_await coro::when_all(std::move(tasks));
 
