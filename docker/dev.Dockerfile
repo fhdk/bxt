@@ -12,7 +12,7 @@ RUN curl --silent --location https://deb.nodesource.com/setup_20.x | bash -
 
 RUN apt update --yes
 
-RUN apt install --yes build-essential git cmake libssl-dev pip ninja-build gdb clangd-16 nodejs
+RUN apt install --yes build-essential git cmake libssl-dev pip ninja-build gdb clangd-16 nodejs zstd
 
 RUN pip install conan==1.60.0
 RUN conan profile new default --detect
