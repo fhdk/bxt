@@ -83,7 +83,7 @@ private:
     PackageVersion m_version;
     PackageArchitecture m_architecture;
     std::filesystem::path m_filepath;
-    bool m_has_signature;
+    bool m_has_signature = false;
 };
 
 } // namespace bxt::Core::Domain

@@ -17,7 +17,9 @@
 #include <fmt/format.h>
 #include <frozen/set.h>
 #include <frozen/string.h>
+#include <iterator>
 #include <parallel_hashmap/phmap.h>
+#include <string>
 
 namespace bxt::Utilities::AlpmDb {
 
@@ -52,10 +54,18 @@ public:
         return packages;
     }
 
+    std::vector<std::string> description_values(const std::string& key) const {
+        std::vector<std::string> values;
+        std::ranges::transform(
+            m_descriptions, std::back_inserter(values),
+            [key](const auto& value) { return value.second.get(key); });
+
+        return values;
+    }
+
     coro::task<void> load();
 
 private:
-
     coro::task<void> save_async();
 
     bool package_exists(const std::string& package_name) const;

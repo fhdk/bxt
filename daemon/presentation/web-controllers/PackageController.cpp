@@ -6,9 +6,12 @@
  */
 #include "PackageController.h"
 
+#include "core/application/dtos/PackageSectionDTO.h"
+#include "drogon/utils/FunctionTraits.h"
 #include "jwt-cpp/traits/nlohmann-json/defaults.h"
 
 #include <drogon/MultiPart.h>
+#include <string>
 
 namespace bxt::Presentation {
 using namespace drogon;
@@ -93,6 +96,51 @@ drogon::Task<drogon::HttpResponsePtr>
 
 drogon::Task<HttpResponsePtr>
     PackageController::sync(drogon::HttpRequestPtr req) {
+}
+
+drogon::Task<drogon::HttpResponsePtr>
+    PackageController::add_package(drogon::HttpRequestPtr req) {
+    /// TODO: Implement
+
+    auto result = drogon::HttpResponse::newHttpResponse();
+    result->setBody("Not implemented");
+    co_return result;
+}
+
+drogon::Task<drogon::HttpResponsePtr>
+    PackageController::remove_package(drogon::HttpRequestPtr req) {
+    auto json = *req->getJsonObject();
+
+    /// TODO: Implement
+
+    auto result = drogon::HttpResponse::newHttpResponse();
+    result->setBody("Not implemented");
+    co_return result;
+}
+
+drogon::Task<drogon::HttpResponsePtr>
+    PackageController::get_packages(drogon::HttpRequestPtr req) {
+    auto req_json = *req->getJsonObject();
+
+    PackageSectionDTO section {req_json["branch"].asString(),
+                               req_json["repo"].asString(),
+                               req_json["architecture"].asString()};
+
+    const auto packages = co_await m_package_service.get_packages(section);
+
+    Json::Value result;
+    for (const auto& package : packages) {
+        Json::Value package_json;
+
+        package_json["name"] = package.name;
+        package_json["filename"] = package.filepath.string();
+        package_json["has_signature"] =
+            package.has_signature ? "true" : "false";
+
+        result.append(package_json);
+    }
+
+    co_return drogon::HttpResponse::newHttpJsonResponse(result);
 }
 
 } // namespace bxt::Presentation

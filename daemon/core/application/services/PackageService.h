@@ -6,6 +6,7 @@
  */
 #pragma once
 
+#include "core/application/dtos/PackageDTO.h"
 #include "core/application/dtos/PackageSectionDTO.h"
 #include "core/domain/repositories/PackageRepositoryBase.h"
 
@@ -18,10 +19,8 @@ public:
     PackageService(Domain::PackageRepositoryBase& repository)
         : m_repository(repository) {}
 
-    coro::task<std::vector<Domain::Package>>
-        get_packages(const PackageSectionDTO& section_dto) const;
-    
-    
+    coro::task<std::vector<PackageDTO>>
+        get_packages(const PackageSectionDTO section_dto) const;
 
 private:
     Domain::PackageRepositoryBase& m_repository;

@@ -50,7 +50,8 @@ coro::task<void> Box::update_async(const Package entity) {
 
 coro::task<std::vector<Core::Domain::Package>>
     Box::find_by_section_async(const Core::Domain::Section section) const {
-    auto packages = m_map.at(SectionDTOMapper::to_dto(section)).packages();
+    auto packages = m_map.at(SectionDTOMapper::to_dto(section))
+                        .description_values("FILENAME");
 
     std::vector<Core::Domain::Package> result;
     result.reserve(packages.size());
