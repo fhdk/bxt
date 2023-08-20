@@ -14,6 +14,7 @@
 
 #include <drogon/drogon.h>
 #include <kangaru/autowire.hpp>
+#include <string>
 
 namespace bxt::Presentation {
 
@@ -42,9 +43,10 @@ public:
     BXT_ADD_METHOD_TO(PackageController::remove_package,
                       "/api/packages/remove",
                       drogon::Post);
-    BXT_ADD_METHOD_TO(PackageController::get_packages,
-                      "/api/packages/get",
-                      drogon::Get);
+    BXT_ADD_METHOD_TO(
+        PackageController::get_packages,
+        "/api/packages/get?branch={1}&repository={2}&architecture={3}",
+        drogon::Get);
 
     BXT_ADD_METHOD_TO(PackageController::sync, "/api/sync", drogon::Post);
 
@@ -64,7 +66,10 @@ public:
     drogon::Task<drogon::HttpResponsePtr>
         remove_package(drogon::HttpRequestPtr req);
     drogon::Task<drogon::HttpResponsePtr>
-        get_packages(drogon::HttpRequestPtr req);
+        get_packages(drogon::HttpRequestPtr req,
+                     const std::string &branch,
+                     const std::string &repository,
+                     const std::string &architecture);
 
 private:
     std::string m_key = "KEY0";

@@ -54,7 +54,7 @@ drogon::Task<drogon::HttpResponsePtr>
     auto params_map = file_upload.getParameters();
 
     auto branch = params_map["branch"];
-    auto repo = params_map["repo"];
+    auto repo = params_map["repository"];
     auto arch = params_map["architecture"];
 
     auto section = PackageSectionDTO {
@@ -119,17 +119,16 @@ drogon::Task<drogon::HttpResponsePtr>
 }
 
 drogon::Task<drogon::HttpResponsePtr>
-    PackageController::get_packages(drogon::HttpRequestPtr req) {
-    auto req_json = *req->getJsonObject();
-
-    PackageSectionDTO section {req_json["branch"].asString(),
-                               req_json["repo"].asString(),
-                               req_json["architecture"].asString()};
+    PackageController::get_packages(drogon::HttpRequestPtr req,
+                                    const std::string &branch,
+                                    const std::string &repository,
+                                    const std::string &architecture) {
+    PackageSectionDTO section {branch, repository, architecture};
 
     const auto packages = co_await m_package_service.get_packages(section);
 
     Json::Value result;
-    for (const auto& package : packages) {
+    for (const auto &package : packages) {
         Json::Value package_json;
 
         package_json["name"] = package.name;

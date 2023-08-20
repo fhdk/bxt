@@ -7,12 +7,16 @@
 
 #include "core/application/services/SectionService.h"
 #include "di.h"
+#include "drogon/HttpResponse.h"
+#include "drogon/drogon_callbacks.h"
+#include "drogon/utils/FunctionTraits.h"
 #include "events.h"
 #include "presentation/web-controllers/SectionController.h"
 
 #include <boost/log/trivial.hpp>
 #include <boost/log/utility/setup.hpp>
 #include <drogon/HttpAppFramework.h>
+#include <filesystem>
 #include <kangaru/debug.hpp>
 
 void setup_logger() {
@@ -90,11 +94,34 @@ int main() {
 
     setup_di_container(ctr);
 
-    auto& app = drogon::app()
-                    .addListener("0.0.0.0", 8080)
-                    .setUploadPath("/tmp/bxt/")
-                    .setClientMaxBodySize(256 * 1024 * 1024)
-                    .setClientMaxMemoryBodySize(1024 * 1024);
+    auto& app =
+        drogon::app()
+            .setDocumentRoot("../frontend/")
+            .registerPreRoutingAdvice([](const drogon::HttpRequestPtr& req,
+                                         drogon::AdviceCallback&& acb,
+                                         drogon::AdviceChainCallback&& accb) {
+                if (req->path().starts_with("/api/")) {
+                    accb();
+                    return;
+                }
+
+                const auto resource =
+                    drogon::app().getDocumentRoot() + "/" + req->path();
+
+                if (!std::filesystem::exists(resource) || req->path() == "/") {
+                    const auto indexPath = fmt::format(
+                        "{}/index.html", drogon::app().getDocumentRoot());
+
+                    acb(drogon::HttpResponse::newFileResponse(indexPath));
+                    return;
+                }
+
+                acb(drogon::HttpResponse::newFileResponse(resource));
+            })
+            .addListener("0.0.0.0", 8080)
+            .setUploadPath("/tmp/bxt/")
+            .setClientMaxBodySize(256 * 1024 * 1024)
+            .setClientMaxMemoryBodySize(1024 * 1024);
 
     setup_controllers(app, ctr);
 

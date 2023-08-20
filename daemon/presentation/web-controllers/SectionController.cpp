@@ -20,7 +20,7 @@ drogon::Task<drogon::HttpResponsePtr>
         Json::Value section_json;
 
         section_json["branch"] = section.branch;
-        section_json["repo"] = section.repository;
+        section_json["repository"] = section.repository;
         section_json["architecture"] = section.architecture;
 
         result.append(section_json);
