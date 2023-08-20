@@ -10,12 +10,14 @@
 #include "core/application/services/PackageLogEntryService.h"
 #include "core/application/services/PackageService.h"
 #include "core/application/services/PermissionService.h"
+#include "core/application/services/SectionService.h"
 #include "core/application/services/UserService.h"
 #include "core/domain/entities/PackageLogEntry.h"
 #include "infrastructure/DeploymentService.h"
 #include "infrastructure/DispatchingUnitOfWork.h"
 #include "infrastructure/alpm/ArchRepoOptions.h"
 #include "infrastructure/alpm/ArchRepoSyncService.h"
+#include "kangaru/service.hpp"
 #include "persistence/alpm/Box.h"
 #include "persistence/config/SectionRepository.h"
 #include "persistence/lmdb/PackageLogEntryRepository.h"
@@ -24,6 +26,7 @@
 #include "presentation/web-controllers/LogController.h"
 #include "presentation/web-controllers/PackageController.h"
 #include "presentation/web-controllers/PermissionController.h"
+#include "presentation/web-controllers/SectionController.h"
 #include "presentation/web-controllers/UserController.h"
 #include "presentation/web-filters/JwtFilter.h"
 #include "utilities/lmdb/Environment.h"
@@ -125,6 +128,12 @@ namespace Core {
               kgr::autocall<kgr::invoke<method<
                   &bxt::Core::Application::PackageLogEntryService::init>>> {};
 
+        struct SectionService
+            : kgr::single_service<
+                  bxt::Core::Application::SectionService,
+                  kgr::dependency<
+                      di::Core::Domain::ReadOnlySectionRepository>> {};
+
     } // namespace Application
 
 } // namespace Core
@@ -213,6 +222,11 @@ namespace Presentation {
               bxt::Presentation::LogController,
               kgr::dependency<di::Core::Application::PackageLogEntryService>> {
     };
+
+    struct SectionController
+        : kgr::shared_service<
+              bxt::Presentation::SectionController,
+              kgr::dependency<di::Core::Application::SectionService>> {};
 
     struct JwtFilter
         : kgr::shared_service<

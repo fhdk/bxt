@@ -5,8 +5,10 @@
  *
  */
 
+#include "core/application/services/SectionService.h"
 #include "di.h"
 #include "events.h"
+#include "presentation/web-controllers/SectionController.h"
 
 #include <boost/log/trivial.hpp>
 #include <boost/log/utility/setup.hpp>
@@ -77,6 +79,7 @@ void setup_controllers(auto& app, kgr::container& ctr) {
         .registerController(ctr.service<UserController>())
         .registerController(ctr.service<PermissionController>())
         .registerController(ctr.service<LogController>())
+        .registerController(ctr.service<SectionController>())
         .registerFilter(ctr.service<JwtFilter>());
 }
 
