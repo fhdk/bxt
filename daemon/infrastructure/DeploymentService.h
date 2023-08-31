@@ -6,37 +6,36 @@
  */
 #pragma once
 
-#include "DeploymentServiceOptions.h"
+#include "PackageService.h"
 #include "core/application/dtos/PackageDTO.h"
 #include "core/application/services/DeploymentService.h"
+#include "core/application/services/PackageService.h"
 #include "core/domain/repositories/PackageRepositoryBase.h"
 #include "utilities/StaticDTOMapper.h"
 
 #include <cstdint>
 #include <filesystem>
 #include <set>
+#include <vector>
 
 namespace bxt::Infrastructure {
 
 class DeploymentService : public bxt::Core::Application::DeploymentService {
 public:
-    DeploymentService(PackageRepositoryBase& repository)
-        : m_repository(repository) {}
+    DeploymentService(bxt::Core::Application::PackageService& service)
+        : m_package_service(service) {}
 
     virtual coro::task<uint64_t> deploy_start() override;
     virtual coro::task<void> deploy_push(PackageDTO package,
-                                         const std::filesystem::path& signature,
                                          uint64_t session_id) override;
     virtual coro::task<void> deploy_end(uint64_t session_id) override;
 
     virtual coro::task<bool> verify_session(uint64_t session_id) override;
 
 private:
-    coro::task<void> process_package(PackageDTO pkg);
-    phmap::parallel_node_hash_map<uint64_t, std::set<PackageDTO>>
+    phmap::parallel_node_hash_map<uint64_t, std::vector<PackageDTO>>
         m_session_packages;
-    DeploymentServiceOptions m_options;
-    PackageRepositoryBase& m_repository;
+    bxt::Core::Application::PackageService& m_package_service;
 };
 
 } // namespace bxt::Infrastructure

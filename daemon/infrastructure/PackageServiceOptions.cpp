@@ -4,19 +4,19 @@
  *   SPDX-License-Identifier: GPL-3.0-or-later
  *
  */
-#include "DeploymentServiceOptions.h"
+#include "PackageServiceOptions.h"
 
 namespace bxt::Infrastructure {
 
 std::filesystem::path
-    DeploymentServiceOptions::pool(const PackageSectionDTO &section) const {
+    PackageServiceOptions::pool(const PackageSectionDTO &section) const {
     if (m_pool_path_overrides.contains(section)) {
         return m_pool_path_overrides.at(section);
     }
     return m_default_pool_path;
 }
 
-void DeploymentServiceOptions::parse(const YAML::Node &root_node) {
+void PackageServiceOptions::parse(const YAML::Node &root_node) {
 }
 
 } // namespace bxt::Infrastructure

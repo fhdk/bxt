@@ -10,7 +10,9 @@
 #include "coro/sync_wait.hpp"
 
 #include <fmt/format.h>
+#include <functional>
 #include <infrastructure/PackageFile.h>
+#include <string>
 
 namespace bxt::Persistence {
 
@@ -60,6 +62,28 @@ coro::task<std::vector<Core::Domain::Package>>
         packages, std::back_inserter(result), [section](const auto &package) {
             return Core::Domain::Package::from_filename(section, package);
         });
+
+    co_return {result.begin(), result.end()};
+}
+
+coro::task<std::vector<Package>> Box::find_by_section_async(
+    const Section section,
+    const std::function<bool(const Package &)> predicate) const {
+    auto packages = m_map.at(SectionDTOMapper::to_dto(section))
+                        .description_values("FILENAME");
+
+    std::vector<Core::Domain::Package> result;
+    result.reserve(packages.size());
+
+    std::ranges::transform(
+        packages, std::back_inserter(result), [section](const auto &package) {
+            return Core::Domain::Package::from_filename(section, package);
+        });
+
+    const auto ret = std::ranges::remove_if(
+        result, [predicate](const Package &pkg) { return !predicate(pkg); });
+
+    result.erase(ret.begin(), ret.end());
 
     co_return {result.begin(), result.end()};
 }

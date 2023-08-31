@@ -13,7 +13,7 @@
 
 namespace bxt::Infrastructure {
 
-class DeploymentServiceOptions : public Utilities::RepoSchema::Extension {
+class PackageServiceOptions : public Utilities::RepoSchema::Extension {
 public:
     std::filesystem::path
         pool(const Core::Application::PackageSectionDTO& section) const;

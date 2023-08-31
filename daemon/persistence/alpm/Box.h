@@ -12,6 +12,7 @@
 #include "utilities/alpmdb/Database.h"
 
 #include <coro/sync_wait.hpp>
+#include <functional>
 
 namespace bxt::Persistence {
 
@@ -50,6 +51,10 @@ public:
 
     virtual coro::task<std::vector<Package>>
         find_by_section_async(const Section section) const override;
+
+    virtual coro::task<std::vector<Package>> find_by_section_async(
+        const Section section,
+        const std::function<bool(const Package &)> predicate) const override;
 
     virtual coro::task<void> commit_async() override;
     virtual coro::task<void> rollback_async() override;

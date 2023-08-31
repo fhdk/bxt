@@ -6,12 +6,20 @@
  */
 #include "PackageController.h"
 
+#include "boost/algorithm/string/classification.hpp"
+#include "boost/algorithm/string/split.hpp"
+#include "core/application/dtos/PackageDTO.h"
 #include "core/application/dtos/PackageSectionDTO.h"
+#include "core/application/services/PackageService.h"
+#include "drogon/HttpResponse.h"
 #include "drogon/utils/FunctionTraits.h"
 #include "jwt-cpp/traits/nlohmann-json/defaults.h"
 
+#include "json/value.h"
 #include <drogon/MultiPart.h>
+#include <map>
 #include <string>
+#include <vector>
 
 namespace bxt::Presentation {
 using namespace drogon;
@@ -99,23 +107,71 @@ drogon::Task<HttpResponsePtr>
 }
 
 drogon::Task<drogon::HttpResponsePtr>
-    PackageController::add_package(drogon::HttpRequestPtr req) {
-    /// TODO: Implement
+    PackageController::commit_transaction(drogon::HttpRequestPtr req) {
+    MultiPartParser file_upload;
+    file_upload.parse(req);
 
-    auto result = drogon::HttpResponse::newHttpResponse();
-    result->setBody("Not implemented");
-    co_return result;
-}
+    const auto files_map = file_upload.getFilesMap();
+    const auto params_map = file_upload.getParameters();
 
-drogon::Task<drogon::HttpResponsePtr>
-    PackageController::remove_package(drogon::HttpRequestPtr req) {
-    auto json = *req->getJsonObject();
+    std::map<int, PackageDTO> packages;
 
-    /// TODO: Implement
+    for (const auto &[name, file] : files_map) {
+        if (!name.starts_with("package")) { continue; }
+        std::vector<std::string> parts;
+        boost::split(parts, name, boost::is_any_of("."));
 
-    auto result = drogon::HttpResponse::newHttpResponse();
-    result->setBody("Not implemented");
-    co_return result;
+        if (parts.size() > 2) { continue; }
+
+        auto file_number_str = parts[0].substr(7);
+        const auto file_number = std::stoi(file_number_str);
+
+        if (!packages.contains(file_number)) {
+            packages.emplace(file_number, PackageDTO {});
+        }
+
+        if (parts.size() == 1 || parts[1] != "signature") {
+            packages[file_number].filepath =
+                app().getUploadPath() + "/" + file.getFileName();
+        } else if (parts[1] == "signature") {
+            packages[file_number].signature_path =
+                app().getUploadPath() + "/" + file.getFileName();
+        }
+    }
+
+    for (const auto &[name, param] : params_map) {
+        if (!name.starts_with("package")) { continue; }
+
+        std::vector<std::string> parts;
+        boost::split(parts, name, boost::is_any_of("."));
+
+        if (parts.size() != 2) { continue; }
+
+        auto file_number_str = parts[0].substr(7);
+        const auto file_number = std::stoi(file_number_str);
+
+        if (!packages.contains(file_number)) { continue; }
+
+        if (parts[1] == "branch") {
+            packages[file_number].section.branch = param;
+        } else if (parts[1] == "repository") {
+            packages[file_number].section.repository = param;
+        } else if (parts[1] == "architecture") {
+            packages[file_number].section.architecture = param;
+        }
+    }
+
+    PackageService::Transaction transaction;
+    for (auto &package : packages) {
+        transaction.to_add.emplace_back(std::move(package.second));
+    }
+
+    auto result = co_await m_package_service.commit_transaction(transaction);
+
+    Json::Value res_json;
+    res_json["ok"] = result ? "ok" : "error";
+
+    co_return drogon::HttpResponse::newHttpJsonResponse(res_json);
 }
 
 drogon::Task<drogon::HttpResponsePtr>

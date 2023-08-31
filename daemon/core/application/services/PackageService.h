@@ -8,22 +8,33 @@
 
 #include "core/application/dtos/PackageDTO.h"
 #include "core/application/dtos/PackageSectionDTO.h"
+#include "core/domain/entities/Package.h"
 #include "core/domain/repositories/PackageRepositoryBase.h"
 
 #include <coro/task.hpp>
+#include <cstdint>
+#include <set>
+#include <string>
+#include <vector>
 
 namespace bxt::Core::Application {
 
 class PackageService {
 public:
-    PackageService(Domain::PackageRepositoryBase& repository)
-        : m_repository(repository) {}
+    virtual ~PackageService() = default;
 
-    coro::task<std::vector<PackageDTO>>
-        get_packages(const PackageSectionDTO section_dto) const;
+    struct Transaction {
+        std::vector<PackageDTO> to_add;
+        std::vector<std::pair<PackageSectionDTO, std::string>> to_remove;
+    };
 
-private:
-    Domain::PackageRepositoryBase& m_repository;
+    virtual coro::task<bool>
+        commit_transaction(const Transaction transaction) = 0;
+
+    virtual coro::task<bool> add_package(const PackageDTO package) = 0;
+
+    virtual coro::task<std::vector<PackageDTO>>
+        get_packages(const PackageSectionDTO section_dto) const = 0;
 };
 
 } // namespace bxt::Core::Application

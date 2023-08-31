@@ -68,10 +68,11 @@ void setup_di_container(kgr::container& ctr) {
     ctr.service<di::Persistence::Box>();
 
     ctr.service<di::Core::Application::AuthService>();
-    ctr.service<di::Core::Application::PackageService>();
     ctr.service<di::Core::Application::PermissionService>();
 
+    ctr.service<di::Infrastructure::PackageService>();
     ctr.service<di::Infrastructure::DeploymentService>();
+
     ctr.service<di::Infrastructure::ArchRepoSyncService>();
 }
 

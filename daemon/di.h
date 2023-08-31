@@ -15,6 +15,7 @@
 #include "core/domain/entities/PackageLogEntry.h"
 #include "infrastructure/DeploymentService.h"
 #include "infrastructure/DispatchingUnitOfWork.h"
+#include "infrastructure/PackageService.h"
 #include "infrastructure/alpm/ArchRepoOptions.h"
 #include "infrastructure/alpm/ArchRepoSyncService.h"
 #include "kangaru/service.hpp"
@@ -102,9 +103,7 @@ namespace Core {
         };
 
         struct PackageService
-            : kgr::single_service<
-                  bxt::Core::Application::PackageService,
-                  kgr::dependency<di::Core::Domain::PackageRepositoryBase>> {};
+            : kgr::abstract_service<bxt::Core::Application::PackageService> {};
 
         struct SyncService
             : kgr::abstract_service<bxt::Core::Application::SyncService> {};
@@ -144,10 +143,16 @@ namespace Infrastructure {
         : kgr::single_service<bxt::Infrastructure::EventLogger,
                               kgr::dependency<di::Utilities::EventBus>> {};
 
+    struct PackageService
+        : kgr::single_service<
+              bxt::Infrastructure::PackageService,
+              kgr::dependency<di::Core::Domain::PackageRepositoryBase>>,
+          kgr::overrides<di::Core::Application::PackageService> {};
+
     struct DeploymentService
         : kgr::single_service<
               bxt::Infrastructure::DeploymentService,
-              kgr::dependency<di::Core::Domain::PackageRepositoryBase>>,
+              kgr::dependency<di::Core::Application::PackageService>>,
           kgr::overrides<di::Core::Application::DeploymentService> {};
 
     struct ArchRepoOptions
