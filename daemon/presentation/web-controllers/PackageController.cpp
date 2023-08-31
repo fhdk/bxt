@@ -66,10 +66,10 @@ drogon::Task<drogon::HttpResponsePtr>
     auto name = file.getFileName();
 
     auto dto =
-        PackageDTO {section, name, app().getUploadPath() + "/" + name, true};
+        PackageDTO {section, name, app().getUploadPath() + "/" + name,
+                    app().getUploadPath() + "/" + signature.getFileName()};
 
-    co_await m_service.deploy_push(
-        dto, app().getUploadPath() + "/" + signature.getFileName(), session_id);
+    co_await m_service.deploy_push(dto, session_id);
 
     auto resp = HttpResponse::newHttpResponse();
 
@@ -134,7 +134,7 @@ drogon::Task<drogon::HttpResponsePtr>
         package_json["name"] = package.name;
         package_json["filename"] = package.filepath.string();
         package_json["has_signature"] =
-            package.has_signature ? "true" : "false";
+            package.signature_path ? "true" : "false";
 
         result.append(package_json);
     }

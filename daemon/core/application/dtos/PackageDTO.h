@@ -11,6 +11,7 @@
 #include "utilities/StaticDTOMapper.h"
 
 #include <filesystem>
+#include <optional>
 #include <string>
 
 namespace bxt::Core::Application {
@@ -18,7 +19,7 @@ struct PackageDTO {
     PackageSectionDTO section;
     std::string name;
     std::filesystem::path filepath;
-    bool has_signature;
+    std::optional<std::filesystem::path> signature_path;
 
     auto operator<=>(const PackageDTO& other) const = default;
 };
@@ -39,12 +40,13 @@ template<> struct bxt::Utilities::StaticDTOMapper<Package, PackageDTO> {
             .section = SectionDTOMapper::to_dto(from.section()),
             .name = from.name(),
             .filepath = from.filepath(),
-            .has_signature = from.has_signature()};
+            .signature_path = from.signature_path()};
     }
     static Package to_entity(const PackageDTO& from) {
         auto section = SectionDTOMapper::to_entity(from.section);
         auto result = Package::from_filepath(section, from.filepath);
-        result.set_has_signature(from.has_signature);
+
+        result.set_signature_path(from.signature_path);
         return result;
     }
 };

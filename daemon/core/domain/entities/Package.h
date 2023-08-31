@@ -13,6 +13,7 @@
 #include "core/domain/value_objects/PackageVersion.h"
 
 #include <filesystem>
+#include <optional>
 #include <string>
 
 namespace bxt::Core::Domain {
@@ -70,11 +71,14 @@ public:
 
     void set_section(const Section& new_section) { m_section = new_section; }
 
-    void set_has_signature(bool has_signature) {
-        m_has_signature = has_signature;
+    std::optional<std::filesystem::path> signature_path() const {
+        return m_signature_path;
     }
 
-    bool has_signature() const { return m_has_signature; }
+    void set_signature_path(
+        const std::optional<std::filesystem::path>& signature_path) {
+        m_signature_path = signature_path;
+    }
 
 private:
     Section m_section;
@@ -83,7 +87,7 @@ private:
     PackageVersion m_version;
     PackageArchitecture m_architecture;
     std::filesystem::path m_filepath;
-    bool m_has_signature = false;
+    std::optional<std::filesystem::path> m_signature_path;
 };
 
 } // namespace bxt::Core::Domain

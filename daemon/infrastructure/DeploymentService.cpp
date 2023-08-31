@@ -41,21 +41,15 @@ coro::task<uint64_t> DeploymentService::deploy_start() {
     co_return session_id;
 }
 
-coro::task<void>
-    DeploymentService::deploy_push(PackageDTO package,
-                                   const std::filesystem::path &signature,
-                                   uint64_t session_id) {
+coro::task<void> DeploymentService::deploy_push(PackageDTO package,
+                                                uint64_t session_id) {
     if (!std::filesystem::exists(package.filepath)) {
         throw std::invalid_argument("File not found");
     }
-    if (package.has_signature) {
-        if (!std::filesystem::exists(signature)) {
+    if (package.signature_path) {
+        if (!std::filesystem::exists(*package.signature_path)) {
             throw std::invalid_argument("Invalid signature file");
         }
-        move_file(signature,
-                  fmt::format("{}/{}.sig",
-                              package.filepath.parent_path().string(),
-                              package.filepath.filename().string()));
     }
 
     m_session_packages.at(session_id).emplace(package);

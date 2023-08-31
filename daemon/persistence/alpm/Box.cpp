@@ -85,9 +85,9 @@ coro::task<void> Box::commit_async() {
 
         std::filesystem::create_symlink(source_path, target_path, ec);
 
-        if (entity.has_signature()) {
+        if (entity.signature_path()) {
             std::filesystem::create_symlink(
-                fmt::format("{}.sig", source_path.string()),
+                *entity.signature_path(),
                 fmt::format("{}.sig", target_path.string()), ec);
         }
 
