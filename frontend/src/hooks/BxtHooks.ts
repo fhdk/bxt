@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import packages from "./packages.json";
 import axios from "axios";
 
-interface IUpdateSections {
+export interface IUpdateSections {
   (): void;
 }
 

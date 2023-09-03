@@ -9,7 +9,7 @@ import packages from "./packages.json";
 import axios from "axios";
 
 
-interface IUpdateFiles {
+export interface IUpdateFiles {
   (sections: ISection[],
     path: string[]): void;
 }

@@ -12,6 +12,7 @@
 #include "core/application/dtos/PackageSectionDTO.h"
 #include "core/application/services/PackageService.h"
 #include "drogon/HttpResponse.h"
+#include "drogon/HttpTypes.h"
 #include "drogon/utils/FunctionTraits.h"
 #include "jwt-cpp/traits/nlohmann-json/defaults.h"
 
@@ -130,6 +131,8 @@ drogon::Task<drogon::HttpResponsePtr>
             packages.emplace(file_number, PackageDTO {});
         }
 
+        file.save();
+
         if (parts.size() == 1 || parts[1] != "signature") {
             packages[file_number].filepath =
                 app().getUploadPath() + "/" + file.getFileName();
@@ -169,9 +172,11 @@ drogon::Task<drogon::HttpResponsePtr>
     auto result = co_await m_package_service.commit_transaction(transaction);
 
     Json::Value res_json;
-    res_json["ok"] = result ? "ok" : "error";
+    res_json["result"] = result ? "ok" : "error";
 
-    co_return drogon::HttpResponse::newHttpJsonResponse(res_json);
+    auto response = drogon::HttpResponse::newHttpJsonResponse(res_json);
+
+    co_return response;
 }
 
 drogon::Task<drogon::HttpResponsePtr>
@@ -188,9 +193,9 @@ drogon::Task<drogon::HttpResponsePtr>
         Json::Value package_json;
 
         package_json["name"] = package.name;
-        package_json["filename"] = package.filepath.string();
+        package_json["filename"] = package.filepath.filename().string();
         package_json["has_signature"] =
-            package.signature_path ? "true" : "false";
+            package.signature_path.has_value() ? "true" : "false";
 
         result.append(package_json);
     }

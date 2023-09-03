@@ -8,12 +8,12 @@ import {
 } from "chonky";
 import { ChonkyIconFA } from "chonky-icon-fontawesome";
 import { useCallback, useEffect, useState } from "react";
-import { useSections } from "../hooks/BxtHooks";
+import { IUpdateSections, useSections } from "../hooks/BxtHooks";
 import Dropzone from "react-dropzone";
 import CommitModal from "../components/CommitModal";
 import { Button, Drawer, Menu } from "react-daisyui";
 import CommitCard from "../components/CommitCard";
-import { useFilesFromSections } from "../hooks/BxtFsHooks";
+import { IUpdateFiles, useFilesFromSections } from "../hooks/BxtFsHooks";
 import * as uuid from "uuid";
 import { toast } from "react-toastify";
 import SnapshotModal from "../components/SnapshotModal";
@@ -23,6 +23,7 @@ import {
   SnapToAction,
 } from "../components/SnapshotAction";
 import { OpenFilesPayload } from "chonky/dist/types/action-payloads.types";
+import axios from "axios";
 
 setChonkyDefaults({ iconComponent: ChonkyIconFA });
 
@@ -89,7 +90,7 @@ const usePackageDropHandler = (
       };
 
       const packages = acceptedFiles.map((value) => {
-        return { name: value.name };
+        return { name: value.name, section, file: value };
       });
 
       setCommit({ id: uuid.v4(), section, packages });
@@ -97,6 +98,39 @@ const usePackageDropHandler = (
     [path, setCommit]
   );
 };
+
+const usePushCommitsHandler = (commits: ICommit[], reload: () => void) => {
+  return useCallback(
+    async (e: any) => {
+      let formData = new FormData();
+
+      let packages = commits.flatMap(value => value.packages);
+      packages.forEach((pkg, index) => {
+        if (pkg.file) {
+          formData.append(`package${index + 1}.filepath`, pkg.file);
+        }
+        if (pkg.hasSignature) {
+          formData.append(`package${index + 1}.signature_path`, `${pkg.file}.sig`);
+        }
+        if (pkg.section.branch) {
+          formData.append(`package${index + 1}.branch`, pkg.section.branch);
+        }
+        if (pkg.section.repository) {
+          formData.append(`package${index + 1}.repository`, pkg.section.repository);
+        }
+        if (pkg.section.architecture) {
+          formData.append(`package${index + 1}.architecture`, pkg.section.architecture);
+        }
+      });
+
+      const result = await axios.post(`${process.env.PUBLIC_URL}/api/packages/commit`, formData);
+
+      if (result.data["result"] == "ok") {
+        toast.done("Pushed!");
+        reload();
+      }
+    }, [commits, reload])
+}
 
 export default (props: any) => {
   const [sections, updateSections] = useSections();
@@ -196,7 +230,10 @@ export default (props: any) => {
               })}
               <div className="grow"></div>
               <Menu.Item>
-                <Button type="button" color="accent">
+                <Button type="button" color="accent" onClick={usePushCommitsHandler(commits, () => {
+                  setCommits([]);
+                  updateSections();
+                })}>
                   Push commits
                 </Button>
               </Menu.Item>
