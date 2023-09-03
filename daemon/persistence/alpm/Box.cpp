@@ -8,6 +8,7 @@
 
 #include "core/domain/events/PackageEvents.h"
 #include "coro/sync_wait.hpp"
+#include "fmt/core.h"
 
 #include <fmt/format.h>
 #include <functional>
@@ -59,8 +60,12 @@ coro::task<std::vector<Core::Domain::Package>>
     result.reserve(packages.size());
 
     std::ranges::transform(
-        packages, std::back_inserter(result), [section](const auto &package) {
-            return Core::Domain::Package::from_filename(section, package);
+        packages, std::back_inserter(result),
+        [section, this](const auto &package) {
+            return Core::Domain::Package::from_filepath(
+                section, fmt::format("{}/{}/{}/{}/{}", m_options.location,
+                                     section.branch(), section.repository(),
+                                     section.architecture(), package));
         });
 
     co_return {result.begin(), result.end()};

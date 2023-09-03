@@ -66,7 +66,7 @@ export const useFilesFromSections = (
             id: `root/${path[1]}/${path[2]}/${path[3]}/${value?.filename}`,
             name: value!.filename,
             isDir: false,
-            thumbnailUrl: `${process.env.PUBLIC_URL}/cube-solid.svg`,
+            thumbnailUrl: value?.has_signature == "true" ? `${process.env.PUBLIC_URL}/cube-signature-solid.svg` : `${process.env.PUBLIC_URL}/cube-solid.svg`,
           })));
         });
         break;

@@ -9,6 +9,7 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <cctype>
+#include <filesystem>
 #include <fmt/format.h>
 #include <stdexcept>
 #include <string>
@@ -89,6 +90,12 @@ Package Package::from_filepath(const Section& section,
                                const std::filesystem::path& filepath) {
     auto result = from_filename(section, filepath.filename());
     result.set_filepath(filepath);
+
+    const auto signature_path = fmt::format("{}.sig", filepath.string());
+
+    if (std::filesystem::exists(signature_path)) {
+        result.set_signature_path(signature_path);
+    }
     return result;
 }
 

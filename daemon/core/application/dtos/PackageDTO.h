@@ -19,7 +19,7 @@ struct PackageDTO {
     PackageSectionDTO section;
     std::string name;
     std::filesystem::path filepath;
-    std::optional<std::filesystem::path> signature_path;
+    std::optional<std::filesystem::path> signature_path = {};
 
     auto operator<=>(const PackageDTO& other) const = default;
 };

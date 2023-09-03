@@ -63,7 +63,7 @@ export default (props: CommitModalProps) => {
     setCommit({ id, section: { ...section, architecture }, packages });
   };
 
-  const setPackages = (pkg: IPackage) => {
+  const setPackages = (pkg: IPackageUpload) => {
     setCommit({ ...commit, packages: [...packages, pkg] });
   };
 

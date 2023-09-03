@@ -87,7 +87,7 @@ private:
     PackageVersion m_version;
     PackageArchitecture m_architecture;
     std::filesystem::path m_filepath;
-    std::optional<std::filesystem::path> m_signature_path;
+    std::optional<std::filesystem::path> m_signature_path = {};
 };
 
 } // namespace bxt::Core::Domain
