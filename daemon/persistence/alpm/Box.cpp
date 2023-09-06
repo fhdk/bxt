@@ -56,19 +56,21 @@ coro::task<std::vector<Core::Domain::Package>>
     auto packages = m_map.at(SectionDTOMapper::to_dto(section))
                         .description_values("FILENAME");
 
+    if (!packages.has_value()) co_return {};
+
     std::vector<Core::Domain::Package> result;
-    result.reserve(packages.size());
+    result.reserve(packages->size());
 
-    std::ranges::transform(
-        packages, std::back_inserter(result),
-        [section, this](const auto &package) {
-            return Core::Domain::Package::from_filepath(
-                section, fmt::format("{}/{}/{}/{}/{}", m_options.location,
-                                     section.branch(), section.repository(),
-                                     section.architecture(), package));
-        });
+    for (const auto &package_name : *packages) {
+        const auto package = Core::Domain::Package::from_filepath(
+            section, fmt::format("{}/{}/{}/{}/{}", m_options.location,
+                                 section.branch(), section.repository(),
+                                 section.architecture(), package_name));
 
-    co_return {result.begin(), result.end()};
+        if (package.has_value()) { result.emplace_back(*package); }
+    }
+
+    co_return result;
 }
 
 coro::task<std::vector<Package>> Box::find_by_section_async(
@@ -77,13 +79,16 @@ coro::task<std::vector<Package>> Box::find_by_section_async(
     auto packages = m_map.at(SectionDTOMapper::to_dto(section))
                         .description_values("FILENAME");
 
-    std::vector<Core::Domain::Package> result;
-    result.reserve(packages.size());
+    if (!packages.has_value()) { co_return {}; }
 
-    std::ranges::transform(
-        packages, std::back_inserter(result), [section](const auto &package) {
-            return Core::Domain::Package::from_filename(section, package);
-        });
+    std::vector<Core::Domain::Package> result;
+    result.reserve(packages->size());
+
+    for (const auto &package_name : *packages) {
+        const auto &package =
+            Core::Domain::Package::from_filename(section, package_name);
+        if (package.has_value()) { result.emplace_back(*package); }
+    }
 
     const auto ret = std::ranges::remove_if(
         result, [predicate](const Package &pkg) { return !predicate(pkg); });
@@ -95,7 +100,6 @@ coro::task<std::vector<Package>> Box::find_by_section_async(
 
 coro::task<void> Box::commit_async() {
     phmap::node_hash_map<PackageSectionDTO, std::set<std::string>> paths_to_add;
-    std::vector<coro::task<void>> tasks;
 
     for (const auto &entity : m_to_add) {
         auto section_dto = SectionDTOMapper::to_dto(entity.section());
@@ -126,6 +130,7 @@ coro::task<void> Box::commit_async() {
 
         m_event_store.emplace_back(event);
     }
+    std::vector<coro::task<bxt::Utilities::AlpmDb::DatabaseResult<void>>> tasks;
 
     tasks.reserve(paths_to_add.size());
 

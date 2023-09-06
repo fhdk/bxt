@@ -6,13 +6,16 @@
  */
 #pragma once
 
-#include "Exception.h"
+#include "Error.h"
 #include "Header.h"
+#include "utilities/errors/Macro.h"
 
 #include <archive.h>
 #include <filesystem>
 #include <memory>
 #include <ostream>
+#include <tl/expected.hpp>
+#include <variant>
 #include <vector>
 
 struct archive;
@@ -26,34 +29,51 @@ public:
         friend class Writer;
 
     public:
-        void write(const std::vector<uint8_t>& data);
-        void operator>>(const std::vector<uint8_t>& data);
+        Entry() = default;
 
-        void finish() { archive_write_finish_entry(m_writer); }
+        template<typename T>
+        using Result =
+            tl::expected<T, std::variant<InvalidEntryError, LibArchiveError>>;
+
+        // Use the Result template for function return type
+        Result<void> write(const std::vector<uint8_t>& data);
+        Result<void> operator>>(const std::vector<uint8_t>& data);
+
+        Result<void> finish() {
+            if (!m_writer) { return tl::make_unexpected(InvalidEntryError {}); }
+
+            if (archive_write_finish_entry(m_writer) != ARCHIVE_OK) {
+                return tl::make_unexpected(LibArchiveError(m_writer));
+            }
+            return {};
+        }
 
         const Header& header() { return m_header; }
 
     private:
-        Entry() = default;
         archive* m_writer = nullptr;
         Header m_header;
     };
 
     Writer() = default;
 
-    void open_filename(const std::filesystem::path& path);
-    void open_memory(std::vector<std::byte>& byte_array, size_t& used_size);
+    BXT_DECLARE_RESULT(LibArchiveError)
+
+    Result<void> open_filename(const std::filesystem::path& path);
+    Result<void> open_memory(std::vector<std::byte>& byte_array,
+                             size_t& used_size);
 
     operator archive*() { return m_archive.get(); }
 
-    Entry start_write(Header& header);
+    Result<Entry> start_write(Header& header);
 
 private:
-    static void deleter(archive* a) {
-        int status = archive_write_free(a);
+    static Result<void> deleter(archive* a) {
+        const int status = archive_write_free(a);
         if (status != ARCHIVE_OK) {
-            throw LibException(status, archive_error_string(a));
+            return tl::make_unexpected(LibArchiveError(a));
         }
+        return {};
     }
     std::unique_ptr<archive, decltype(&deleter)> m_archive {archive_write_new(),
                                                             &deleter};

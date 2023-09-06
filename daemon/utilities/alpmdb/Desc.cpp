@@ -6,6 +6,8 @@
  */
 #include "Desc.h"
 
+#include "tl/expected.hpp"
+#include "utilities/libarchive/Error.h"
 #include "utilities/libarchive/Reader.h"
 
 #include <boost/algorithm/string/join.hpp>
@@ -65,7 +67,7 @@ Desc::Desc(const std::string &contents, const std::string &files)
     : m_desc(contents), m_files(files) {
 }
 
-std::string Desc::get(const std::string &key) const {
+std::optional<std::string> Desc::get(const std::string &key) const {
     auto prepared_key = fmt::format("%{}%\n", key);
 
     auto value_begin = m_desc.find(prepared_key) + prepared_key.size();
@@ -75,7 +77,7 @@ std::string Desc::get(const std::string &key) const {
     return m_desc.substr(value_begin, value_end - value_begin);
 }
 
-Desc Desc::parse_package(const std::filesystem::path &filepath) {
+Desc::Result<Desc> Desc::parse_package(const std::filesystem::path &filepath) {
     std::ostringstream desc;
     std::ostringstream files;
 
@@ -83,12 +85,13 @@ Desc Desc::parse_package(const std::filesystem::path &filepath) {
 
     archive_read_support_filter_all(file_reader);
     archive_read_support_format_all(file_reader);
-    try {
-        file_reader.open_filename(filepath);
-    } catch (Archive::LibException &e) {
-        throw DescParseException(fmt::format(
-            "The file '{}' is not a valid archive.\nLibArchive error: {}",
-            std::filesystem::absolute(filepath).string(), e.what()));
+
+    const auto package_infos = file_reader.open_filename(filepath);
+
+    if (!package_infos.has_value()) {
+        return tl::make_unexpected(
+            ParseError(ParseError::ErrorType::InvalidArchive,
+                       std::move(package_infos.error())));
     }
 
     PkgInfo infoObj;
@@ -104,15 +107,29 @@ Desc Desc::parse_package(const std::filesystem::path &filepath) {
         }
         found = true;
 
-        auto data = b.read_all();
+        auto contents = b.read_all();
 
-        infoObj.parse(reinterpret_cast<char *>(data.data()));
+        if (!contents.has_value()) {
+            if (const auto invalidentry =
+                    std::get_if<Archive::InvalidEntryError>(
+                        &contents.error())) {
+                return tl::make_unexpected(
+                    ParseError(ParseError::ErrorType::InvalidArchive,
+                               std::move(*invalidentry)));
+            } else {
+                return tl::make_unexpected(
+                    ParseError(ParseError::ErrorType::InvalidArchive,
+                               std::move(*std::get_if<Archive::LibArchiveError>(
+                                   &contents.error()))));
+            }
+        }
+
+        infoObj.parse(reinterpret_cast<char *>(contents->data()));
     }
 
     if (!found) {
-        throw DescParseException(
-            fmt::format("No package info is available in '{}' archive",
-                        std::filesystem::absolute(filepath).string()));
+        return tl::make_unexpected(
+            ParseError(ParseError::ErrorType::NoPackageInfo));
     }
 
     constexpr static char format_string[] = "%{}%\n{}\n\n";

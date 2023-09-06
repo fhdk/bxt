@@ -5,6 +5,8 @@
  *
  */
 #pragma once
+#include "tl/expected.hpp"
+#include "utilities/Error.h"
 #include "utilities/alpmdb/Desc.h"
 
 #include <boost/log/trivial.hpp>
@@ -15,36 +17,63 @@
 #include <coro/task.hpp>
 #include <filesystem>
 #include <fmt/format.h>
+#include <frozen/map.h>
 #include <frozen/set.h>
 #include <frozen/string.h>
 #include <iterator>
+#include <memory>
 #include <parallel_hashmap/phmap.h>
 #include <string>
+#include <string_view>
 
 namespace bxt::Utilities::AlpmDb {
 
-struct DatabaseParseException : public std::runtime_error {
-    explicit DatabaseParseException(const std::string& what)
-        : std::runtime_error(what) {}
+class DatabaseError : public bxt::Error {
+public:
+    enum class ErrorType {
+        IOError,
+        DatabaseMalformedError,
+        InvalidPackageError
+    };
+    DatabaseError(ErrorType error_type) : error_type(error_type) {}
+
+    DatabaseError(ErrorType error_type, const bxt::Error&& source)
+        : bxt::Error(std::make_unique<bxt::Error>(std::move(source))),
+          error_type(error_type) {}
+
+    static inline frozen::map<ErrorType, std::string_view, 3> messages {
+        {ErrorType::IOError, "IO error"},
+        {ErrorType::DatabaseMalformedError, "Database is malformed"},
+        {ErrorType::InvalidPackageError, "Invalid package"}};
+
+    const std::string message() const noexcept override {
+        return messages.at(error_type).data();
+    }
+
+private:
+    ErrorType error_type;
 };
 
 class Database {
 public:
+    BXT_DECLARE_RESULT(DatabaseError)
+
     explicit Database(const std::filesystem::path& path = "./",
                       const std::string& name = "")
         : m_path(std::filesystem::absolute(path)), m_name(name) {
         if (name == "") { m_name = m_path.parent_path().filename(); }
-        try {
-            coro::sync_wait(load());
-        } catch (DatabaseParseException& e) {
+        const auto load_result = coro::sync_wait(load());
+
+        if (!load_result.has_value()) {
             BOOST_LOG_TRIVIAL(warning)
-                << fmt::format("Database '{}' is not readable or doesn't exist",
-                               m_path.string());
+                << fmt::format("Database '{}' is not readable or doesn't "
+                               "exist. Error is {}",
+                               m_path.string(), load_result.error().what());
         }
     }
 
-    coro::task<void> add(const std::set<std::string>& files);
-    coro::task<void> remove(const std::set<std::string>& packages);
+    coro::task<Result<void>> add(const std::set<std::string>& files);
+    coro::task<Result<void>> remove(const std::set<std::string>& packages);
     std::set<std::string> packages() const {
         std::set<std::string> packages;
         std::ranges::transform(m_descriptions,
@@ -54,19 +83,26 @@ public:
         return packages;
     }
 
-    std::vector<std::string> description_values(const std::string& key) const {
+    Result<std::vector<std::string>>
+        description_values(const std::string& key) const {
         std::vector<std::string> values;
-        std::ranges::transform(
-            m_descriptions, std::back_inserter(values),
-            [key](const auto& value) { return value.second.get(key); });
+        values.reserve(m_descriptions.size());
+
+        for (const auto& [current_key, value] : m_descriptions) {
+            const auto result = value.get(key);
+
+            if (!result.has_value()) { continue; }
+
+            values.push_back(*result);
+        }
 
         return values;
     }
 
-    coro::task<void> load();
+    coro::task<Result<void>> load();
 
 private:
-    coro::task<void> save_async();
+    coro::task<Result<void>> save_async();
 
     bool package_exists(const std::string& package_name) const;
     void create_symlinks() const;

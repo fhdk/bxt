@@ -6,6 +6,10 @@
  */
 #include "Database.h"
 
+#include "tl/expected.hpp"
+#include "utilities/Error.h"
+#include "utilities/libarchive/Error.h"
+
 #include <algorithm>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/regex.hpp>
@@ -19,23 +23,30 @@
 
 namespace bxt::Utilities::AlpmDb {
 
-coro::task<void> Database::add(const std::set<std::string>& packages) {
+coro::task<Database::Result<void>>
+    Database::add(const std::set<std::string>& packages) {
     coro::latch latch {static_cast<ptrdiff_t>(packages.size())};
 
     for (const auto& package : packages) {
         auto description = Desc::parse_package(package);
+        if (!description.has_value()) {
+            co_return tl::unexpected(
+                DatabaseError(DatabaseError::ErrorType::InvalidPackageError));
+        }
+        const auto name = description->get("NAME");
 
-        auto name = description.get("NAME");
-        auto version = description.get("VERSION");
+        const auto version = description->get("VERSION");
+
+        if (!name.has_value() || !version.has_value()) { continue; }
 
         m_descriptions.lazy_emplace_l(
-            fmt::format("{}-{}", name, version),
+            fmt::format("{}-{}", *name, *version),
             [description, &latch, name](auto& value) {
-                value.second = description;
+                value.second = *description;
                 latch.count_down();
             },
             [description, &latch, name, version](const auto& ctor) {
-                ctor(fmt::format("{}-{}", name, version), description);
+                ctor(fmt::format("{}-{}", *name, *version), *description);
                 latch.count_down();
             });
     }
@@ -44,10 +55,11 @@ coro::task<void> Database::add(const std::set<std::string>& packages) {
 
     co_await save_async();
 
-    co_return;
+    co_return {};
 }
 
-coro::task<void> Database::remove(const std::set<std::string>& packages) {
+coro::task<Database::Result<void>>
+    Database::remove(const std::set<std::string>& packages) {
     coro::latch latch {static_cast<ptrdiff_t>(packages.size())};
 
     for (const auto& pkgname : packages) {
@@ -61,7 +73,7 @@ coro::task<void> Database::remove(const std::set<std::string>& packages) {
 
     co_await save_async();
 
-    co_return;
+    co_return {};
 }
 
 template<typename TBuffer>
@@ -74,11 +86,14 @@ void write_buffer_to_archive(Archive::Writer& writer,
     archive_entry_set_size(header, buffer.size());
 
     auto entry = writer.start_write(header);
-    entry.write({buffer.begin(), buffer.end()});
-    entry.finish();
+
+    if (!entry.has_value()) { return; }
+
+    entry->write({buffer.begin(), buffer.end()});
+    entry->finish();
 }
 
-coro::task<void> Database::save_async() {
+coro::task<Database::Result<void>> Database::save_async() {
     auto lock = co_await m_file_lock->lock();
 
     Archive::Writer db_writer, files_writer;
@@ -108,6 +123,8 @@ coro::task<void> Database::save_async() {
     }
 
     create_symlinks();
+
+    co_return {};
 }
 
 void Database::create_symlinks() const {
@@ -121,7 +138,7 @@ void Database::create_symlinks() const {
         m_path / fmt::format("{}.files", m_name), ec);
 }
 
-coro::task<void> Database::load() {
+coro::task<Database::Result<void>> Database::load() {
     auto lock = co_await m_file_lock->lock();
 
     Archive::Reader db_reader;
@@ -129,12 +146,12 @@ coro::task<void> Database::load() {
     archive_read_support_format_all(db_reader);
     archive_read_support_filter_all(db_reader);
 
-    try {
+    const auto opened =
         db_reader.open_filename(m_path / fmt::format("{}.db.tar.zst", m_name));
-    } catch (const Archive::LibException& exception) {
-        throw DatabaseParseException(
-            fmt::format("Cannot parse database. LibArchive exception: {}",
-                        exception.what()));
+
+    if (!opened.has_value()) {
+        co_return tl::unexpected(DatabaseError {
+            DatabaseError::ErrorType::IOError, std::move(opened.error())});
     }
 
     for (auto& [header, data] : db_reader) {
@@ -150,13 +167,27 @@ coro::task<void> Database::load() {
 
         if (parts[1] != "desc") continue;
 
-        auto buffer = data.read_all();
-        Desc desc({buffer.begin(), buffer.end()});
+        const auto buffer = data.read_all();
+        if (!buffer.has_value()) {
+            if (const auto& buffer_err =
+                    std::get_if<Archive::InvalidEntryError>(&buffer.error())) {
+                co_return tl::unexpected(DatabaseError(
+                    DatabaseError::ErrorType::DatabaseMalformedError,
+                    std::move(*buffer_err)));
+            } else {
+                co_return tl::unexpected(DatabaseError(
+                    DatabaseError::ErrorType::DatabaseMalformedError,
+                    std::move(*std::get_if<Archive::LibArchiveError>(
+                        &buffer.error()))));
+            }
+        }
+
+        Desc desc({buffer->begin(), buffer->end()});
 
         m_descriptions[parts[0]] = desc;
     }
 
-    co_return;
+    co_return {};
 }
 
 } // namespace bxt::Utilities::AlpmDb

@@ -42,11 +42,11 @@ template<> struct bxt::Utilities::StaticDTOMapper<Package, PackageDTO> {
             .filepath = from.filepath(),
             .signature_path = from.signature_path()};
     }
-    static Package to_entity(const PackageDTO& from) {
+    static Package::ParseResult to_entity(const PackageDTO& from) {
         auto section = SectionDTOMapper::to_entity(from.section);
         auto result = Package::from_filepath(section, from.filepath);
 
-        result.set_signature_path(from.signature_path);
+        result->set_signature_path(from.signature_path);
         return result;
     }
 };

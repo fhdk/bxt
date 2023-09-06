@@ -11,12 +11,16 @@
 #include "core/domain/value_objects/Name.h"
 #include "core/domain/value_objects/PackageArchitecture.h"
 #include "core/domain/value_objects/PackageVersion.h"
+#include "frozen/map.h"
+#include "tl/expected.hpp"
+#include "utilities/Error.h"
 
 #include <filesystem>
 #include <optional>
 #include <string>
 
 namespace bxt::Core::Domain {
+
 class Package {
 public:
     struct TId {
@@ -48,10 +52,39 @@ public:
                            architecture());
     }
 
-    static Package from_filename(const Section& section,
-                                 const std::string& filename);
-    static Package from_filepath(const Section& section,
-                                 const std::filesystem::path& filepath);
+    struct ParsingError : public bxt::Error {
+        enum class ErrorCode {
+            InvalidFilename,
+            InvalidVersion,
+            InvalidReleaseTag,
+            InvalidName,
+            InvalidEpoch
+        };
+
+        const ErrorCode error_code;
+
+        static inline const frozen::map<ErrorCode, std::string_view, 5>
+            error_messages = {
+                {ErrorCode::InvalidFilename, "Invalid package filename"},
+                {ErrorCode::InvalidVersion, "Invalid package version"},
+                {ErrorCode::InvalidReleaseTag, "Invalid package release tag"},
+                {ErrorCode::InvalidName, "Invalid package name"},
+                {ErrorCode::InvalidEpoch, "Invalid package epoch"}};
+
+        ParsingError(ErrorCode error_code) : error_code(error_code) {}
+
+        const std::string message() const noexcept override {
+            return error_messages.at(error_code).data();
+        }
+    };
+    using ParseResult = tl::expected<Package, ParsingError>;
+
+    static ParseResult from_filename(const Section& section,
+                                     const std::string& filename);
+    static ParseResult from_filepath(
+        const Section& section,
+        const std::filesystem::path& filepath,
+        const std::optional<std::filesystem::path>& signature_path = {});
 
     Section section() const { return m_section; }
 

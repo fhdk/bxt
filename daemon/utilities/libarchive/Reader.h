@@ -6,8 +6,10 @@
  */
 #pragma once
 
-#include "Exception.h"
+#include "Error.h"
 #include "Header.h"
+#include "tl/expected.hpp"
+#include "utilities/errors/Macro.h"
 
 #include <archive.h>
 #include <array>
@@ -15,32 +17,44 @@
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <variant>
 #include <vector>
 
 struct archive;
 namespace Archive {
 
-class Reader
-{
+class Reader {
 public:
     class Entry {
+        template<typename T>
+        using Result =
+            tl::expected<T, std::variant<InvalidEntryError, LibArchiveError>>;
         friend class Reader;
 
     public:
         template<std::size_t amount>
-        void read_buffer(std::array<uint8_t, amount>& buffer,
-                         std::size_t& actual) {
-            if (!m_reader) { throw InvalidEntry(); }
+        Result<void> read_buffer(std::array<uint8_t, amount>& buffer,
+                                 std::size_t& actual) {
+            if (!m_reader) { return tl::make_unexpected(InvalidEntryError()); }
 
             actual = archive_read_data(m_reader, buffer.data(), amount);
 
-            if (actual < 0) {
-                throw LibException(actual, archive_error_string(m_reader));
+            if (static_cast<int64_t>(actual) < 0) {
+                return tl::make_unexpected(LibArchiveError(m_reader));
             }
+
+            return {};
         }
-        std::vector<uint8_t> read_all();
-        std::vector<uint8_t> read(std::size_t amount);
-        void skip() { archive_read_data_skip(m_reader); }
+
+        Result<std::vector<uint8_t>> read_all();
+        Result<std::vector<uint8_t>> read(std::size_t amount);
+
+        Result<void> skip() {
+            if (archive_read_data_skip(m_reader) != ARCHIVE_OK) {
+                return tl::make_unexpected(LibArchiveError(m_reader));
+            }
+            return {};
+        }
 
     private:
         Entry(archive* a) : m_reader(a) {}
@@ -123,14 +137,13 @@ public:
     };
 
     Reader() = default;
+    BXT_DECLARE_RESULT(LibArchiveError)
 
-    void open_filename(const std::filesystem::path& path);
-    void open_memory(const std::vector<uint8_t>& byte_array);
-    void open_memory(uint8_t* data, size_t length);
+    Result<void> open_filename(const std::filesystem::path& path);
+    Result<void> open_memory(const std::vector<uint8_t>& byte_array);
+    Result<void> open_memory(uint8_t* data, size_t length);
 
-    struct archive* archive() {
-        return m_archive.get();
-    }
+    struct archive* archive() { return m_archive.get(); }
     operator struct archive *() { return m_archive.get(); }
 
     Iterator begin() {
@@ -144,15 +157,15 @@ public:
     Iterator end() { return Iterator(m_archive.get()); }
 
 private:
-    static void deleter(struct archive* a) {
+    static Result<void> deleter(struct archive* a) {
         int status = archive_read_free(a);
         if (status != ARCHIVE_OK) {
-            throw LibException(status, archive_error_string(a));
+            return tl::make_unexpected(LibArchiveError(a));
         }
+        return {};
     }
     std::unique_ptr<struct archive, decltype(&deleter)> m_archive {
         archive_read_new(), &deleter};
 };
 
 } // namespace Archive
-

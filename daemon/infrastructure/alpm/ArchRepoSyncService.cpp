@@ -23,7 +23,6 @@ coro::task<void> ArchRepoSyncService::sync(const PackageSectionDTO& section) {
 
     auto task = [this,
                  section](const auto& pkgname) -> coro::task<PackageFile> {
-
         co_return co_await download_package(section, pkgname);
     };
 
@@ -36,12 +35,15 @@ coro::task<void> ArchRepoSyncService::sync(const PackageSectionDTO& section) {
     std::vector<Package> packages_to_add;
     packages_to_add.reserve(tasks.size());
 
-    std::ranges::transform(
-        files, std::back_inserter(packages_to_add), [](const auto& file_task) {
-            auto file = file_task.return_value();
-            return Package::from_filepath(
-                SectionDTOMapper::to_entity(file.section()), file.file_path());
-        });
+    for (const auto& file_task : files) {
+        const auto file = file_task.return_value();
+        const auto package_result = Package::from_filepath(
+            SectionDTOMapper::to_entity(file.section()), file.file_path());
+
+        if (package_result.has_value()) {
+            packages_to_add.emplace_back(*package_result);
+        }
+    }
 
     co_await m_package_repository.add_async(packages_to_add);
 
@@ -99,12 +101,15 @@ coro::task<std::vector<std::string>>
 
         if (!pname.ends_with("/desc")) { continue; }
 
-        auto data = entry.read_all();
+        auto contents = entry.read_all();
 
-        Utilities::AlpmDb::Desc desc(reinterpret_cast<char*>(data.data()));
-        try {
-            result.emplace_back(desc.get("FILENAME"));
-        } catch (const std::invalid_argument& arg) {}
+        if (!contents.has_value()) { continue; }
+
+        Utilities::AlpmDb::Desc desc(reinterpret_cast<char*>(contents->data()));
+
+        const auto filename = desc.get("FILENAME");
+        if (!filename.has_value()) { continue; }
+        result.emplace_back(*filename);
     }
 
     co_return result;

@@ -64,6 +64,8 @@ coro::task<bool> PackageService::add_package(const PackageDTO package) {
 
     auto deployed_entity = PackageDTOMapper::to_entity(package);
 
+    if (!deployed_entity.has_value()) { co_return false; }
+
     auto current_entitites = m_repository.find_by_section(
         SectionDTOMapper::to_entity(package.section));
 
@@ -71,7 +73,7 @@ coro::task<bool> PackageService::add_package(const PackageDTO package) {
         std::ranges::find(current_entitites, package.name, &Package::name);
 
     if (current_entity != current_entitites.end()
-        && deployed_entity.version() <= current_entity->version()) {
+        && deployed_entity->version() <= current_entity->version()) {
         co_return false;
     }
     auto renamed_package = package;
@@ -93,7 +95,7 @@ coro::task<bool> PackageService::add_package(const PackageDTO package) {
     }
 
     co_await m_repository.add_async(
-        PackageDTOMapper::to_entity(renamed_package));
+        *PackageDTOMapper::to_entity(renamed_package));
 
     co_return true;
 }
