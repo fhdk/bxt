@@ -8,6 +8,10 @@
 
 #include "UnitOfWorkBase.h"
 #include "core/domain/events/EventBase.h"
+#include "frozen/unordered_map.h"
+#include "tl/expected.hpp"
+#include "utilities/Error.h"
+#include "utilities/errors/Macro.h"
 
 #include <any>
 #include <coro/sync_wait.hpp>
@@ -15,9 +19,9 @@
 #include <coro/when_all.hpp>
 #include <functional>
 #include <span>
+#include <vector>
 
-namespace bxt::Core::Domain
-{
+namespace bxt::Core::Domain {
 
 /**
  * @class ReadOnlyRepositoryBase
@@ -28,6 +32,35 @@ namespace bxt::Core::Domain
  * @tparam TEntity The entity type that the repository works with.
  */
 template<typename TEntity> struct ReadOnlyRepositoryBase {
+    struct Error : public bxt::Error {
+        enum class ErrorTypes {
+            EntityNotFound,
+            EntityFindError,
+            InvalidArgument,
+        };
+
+        Error(ErrorTypes error_type) : error_type(error_type) {}
+
+        Error(ErrorTypes error_type, const bxt::Error&& source)
+            : bxt::Error(std::make_unique<bxt::Error>(std::move(source))),
+              error_type(error_type) {}
+
+        const std::string message() const noexcept override {
+            return error_messages.at(error_type).data();
+        }
+
+        ErrorTypes error_type;
+
+    private:
+        static inline frozen::unordered_map<ErrorTypes, std::string_view, 3>
+            error_messages = {
+                {ErrorTypes::EntityNotFound, "Entity not found"},
+                {ErrorTypes::EntityFindError, "Error finding entity"},
+                {ErrorTypes::InvalidArgument, "Invalid argument"},
+            };
+    };
+    BXT_DECLARE_RESULT(Error)
+
     /**
      * @typedef TId
      * @brief The type of the identifier of the entity.
@@ -39,13 +72,13 @@ template<typename TEntity> struct ReadOnlyRepositoryBase {
      * @typedef TResult
      * @brief The type that represents a single result of a query.
      */
-    using TResult = std::optional<TEntity>;
+    using TResult = Result<TEntity>;
 
     /**
      * @typedef TResults
      * @brief The type that represents multiple results of a query.
      */
-    using TResults = std::vector<TEntity>;
+    using TResults = Result<std::vector<TEntity>>;
 
     virtual ~ReadOnlyRepositoryBase() = default;
 
@@ -149,7 +182,36 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity>,
     using TId = typename ReadOnlyRepositoryBase<TEntity>::TId;
     using TResult = typename ReadOnlyRepositoryBase<TEntity>::TResult;
     using TResults = typename ReadOnlyRepositoryBase<TEntity>::TResults;
-    using TEntities = TResults;
+    using TEntities = std::vector<TEntity>;
+
+    struct Error : public bxt::Error {
+        enum class ErrorTypes {
+            EntityNotFound,
+            OperationError,
+            InvalidArgument
+        };
+
+        Error(ErrorTypes error_type) : error_type(error_type) {}
+
+        Error(ErrorTypes error_type, const bxt::Error&& source)
+            : bxt::Error(std::make_unique<bxt::Error>(std::move(source))),
+              error_type(error_type) {}
+
+        const std::string message() const noexcept override {
+            return error_messages.at(error_type).data();
+        }
+
+        ErrorTypes error_type;
+
+    private:
+        static inline frozen::unordered_map<ErrorTypes, std::string_view, 3>
+            error_messages = {
+                {ErrorTypes::EntityNotFound, "Entity not found"},
+                {ErrorTypes::OperationError, "Operation error"},
+                {ErrorTypes::InvalidArgument, "Invalid argument"},
+            };
+    };
+    BXT_DECLARE_RESULT(Error)
 
     virtual ~ReadWriteRepositoryBase() = default;
 
@@ -160,15 +222,15 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity>,
      * @return coro::task<void> A task that represents the asynchronous
      * operation.
      */
-    virtual coro::task<void> add_async(const TEntity entity) = 0;
+    virtual coro::task<Result<void>> add_async(const TEntity entity) = 0;
 
     /**
      * @brief Synchronously adds a new entity to the repository.
      *
      * @param entity The entity to be added.
      */
-    virtual void add(const TEntity& entity) {
-        coro::sync_wait(add_async(entity));
+    virtual Result<void> add(const TEntity& entity) {
+        return coro::sync_wait(add_async(entity));
     }
 
     /**
@@ -178,14 +240,14 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity>,
      * @return coro::task<void> A task that represents the asynchronous
      * operation.
      */
-    virtual coro::task<void> add_async(const TResults entities) {
-        std::vector<coro::task<void>> tasks;
+    virtual coro::task<Result<void>> add_async(const TEntities entities) {
+        std::vector<coro::task<Result<void>>> tasks;
         for (const auto& entity : entities) {
             tasks.push_back(add_async(entity));
         }
 
         co_await coro::when_all(std::move(tasks));
-        co_return;
+        co_return {};
     }
 
     /**
@@ -193,8 +255,8 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity>,
      *
      * @param entities The entities to be added.
      */
-    virtual void add(const TResults& entities) {
-        coro::sync_wait(add_async(entities));
+    virtual Result<void> add(const TEntities& entities) {
+        return coro::sync_wait(add_async(entities));
     }
 
     /**
@@ -204,15 +266,15 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity>,
      * @return coro::task<void> A task that represents the asynchronous
      * operation.
      */
-    virtual coro::task<void> update_async(const TEntity entity) = 0;
+    virtual coro::task<Result<void>> update_async(const TEntity entity) = 0;
 
     /**
      * @brief Synchronously updates an existing entity in the repository.
      *
      * @param entity The entity to be updated.
      */
-    virtual void update(const TEntity& entity) {
-        coro::sync_wait(update_async(entity));
+    virtual Result<void> update(const TEntity& entity) {
+        return coro::sync_wait(update_async(entity));
     }
 
     /**
@@ -223,14 +285,14 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity>,
      * @return coro::task<void> A task that represents the asynchronous
      * operation.
      */
-    virtual coro::task<void> update_async(const TResults entities) {
-        std::vector<coro::task<void>> tasks;
+    virtual coro::task<Result<void>> update_async(const TEntities entities) {
+        std::vector<coro::task<Result<void>>> tasks;
         for (auto& entity : entities) {
             tasks.push_back(update_async(entity));
         }
 
         co_await coro::when_all(std::move(tasks));
-        co_return;
+        co_return {};
     }
 
     /**
@@ -239,8 +301,8 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity>,
      *
      * @param entities The entities to be updated.
      */
-    virtual void update(const TResults& entities) {
-        coro::sync_wait(update_async(entities));
+    virtual Result<void> update(const TEntities& entities) {
+        return coro::sync_wait(update_async(entities));
     }
 
     /**
@@ -250,14 +312,14 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity>,
      * @return coro::task<void> A task that represents the asynchronous
      * operation.
      */
-    virtual coro::task<void> remove_async(const TId id) = 0;
+    virtual coro::task<Result<void>> remove_async(const TId id) = 0;
 
     /**
      * @brief Synchronously removes an entity from the repository.
      *
      * @param id The ID of the entity to be removed.
      */
-    virtual void remove(const TId& id) {
+    virtual Result<void> remove(const TId& id) {
         coro::sync_wait(remove_async(TId(id)));
     }
 
@@ -268,14 +330,14 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity>,
      * @return coro::task<void> A task that represents the asynchronous
      * operation.
      */
-    virtual coro::task<void> remove_async(const std::vector<TId> ids) {
-        std::vector<coro::task<void>> tasks;
+    virtual coro::task<Result<void>> remove_async(const std::vector<TId> ids) {
+        std::vector<coro::task<Result<void>>> tasks;
         for (auto& id : ids) {
             tasks.push_back(remove_async(id));
         }
 
         co_await coro::when_all(std::move(tasks));
-        co_return;
+        co_return {};
     }
 
     /**
@@ -283,8 +345,8 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity>,
      *
      * @param ids The IDs of the entities to be removed.
      */
-    virtual void remove(const std::vector<TId>& ids) {
-        coro::sync_wait(remove_async(ids));
+    virtual Result<void> remove(const std::vector<TId>& ids) {
+        return coro::sync_wait(remove_async(ids));
     }
 
     virtual std::vector<Events::EventPtr> event_store() const = 0;

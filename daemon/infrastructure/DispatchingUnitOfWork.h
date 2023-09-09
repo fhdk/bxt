@@ -20,14 +20,15 @@ public:
         m_dispatcher = &dispatcher;
     }
 
-    virtual coro::task<void> commit_async() {
+    virtual coro::task<Core::Domain::UnitOfWorkBase::Result<void>>
+        commit_async() {
         co_await TBase::commit_async();
 
         if (m_dispatcher) {
             co_await m_dispatcher->dispatch_async(TBase::event_store());
         }
 
-        co_return;
+        co_return {};
     }
 
 private:

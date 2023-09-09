@@ -8,6 +8,7 @@
 
 #include "core/application/dtos/UserDTO.h"
 #include "core/domain/events/UserEvents.h"
+#include "core/domain/repositories/UnitOfWorkBase.h"
 
 #include <boost/uuid/uuid_io.hpp>
 #include <iostream>
@@ -23,15 +24,15 @@ coro::task<UserRepository::TResult>
 }
 
 coro::task<UserRepository::TResult>
-    UserRepository::find_first_async(std::function<bool(const User &)>) {
+    UserRepository::find_first_async(std::function<bool(const User&)>) {
 }
 
 coro::task<UserRepository::TResults>
-    UserRepository::find_async(std::function<bool(const User &)>) {
+    UserRepository::find_async(std::function<bool(const User&)>) {
 }
 
 coro::task<UserRepository::TResults> UserRepository::all_async() {
-    UserRepository::TResults results;
+    UserRepository::TEntities results;
     auto rotxn = lmdb::txn::begin(m_environment->env(), nullptr, MDB_RDONLY);
 
     {
@@ -55,21 +56,25 @@ coro::task<UserRepository::TResults> UserRepository::all_async() {
     co_return results;
 }
 
-coro::task<void> UserRepository::add_async(const User entity) {
+coro::task<UserRepository::WriteResult<void>>
+    UserRepository::add_async(const User entity) {
     m_to_add.emplace_back(entity);
-    co_return;
+    co_return {};
 }
 
-coro::task<void> UserRepository::remove_async(const TId id) {
+coro::task<UserRepository::WriteResult<void>>
+    UserRepository::remove_async(const TId id) {
     m_to_remove.emplace_back(id);
 
-    co_return;
+    co_return {};
 }
 
-coro::task<void> UserRepository::update_async(const User entity) {
+coro::task<UserRepository::WriteResult<void>>
+    UserRepository::update_async(const User entity) {
+    co_return {};
 }
 
-coro::task<void> UserRepository::commit_async() {
+coro::task<UnitOfWorkBase::Result<void>> UserRepository::commit_async() {
     std::vector<coro::task<bool>> tasks;
 
     for (const auto& entity : m_to_add) {
@@ -89,12 +94,16 @@ coro::task<void> UserRepository::commit_async() {
     }
 
     co_await coro::when_all(std::move(tasks));
+
+    co_return {};
 }
 
-coro::task<void> UserRepository::rollback_async() {
+coro::task<UnitOfWorkBase::Result<void>> UserRepository::rollback_async() {
     m_to_add.clear();
     m_to_remove.clear();
     m_to_update.clear();
+
+    return {};
 }
 
 std::vector<Core::Domain::Events::EventPtr>

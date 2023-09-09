@@ -29,8 +29,7 @@ public:
     virtual coro::task<TResults>
         find_async(std::function<bool(const Section &)> condition) override;
 
-    virtual coro::task<std::vector<bxt::Core::Domain::Section>>
-        all_async() override;
+    virtual coro::task<TResults> all_async() override;
 
 private:
     Utilities::RepoSchema::Parser &m_parser;

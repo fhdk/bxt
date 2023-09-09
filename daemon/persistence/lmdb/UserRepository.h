@@ -8,6 +8,8 @@
 
 #include "core/application/dtos/UserDTO.h"
 #include "core/domain/events/EventBase.h"
+#include "core/domain/repositories/RepositoryBase.h"
+#include "core/domain/repositories/UnitOfWorkBase.h"
 #include "core/domain/repositories/UserRepository.h"
 #include "utilities/lmdb/Database.h"
 #include "utilities/lmdb/Environment.h"
@@ -19,6 +21,9 @@ namespace bxt::Persistence {
 
 class UserRepository : public bxt::Core::Domain::UserRepository {
     using User = bxt::Core::Domain::User;
+    template<typename T>
+    using WriteResult =
+        bxt::Core::Domain::ReadWriteRepositoryBase<User>::template Result<T>;
 
 public:
     UserRepository(std::shared_ptr<bxt::Utilities::LMDB::Environment> env)
@@ -33,15 +38,16 @@ public:
 
     virtual coro::task<TResults> all_async() override;
 
-    virtual coro::task<void> add_async(const User entity) override;
+    virtual coro::task<WriteResult<void>> add_async(const User entity) override;
 
-    virtual coro::task<void> remove_async(const TId id) override;
+    virtual coro::task<WriteResult<void>> remove_async(const TId id) override;
 
-    virtual coro::task<void> update_async(const User entity) override;
+    virtual coro::task<WriteResult<void>>
+        update_async(const User entity) override;
 
-    virtual coro::task<void> commit_async() override;
+    virtual coro::task<UnitOfWorkBase::Result<void>> commit_async() override;
 
-    virtual coro::task<void> rollback_async() override;
+    virtual coro::task<UnitOfWorkBase::Result<void>> rollback_async() override;
 
     virtual std::vector<Core::Domain::Events::EventPtr>
         event_store() const override;

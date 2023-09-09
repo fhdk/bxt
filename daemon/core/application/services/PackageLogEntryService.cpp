@@ -6,6 +6,8 @@
  */
 #include "PackageLogEntryService.h"
 
+#include "core/application/dtos/PackageDTO.h"
+#include "core/application/dtos/PackageLogEntryDTO.h"
 #include "core/domain/events/PackageEvents.h"
 
 namespace bxt::Core::Application {
@@ -39,12 +41,13 @@ void PackageLogEntryService::init() {
 coro::task<std::vector<PackageLogEntryDTO>> PackageLogEntryService::events() {
     std::vector<PackageLogEntryDTO> result;
 
-    auto entities = co_await m_repository.all_async();
+    const auto entities = co_await m_repository.all_async();
 
-    std::ranges::transform(
-        entities, std::back_inserter(result),
-        Utilities::StaticDTOMapper<PackageLogEntry,
-                                   PackageLogEntryDTO>::to_dto);
+    if (!entities.has_value()) { co_return result; }
+
+    result.reserve(entities->size());
+    std::ranges::transform(*entities, std::back_inserter(result),
+                           PackageLogEntryDTOMapper::to_dto);
 
     co_return result;
 }

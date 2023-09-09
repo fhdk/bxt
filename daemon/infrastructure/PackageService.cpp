@@ -69,10 +69,12 @@ coro::task<bool> PackageService::add_package(const PackageDTO package) {
     auto current_entitites = m_repository.find_by_section(
         SectionDTOMapper::to_entity(package.section));
 
-    auto current_entity =
-        std::ranges::find(current_entitites, package.name, &Package::name);
+    if (!current_entitites.has_value()) { co_return false; }
 
-    if (current_entity != current_entitites.end()
+    auto current_entity =
+        std::ranges::find(*current_entitites, package.name, &Package::name);
+
+    if (current_entity != current_entitites->end()
         && deployed_entity->version() <= current_entity->version()) {
         co_return false;
     }
@@ -103,12 +105,14 @@ coro::task<bool> PackageService::add_package(const PackageDTO package) {
 coro::task<std::vector<PackageDTO>>
     PackageService::get_packages(const PackageSectionDTO section_dto) const {
     auto section = SectionDTOMapper::to_entity(section_dto);
+    std::vector<PackageDTO> result;
 
     auto result_entities = co_await m_repository.find_by_section_async(section);
 
-    std::vector<PackageDTO> result;
-    result.reserve(result_entities.size());
-    std::ranges::transform(result_entities, std::back_inserter(result),
+    if (!result_entities.has_value()) { co_return result; }
+
+    result.reserve(result_entities->size());
+    std::ranges::transform(*result_entities, std::back_inserter(result),
                            PackageDTOMapper::to_dto);
 
     co_return result;

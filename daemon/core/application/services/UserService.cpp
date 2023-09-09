@@ -27,12 +27,13 @@ coro::task<bool>
 
 coro::task<std::vector<bxt::Core::Application::UserDTO>>
     bxt::Core::Application::UserService::get_users() const {
-    auto values = co_await m_repository.all_async();
-
     std::vector<bxt::Core::Application::UserDTO> result;
-    result.reserve(values.size());
 
-    std::ranges::transform(values, std::back_inserter(result),
+    const auto values = co_await m_repository.all_async();
+    if (!values.has_value()) { co_return result; }
+
+    result.reserve(values->size());
+    std::ranges::transform(*values, std::back_inserter(result),
                            UserDTOMapper::to_dto);
 
     co_return result;

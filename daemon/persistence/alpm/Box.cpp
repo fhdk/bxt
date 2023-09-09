@@ -9,6 +9,7 @@
 #include "core/domain/events/PackageEvents.h"
 #include "coro/sync_wait.hpp"
 #include "fmt/core.h"
+#include "utilities/alpmdb/Database.h"
 
 #include <fmt/format.h>
 #include <functional>
@@ -31,27 +32,28 @@ coro::task<Box::TResults>
 coro::task<Box::TResults> Box::all_async() {
 }
 
-coro::task<void> Box::add_async(const Package entity) {
+coro::task<Box::WriteResult<void>> Box::add_async(const Package entity) {
     m_to_add.emplace_back(entity);
-    co_return;
+    co_return {};
 }
 
-coro::task<void> Box::remove_async(const TId entity) {
+coro::task<Box::WriteResult<void>> Box::remove_async(const TId entity) {
     m_to_remove.emplace_back(entity);
-    co_return;
+    co_return {};
 }
 
-coro::task<void> Box::add_async(const std::vector<Package> entities) {
+coro::task<Box::WriteResult<void>>
+    Box::add_async(const std::vector<Package> entities) {
     m_to_add.insert(m_to_add.end(), entities.begin(), entities.end());
-    co_return;
+    co_return {};
 }
 
-coro::task<void> Box::update_async(const Package entity) {
+coro::task<Box::WriteResult<void>> Box::update_async(const Package entity) {
     m_to_update.emplace_back(entity);
-    co_return;
+    co_return {};
 }
 
-coro::task<std::vector<Core::Domain::Package>>
+coro::task<Box::TResults>
     Box::find_by_section_async(const Core::Domain::Section section) const {
     auto packages = m_map.at(SectionDTOMapper::to_dto(section))
                         .description_values("FILENAME");
@@ -73,7 +75,7 @@ coro::task<std::vector<Core::Domain::Package>>
     co_return result;
 }
 
-coro::task<std::vector<Package>> Box::find_by_section_async(
+coro::task<Box::TResults> Box::find_by_section_async(
     const Section section,
     const std::function<bool(const Package &)> predicate) const {
     auto packages = m_map.at(SectionDTOMapper::to_dto(section))
@@ -85,20 +87,17 @@ coro::task<std::vector<Package>> Box::find_by_section_async(
     result.reserve(packages->size());
 
     for (const auto &package_name : *packages) {
-        const auto &package =
+        const auto package =
             Core::Domain::Package::from_filename(section, package_name);
-        if (package.has_value()) { result.emplace_back(*package); }
+        if (package.has_value() && predicate(*package)) {
+            result.emplace_back(*package);
+        }
     }
 
-    const auto ret = std::ranges::remove_if(
-        result, [predicate](const Package &pkg) { return !predicate(pkg); });
-
-    result.erase(ret.begin(), ret.end());
-
-    co_return {result.begin(), result.end()};
+    co_return result;
 }
 
-coro::task<void> Box::commit_async() {
+coro::task<UnitOfWorkBase::Result<void>> Box::commit_async() {
     phmap::node_hash_map<PackageSectionDTO, std::set<std::string>> paths_to_add;
 
     for (const auto &entity : m_to_add) {
@@ -130,7 +129,7 @@ coro::task<void> Box::commit_async() {
 
         m_event_store.emplace_back(event);
     }
-    std::vector<coro::task<bxt::Utilities::AlpmDb::DatabaseResult<void>>> tasks;
+    std::vector<coro::task<Utilities::AlpmDb::Database::Result<void>>> tasks;
 
     tasks.reserve(paths_to_add.size());
 
@@ -145,15 +144,15 @@ coro::task<void> Box::commit_async() {
 
     co_await coro::when_all(std::move(tasks));
 
-    co_return;
+    co_return {};
 }
 
-coro::task<void> Box::rollback_async() {
+coro::task<UnitOfWorkBase::Result<void>> Box::rollback_async() {
     m_to_add.clear();
     m_to_remove.clear();
     m_to_update.clear();
 
-    co_return;
+    co_return {};
 }
 
 std::vector<Events::EventPtr> Box::event_store() const {

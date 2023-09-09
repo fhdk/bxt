@@ -24,7 +24,7 @@ coro::task<SectionRepository::TResults>
         std::function<bool(const Section&)> condition) {
 }
 
-coro::task<std::vector<Section>> SectionRepository::all_async() {
+coro::task<SectionRepository::TResults> SectionRepository::all_async() {
     const auto& sections = m_parser.sections();
 
     std::vector<Section> result;
@@ -36,7 +36,7 @@ coro::task<std::vector<Section>> SectionRepository::all_async() {
                            section.architecture);
         });
 
-    co_return {result.begin(), result.end()};
+    co_return result;
 }
 
 } // namespace bxt::Persistence

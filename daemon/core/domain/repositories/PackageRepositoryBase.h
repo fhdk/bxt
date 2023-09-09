@@ -17,18 +17,23 @@
 
 namespace bxt::Core::Domain {
 struct PackageRepositoryBase : public ReadWriteRepositoryBase<Package> {
-    virtual coro::task<std::vector<Package>>
+    template<typename T>
+    using ReadResult = ReadOnlyRepositoryBase<Package>::Result<T>;
+    template<typename T>
+    using WriteResult = ReadWriteRepositoryBase<Package>::Result<T>;
+
+    virtual coro::task<TResults>
         find_by_section_async(const Section section) const = 0;
 
-    virtual std::vector<Package> find_by_section(const Section& section) {
+    virtual TResults find_by_section(const Section& section) {
         return coro::sync_wait(find_by_section_async(section));
     }
 
-    virtual coro::task<std::vector<Package>> find_by_section_async(
+    virtual coro::task<TResults> find_by_section_async(
         const Section section,
         const std::function<bool(const Package& pkg)> predicate) const = 0;
 
-    virtual std::vector<Package> find_by_section(
+    virtual TResults find_by_section(
         const Section section,
         const std::function<bool(const Package& pkg)> predicate) const {
         return coro::sync_wait(find_by_section_async(section, predicate));
