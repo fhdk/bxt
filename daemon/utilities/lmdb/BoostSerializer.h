@@ -11,7 +11,12 @@
 #include "core/application/dtos/PackageSectionDTO.h"
 #include "core/application/dtos/UserDTO.h"
 #include "core/domain/entities/PackageLogEntry.h"
+#include "nonstd/expected.hpp"
+#include "utilities/Error.h"
+#include "utilities/errors/Macro.h"
+#include "utilities/lmdb/Error.h"
 
+#include <boost/archive/archive_exception.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/serialization/serialization.hpp>
@@ -68,23 +73,48 @@ void boost::serialization::serialize(
 }
 
 namespace bxt::Utilities::LMDB {
-template<typename T> struct BoostSerializer {
-    static std::string serialize(const T &value) {
-        std::stringstream entity_stream;
-        boost::archive::text_oarchive entity_archive(entity_stream);
-        entity_archive << value;
 
-        return entity_stream.str();
+struct BoostSerializationError : public bxt::Error {
+    BoostSerializationError(boost::archive::archive_exception &&exception)
+        : exception(exception) {};
+
+    const std::string message() const noexcept override {
+        return exception.what();
     }
 
-    static T deserialize(std::string_view value) {
-        std::stringstream entity_stream((std::string(value)));
-        boost::archive::text_iarchive entity_archive(entity_stream);
+    boost::archive::archive_exception exception;
+};
 
-        T result;
-        entity_archive >> result;
+template<typename TSerializable> struct BoostSerializer {
+    BXT_DECLARE_RESULT(SerializationError);
 
-        return result;
+    static Result<std::string> serialize(const TSerializable &value) {
+        try {
+            std::stringstream entity_stream;
+            boost::archive::text_oarchive entity_archive(entity_stream);
+
+            entity_archive << value;
+
+            return entity_stream.str();
+        } catch (boost::archive::archive_exception &e) {
+            return bxt::make_error_with_source<SerializationError>(
+                BoostSerializationError(std::move(e)));
+        }
+    }
+
+    static Result<TSerializable> deserialize(std::string_view value) {
+        try {
+            std::stringstream entity_stream((std::string(value)));
+            boost::archive::text_iarchive entity_archive(entity_stream);
+
+            TSerializable result;
+            entity_archive >> result;
+
+            return result;
+        } catch (boost::archive::archive_exception &e) {
+            return bxt::make_error_with_source<SerializationError>(
+                BoostSerializationError(std::move(e)));
+        }
     }
 };
 } // namespace bxt::Utilities::LMDB

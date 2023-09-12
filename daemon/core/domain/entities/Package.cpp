@@ -16,7 +16,7 @@
 #include <vector>
 
 namespace bxt::Core::Domain {
-tl::expected<Package, Package::ParsingError>
+nonstd::expected<Package, Package::ParsingError>
     Package::from_filename(const Section& section,
                            const std::string& filename) {
     std::vector<std::string> substrings;
@@ -26,7 +26,7 @@ tl::expected<Package, Package::ParsingError>
     auto subsize = substrings.size();
 
     if (subsize < 4) {
-        return tl::make_unexpected(Package::ParsingError(
+        return nonstd::make_unexpected(Package::ParsingError(
             Package::ParsingError::ErrorCode::InvalidFilename));
     }
 
@@ -81,7 +81,7 @@ tl::expected<Package, Package::ParsingError>
         } else if (!valid_name) {
             error_code = Package::ParsingError::ErrorCode::InvalidName;
         }
-        return tl::make_unexpected(Package::ParsingError(error_code));
+        return nonstd::make_unexpected(Package::ParsingError(error_code));
     }
 
     std::optional<int> epoch_int;
@@ -93,7 +93,7 @@ tl::expected<Package, Package::ParsingError>
                    PackageArchitecture(), filename);
 }
 
-tl::expected<Package, Package::ParsingError> Package::from_filepath(
+nonstd::expected<Package, Package::ParsingError> Package::from_filepath(
     const Section& section,
     const std::filesystem::path& filepath,
     const std::optional<std::filesystem::path>& signature_path) {

@@ -71,7 +71,8 @@ namespace Core {
     namespace Domain {
 
         struct UserRepository
-            : kgr::abstract_service<bxt::Core::Domain::UserRepository> {};
+            : kgr::abstract_service<
+                  bxt::Core::Domain::ReadWriteRepositoryBase<User>> {};
 
         struct PackageRepositoryBase
             : kgr::abstract_service<bxt::Core::Domain::PackageRepositoryBase> {
@@ -171,7 +172,7 @@ namespace Persistence {
 
     struct UserRepository
         : kgr::single_service<
-              bxt::Persistence::UserRepository,
+              bxt::Persistence::LMDB::UserRepository,
               kgr::dependency<di::Utilities::LMDB::Environment>>,
           kgr::overrides<di::Core::Domain::UserRepository> {};
 

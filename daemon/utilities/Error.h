@@ -6,6 +6,7 @@
  */
 #pragma once
 #include "fmt/format.h"
+#include "nonstd/expected.hpp"
 
 #include <memory>
 #include <stdexcept>
@@ -47,5 +48,22 @@ struct Error {
         return result;
     }
 };
+
+template<typename TError, typename TSource, typename... TArgs>
+nonstd::unexpected<TError> make_error_with_source(TSource&& source,
+                                                  TArgs... ctorargs) {
+    TError result(ctorargs...);
+
+    result.source = std::make_unique<TSource>(std::move(source));
+
+    return nonstd::make_unexpected(result);
+}
+
+template<typename TError, typename... TArgs>
+nonstd::unexpected<TError> make_error(TArgs... ctorargs) {
+    TError result(ctorargs...);
+
+    return nonstd::make_unexpected(result);
+}
 
 } // namespace bxt

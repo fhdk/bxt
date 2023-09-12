@@ -6,7 +6,7 @@
  */
 #include "Database.h"
 
-#include "tl/expected.hpp"
+#include "nonstd/expected.hpp"
 #include "utilities/Error.h"
 #include "utilities/libarchive/Error.h"
 
@@ -30,8 +30,8 @@ coro::task<Database::Result<void>>
     for (const auto& package : packages) {
         auto description = Desc::parse_package(package);
         if (!description.has_value()) {
-            co_return tl::unexpected(
-                DatabaseError(DatabaseError::ErrorType::InvalidPackageError));
+            co_return nonstd::unexpected(
+                DatabaseError(DatabaseError::ErrorType::InvalidEntityError));
         }
         const auto name = description->get("NAME");
 
@@ -150,7 +150,7 @@ coro::task<Database::Result<void>> Database::load() {
         db_reader.open_filename(m_path / fmt::format("{}.db.tar.zst", m_name));
 
     if (!opened.has_value()) {
-        co_return tl::unexpected(DatabaseError {
+        co_return nonstd::unexpected(DatabaseError {
             DatabaseError::ErrorType::IOError, std::move(opened.error())});
     }
 
@@ -171,11 +171,11 @@ coro::task<Database::Result<void>> Database::load() {
         if (!buffer.has_value()) {
             if (const auto& buffer_err =
                     std::get_if<Archive::InvalidEntryError>(&buffer.error())) {
-                co_return tl::unexpected(DatabaseError(
+                co_return nonstd::unexpected(DatabaseError(
                     DatabaseError::ErrorType::DatabaseMalformedError,
                     std::move(*buffer_err)));
             } else {
-                co_return tl::unexpected(DatabaseError(
+                co_return nonstd::unexpected(DatabaseError(
                     DatabaseError::ErrorType::DatabaseMalformedError,
                     std::move(*std::get_if<Archive::LibArchiveError>(
                         &buffer.error()))));

@@ -10,6 +10,5 @@
 #include "core/domain/repositories/RepositoryBase.h"
 
 namespace bxt::Core::Domain {
-struct UserRepository : public ReadWriteRepositoryBase<User> {
-};
+using UserRepository = ReadWriteRepositoryBase<User>;
 } // namespace bxt::Core::Domain

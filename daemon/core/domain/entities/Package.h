@@ -12,10 +12,10 @@
 #include "core/domain/value_objects/PackageArchitecture.h"
 #include "core/domain/value_objects/PackageVersion.h"
 #include "frozen/map.h"
-#include "tl/expected.hpp"
 #include "utilities/Error.h"
 
 #include <filesystem>
+#include <nonstd/expected.hpp>
 #include <optional>
 #include <string>
 
@@ -77,7 +77,7 @@ public:
             return error_messages.at(error_code).data();
         }
     };
-    using ParseResult = tl::expected<Package, ParsingError>;
+    using ParseResult = nonstd::expected<Package, ParsingError>;
 
     static ParseResult from_filename(const Section& section,
                                      const std::string& filename);

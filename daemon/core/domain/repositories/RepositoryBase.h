@@ -9,7 +9,7 @@
 #include "UnitOfWorkBase.h"
 #include "core/domain/events/EventBase.h"
 #include "frozen/unordered_map.h"
-#include "tl/expected.hpp"
+#include "nonstd/expected.hpp"
 #include "utilities/Error.h"
 #include "utilities/errors/Macro.h"
 
@@ -22,6 +22,35 @@
 #include <vector>
 
 namespace bxt::Core::Domain {
+struct ReadError : public bxt::Error {
+    enum class ErrorTypes {
+        EntityNotFound,
+        EntityFindError,
+        InvalidArgument,
+    };
+
+    ReadError() = default;
+
+    ReadError(ErrorTypes error_type) : error_type(error_type) {}
+
+    ReadError(ErrorTypes error_type, const bxt::Error&& source)
+        : bxt::Error(std::make_unique<bxt::Error>(std::move(source))),
+          error_type(error_type) {}
+
+    const std::string message() const noexcept override {
+        return error_messages.at(error_type).data();
+    }
+
+    ErrorTypes error_type;
+
+private:
+    static inline frozen::unordered_map<ErrorTypes, std::string_view, 3>
+        error_messages = {
+            {ErrorTypes::EntityNotFound, "Entity not found"},
+            {ErrorTypes::EntityFindError, "Error finding entity"},
+            {ErrorTypes::InvalidArgument, "Invalid argument"},
+        };
+};
 
 /**
  * @class ReadOnlyRepositoryBase
@@ -32,34 +61,7 @@ namespace bxt::Core::Domain {
  * @tparam TEntity The entity type that the repository works with.
  */
 template<typename TEntity> struct ReadOnlyRepositoryBase {
-    struct Error : public bxt::Error {
-        enum class ErrorTypes {
-            EntityNotFound,
-            EntityFindError,
-            InvalidArgument,
-        };
-
-        Error(ErrorTypes error_type) : error_type(error_type) {}
-
-        Error(ErrorTypes error_type, const bxt::Error&& source)
-            : bxt::Error(std::make_unique<bxt::Error>(std::move(source))),
-              error_type(error_type) {}
-
-        const std::string message() const noexcept override {
-            return error_messages.at(error_type).data();
-        }
-
-        ErrorTypes error_type;
-
-    private:
-        static inline frozen::unordered_map<ErrorTypes, std::string_view, 3>
-            error_messages = {
-                {ErrorTypes::EntityNotFound, "Entity not found"},
-                {ErrorTypes::EntityFindError, "Error finding entity"},
-                {ErrorTypes::InvalidArgument, "Invalid argument"},
-            };
-    };
-    BXT_DECLARE_RESULT(Error)
+    BXT_DECLARE_RESULT(ReadError)
 
     /**
      * @typedef TId
@@ -163,6 +165,30 @@ template<typename TEntity> struct ReadOnlyRepositoryBase {
     virtual TResults all() { return coro::sync_wait(all_async()); }
 };
 
+struct WriteError : public bxt::Error {
+    enum class ErrorTypes { EntityNotFound, OperationError, InvalidArgument };
+
+    WriteError(ErrorTypes error_type) : error_type(error_type) {}
+
+    WriteError(ErrorTypes error_type, const bxt::Error&& source)
+        : bxt::Error(std::make_unique<bxt::Error>(std::move(source))),
+          error_type(error_type) {}
+
+    const std::string message() const noexcept override {
+        return error_messages.at(error_type).data();
+    }
+
+    ErrorTypes error_type;
+
+private:
+    static inline frozen::unordered_map<ErrorTypes, std::string_view, 3>
+        error_messages = {
+            {ErrorTypes::EntityNotFound, "Entity not found"},
+            {ErrorTypes::OperationError, "Operation error"},
+            {ErrorTypes::InvalidArgument, "Invalid argument"},
+        };
+};
+
 /**
  * @class ReadWriteRepositoryBase
  *
@@ -184,34 +210,7 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity>,
     using TResults = typename ReadOnlyRepositoryBase<TEntity>::TResults;
     using TEntities = std::vector<TEntity>;
 
-    struct Error : public bxt::Error {
-        enum class ErrorTypes {
-            EntityNotFound,
-            OperationError,
-            InvalidArgument
-        };
-
-        Error(ErrorTypes error_type) : error_type(error_type) {}
-
-        Error(ErrorTypes error_type, const bxt::Error&& source)
-            : bxt::Error(std::make_unique<bxt::Error>(std::move(source))),
-              error_type(error_type) {}
-
-        const std::string message() const noexcept override {
-            return error_messages.at(error_type).data();
-        }
-
-        ErrorTypes error_type;
-
-    private:
-        static inline frozen::unordered_map<ErrorTypes, std::string_view, 3>
-            error_messages = {
-                {ErrorTypes::EntityNotFound, "Entity not found"},
-                {ErrorTypes::OperationError, "Operation error"},
-                {ErrorTypes::InvalidArgument, "Invalid argument"},
-            };
-    };
-    BXT_DECLARE_RESULT(Error)
+    BXT_DECLARE_RESULT(WriteError)
 
     virtual ~ReadWriteRepositoryBase() = default;
 

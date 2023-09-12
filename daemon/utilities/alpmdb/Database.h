@@ -5,9 +5,10 @@
  *
  */
 #pragma once
-#include "tl/expected.hpp"
+#include "nonstd/expected.hpp"
 #include "utilities/Error.h"
 #include "utilities/alpmdb/Desc.h"
+#include "utilities/errors/DatabaseError.h"
 
 #include <boost/log/trivial.hpp>
 #include <coro/event.hpp>
@@ -27,32 +28,6 @@
 #include <string_view>
 
 namespace bxt::Utilities::AlpmDb {
-
-class DatabaseError : public bxt::Error {
-public:
-    enum class ErrorType {
-        IOError,
-        DatabaseMalformedError,
-        InvalidPackageError
-    };
-    DatabaseError(ErrorType error_type) : error_type(error_type) {}
-
-    DatabaseError(ErrorType error_type, const bxt::Error&& source)
-        : bxt::Error(std::make_unique<bxt::Error>(std::move(source))),
-          error_type(error_type) {}
-
-    static inline frozen::map<ErrorType, std::string_view, 3> messages {
-        {ErrorType::IOError, "IO error"},
-        {ErrorType::DatabaseMalformedError, "Database is malformed"},
-        {ErrorType::InvalidPackageError, "Invalid package"}};
-
-    const std::string message() const noexcept override {
-        return messages.at(error_type).data();
-    }
-
-private:
-    ErrorType error_type;
-};
 
 class Database {
 public:

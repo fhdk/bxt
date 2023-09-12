@@ -13,7 +13,10 @@
 #include "core/domain/repositories/UnitOfWorkBase.h"
 #include "coro/task.hpp"
 #include "coro/when_all.hpp"
+#include "nonstd/expected.hpp"
+#include "utilities/Error.h"
 #include "utilities/StaticDTOMapper.h"
+#include "utilities/errors/DatabaseError.h"
 #include "utilities/lmdb/Database.h"
 #include "utilities/lmdb/Environment.h"
 
@@ -21,6 +24,7 @@
 #include <vector>
 
 namespace bxt::Persistence {
+
 template<typename TEntity, typename TDTO>
 class LmdbRepositoryBase
     : public bxt::Core::Domain::ReadWriteRepositoryBase<TEntity> {
@@ -46,7 +50,16 @@ public:
     using TMapper = Utilities::StaticDTOMapper<TEntity, TDTO>;
 
     virtual coro::task<TResult> find_by_id_async(TId id) override {
-        //        co_return co_await m_db.get(std::string(id));
+        using namespace bxt::Core::Domain;
+
+        const auto entity = co_await m_db.get(std::string(id));
+
+        if (!entity.has_value()) {
+            co_return bxt::make_error<ReadError>(
+                ReadError::ErrorTypes::EntityNotFound);
+        }
+
+        co_return TMapper::to_entity(*entity);
     }
     virtual coro::task<TResult>
         find_first_async(std::function<bool(const TEntity &)>) override {}
@@ -64,11 +77,17 @@ public:
             std::string_view key, value;
             if (cursor.get(key, value, MDB_FIRST)) {
                 do {
-                    TDTO res =
+                    auto res =
                         Utilities::LMDB::BoostSerializer<TDTO>::deserialize(
                             value);
 
-                    results.emplace_back(TMapper::to_entity(res));
+                    if (!res.has_value()) {
+                        co_return bxt::make_error_with_source<ReadError>(
+                            std::move(res.error()),
+                            ReadError::ErrorTypes::EntityFindError);
+                    }
+
+                    results.emplace_back(TMapper::to_entity(*res));
                 } while (cursor.get(key, value, MDB_NEXT));
             }
         }
@@ -91,14 +110,15 @@ public:
     }
 
     virtual coro::task<UnitOfWorkBase::Result<void>> commit_async() override {
-        std::vector<coro::task<bool>> tasks;
+        std::vector<coro::task<typename decltype(m_db)::template Result<bool>>>
+            tasks;
 
         for (const auto &el : m_to_add) {
             tasks.push_back(
                 m_db.put(std::string(el.id()), TMapper::to_dto(el)));
         }
         for (const auto &el : m_to_remove) {
-            tasks.push_back(m_db.del(el));
+            tasks.push_back(m_db.del(std::string(el)));
         }
 
         co_await coro::when_all(std::move(tasks));
