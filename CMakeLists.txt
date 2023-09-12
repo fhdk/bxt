@@ -18,6 +18,13 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(lmdbxx)
 
 FetchContent_Declare(
+    libcoro
+    GIT_REPOSITORY https://github.com/jbaldwin/libcoro.git
+    GIT_TAG        76ae314434a5d4ba9010628ea447746bd0a18806
+)
+FetchContent_MakeAvailable(libcoro)
+
+FetchContent_Declare(
     event-bus
     GIT_REPOSITORY https://github.com/gelldur/EventBus.git
     GIT_TAG        v3.0.3
