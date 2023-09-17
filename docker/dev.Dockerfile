@@ -8,8 +8,10 @@ RUN sed -i 's/htt[p|ps]:\/\/archive.ubuntu.com\/ubuntu\//mirror:\/\/mirrors.ubun
 RUN echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-16 main" > /etc/apt/sources.list.d/llvm.list
 RUN curl --silent --location https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
 
-RUN curl --silent --location https://deb.nodesource.com/setup_20.x | bash -
+RUN  mkdir -p /etc/apt/keyrings
+RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
 
+RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
 RUN apt update --yes
 
 RUN apt install --yes build-essential git cmake libssl-dev pip ninja-build gdb clangd-16 nodejs zstd
