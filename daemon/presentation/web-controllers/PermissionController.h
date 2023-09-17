@@ -8,7 +8,7 @@
 #pragma once
 
 #include "core/application/services/PermissionService.h"
-#include "utilities/drogon/Macros.h"
+#include "utilities/drogon/Macro.h"
 
 #include <drogon/HttpController.h>
 
@@ -28,10 +28,11 @@ public:
     BXT_JWT_ADD_METHOD_TO(PermissionController::remove_permission,
                           "/api/permissions/remove",
                           drogon::Post);
-    BXT_JWT_ADD_METHOD_TO(PermissionController::get_permissions, "/api/permissions", drogon::Get);
+    BXT_JWT_ADD_METHOD_TO(PermissionController::get_permissions,
+                          "/api/permissions",
+                          drogon::Get);
 
     METHOD_LIST_END
-
 
     drogon::Task<drogon::HttpResponsePtr>
         add_permission(drogon::HttpRequestPtr req);

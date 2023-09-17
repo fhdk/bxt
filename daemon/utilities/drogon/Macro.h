@@ -6,8 +6,7 @@
  */
 #pragma once
 
-#define BXT_ADD_METHOD_TO(...) \
-    ADD_METHOD_TO(__VA_ARGS__, drogon::Options, "bxt::UI::JwtFilter")
+#define BXT_ADD_METHOD_TO(...) ADD_METHOD_TO(__VA_ARGS__, drogon::Options)
 
 #define BXT_JWT_ADD_METHOD_TO(...) \
-    ADD_METHOD_TO(__VA_ARGS__, drogon::Options, "bxt::UI::JwtFilter")
+    ADD_METHOD_TO(__VA_ARGS__, drogon::Options, "bxt::Presentation::JwtFilter")

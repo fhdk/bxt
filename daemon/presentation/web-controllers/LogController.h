@@ -5,24 +5,28 @@
  *
  */
 #pragma once
-#include <drogon/HttpController.h>
-
 #include "core/application/services/PackageLogEntryService.h"
-#include "utilities/drogon/Macros.h"
+#include "utilities/drogon/Macro.h"
+
+#include <drogon/HttpController.h>
 
 namespace bxt::Presentation {
 
 class LogController : public drogon::HttpController<LogController, false> {
 public:
-    LogController(Core::Application::PackageLogEntryService &service): m_service(service){}
+    LogController(Core::Application::PackageLogEntryService &service)
+        : m_service(service) {}
 
     METHOD_LIST_BEGIN
 
-    BXT_ADD_METHOD_TO(LogController::get_package_logs, "/api/logs/packages", drogon::Get);
+    BXT_JWT_ADD_METHOD_TO(LogController::get_package_logs,
+                          "/api/logs/packages",
+                          drogon::Get);
 
     METHOD_LIST_END
 
-    drogon::Task<drogon::HttpResponsePtr> get_package_logs(drogon::HttpRequestPtr);
+    drogon::Task<drogon::HttpResponsePtr>
+        get_package_logs(drogon::HttpRequestPtr);
 
 private:
     Core::Application::PackageLogEntryService &m_service;
