@@ -20,7 +20,7 @@ FetchContent_MakeAvailable(lmdbxx)
 FetchContent_Declare(
     libcoro
     GIT_REPOSITORY https://github.com/jbaldwin/libcoro.git
-    GIT_TAG        76ae314434a5d4ba9010628ea447746bd0a18806
+    GIT_TAG        a56dee3217fca58f56d9e9124101fd4b7c530fbb
 )
 FetchContent_MakeAvailable(libcoro)
 
