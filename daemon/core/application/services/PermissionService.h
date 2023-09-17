@@ -7,9 +7,11 @@
 #pragma once
 
 #include "core/application/dtos/UserDTO.h"
+#include "core/application/errors/CrudError.h"
 #include "core/domain/repositories/UserRepository.h"
 #include "core/domain/services/PermissionMatcher.h"
 #include "core/domain/value_objects/Permission.h"
+#include "utilities/errors/Macro.h"
 
 #include <string>
 #include <string_view>
@@ -17,16 +19,18 @@
 namespace bxt::Core::Application {
 class PermissionService {
 public:
+    BXT_DECLARE_RESULT(CrudError)
     PermissionService(Core::Domain::UserRepository& repository,
                       Core::Domain::PermissionMatcher& matcher)
         : m_repository(repository), m_matcher(matcher) {}
 
-    coro::task<void> add(const std::string& user_name,
-                         const std::string& permission);
-    coro::task<void> remove(const std::string& user_name,
-                            const std::string& permission);
+    coro::task<Result<void>> add(const std::string& user_name,
+                                 const std::string& permission);
+    coro::task<Result<void>> remove(const std::string& user_name,
+                                    const std::string& permission);
 
-    coro::task<std::vector<std::string>> get(const std::string& user_name);
+    coro::task<Result<std::vector<std::string>>>
+        get(const std::string& user_name);
 
     coro::task<bool> check(const std::string_view permission,
                            const std::string& user_name);

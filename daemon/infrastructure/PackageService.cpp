@@ -7,6 +7,7 @@
 #include "PackageService.h"
 
 #include "core/application/dtos/PackageDTO.h"
+#include "core/application/errors/CrudError.h"
 #include "coro/task.hpp"
 #include "coro/when_all.hpp"
 
@@ -31,7 +32,7 @@ bool move_file(const std::filesystem::path &from,
 
 namespace bxt::Infrastructure {
 
-coro::task<bool> PackageService::commit_transaction(
+coro::task<PackageService::Result<void>> PackageService::commit_transaction(
     const PackageService::Transaction transaction) {
     std::vector<PackageDTO> packages_to_add;
     std::vector<Package::TId> ids_to_remove;
@@ -46,7 +47,7 @@ coro::task<bool> PackageService::commit_transaction(
                                  Name(value.second)};
         });
 
-    std::vector<coro::task<bool>> tasks;
+    std::vector<coro::task<PackageService::Result<void>>> tasks;
     for (const auto &package : transaction.to_add) {
         tasks.push_back(add_package(package));
     }
@@ -56,27 +57,35 @@ coro::task<bool> PackageService::commit_transaction(
 
     co_await m_repository.commit_async();
 
-    co_return true;
+    co_return {};
 }
 
-coro::task<bool> PackageService::add_package(const PackageDTO package) {
+coro::task<PackageService::Result<void>>
+    PackageService::add_package(const PackageDTO package) {
     std::filesystem::create_directories(m_options.pool(package.section));
 
     auto deployed_entity = PackageDTOMapper::to_entity(package);
 
-    if (!deployed_entity.has_value()) { co_return false; }
+    if (!deployed_entity.has_value()) {
+        co_return bxt::make_error<CrudError>(
+            CrudError::ErrorType::InvalidArgument);
+    }
 
     auto current_entitites = m_repository.find_by_section(
         SectionDTOMapper::to_entity(package.section));
 
-    if (!current_entitites.has_value()) { co_return false; }
+    if (!current_entitites.has_value()) {
+        co_return bxt::make_error<CrudError>(
+            CrudError::ErrorType::InvalidArgument);
+    }
 
     auto current_entity =
         std::ranges::find(*current_entitites, package.name, &Package::name);
 
     if (current_entity != current_entitites->end()
         && deployed_entity->version() <= current_entity->version()) {
-        co_return false;
+        co_return bxt::make_error<CrudError>(
+            CrudError::ErrorType::EntityAlreadyExists);
     }
     auto renamed_package = package;
 
@@ -99,10 +108,10 @@ coro::task<bool> PackageService::add_package(const PackageDTO package) {
     co_await m_repository.add_async(
         *PackageDTOMapper::to_entity(renamed_package));
 
-    co_return true;
+    co_return {};
 }
 
-coro::task<std::vector<PackageDTO>>
+coro::task<PackageService::Result<std::vector<PackageDTO>>>
     PackageService::get_packages(const PackageSectionDTO section_dto) const {
     auto section = SectionDTOMapper::to_entity(section_dto);
     std::vector<PackageDTO> result;

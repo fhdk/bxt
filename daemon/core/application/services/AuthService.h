@@ -5,7 +5,10 @@
  *
  */
 #pragma once
+#include "core/application/errors/AuthError.h"
 #include "core/domain/repositories/UserRepository.h"
+#include "utilities/Error.h"
+#include "utilities/errors/Macro.h"
 
 #include <coro/task.hpp>
 #include <jwt-cpp/jwt.h>
@@ -16,12 +19,15 @@ namespace bxt::Core::Application {
 
 class AuthService {
 public:
+    BXT_DECLARE_RESULT(AuthError);
+
     AuthService(Domain::UserRepository& user_repository)
         : m_user_repository(user_repository) {}
 
-    coro::task<bool> auth(const std::string& name, const std::string& password);
+    coro::task<Result<void>> auth(const std::string& name,
+                                  const std::string& password);
 
-    coro::task<bool> verify(const std::string& token) const;
+    coro::task<Result<void>> verify(const std::string& token) const;
 
 private:
     Domain::UserRepository& m_user_repository;

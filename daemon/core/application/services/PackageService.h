@@ -8,8 +8,12 @@
 
 #include "core/application/dtos/PackageDTO.h"
 #include "core/application/dtos/PackageSectionDTO.h"
+#include "core/application/errors/CrudError.h"
 #include "core/domain/entities/Package.h"
 #include "core/domain/repositories/PackageRepositoryBase.h"
+#include "frozen/unordered_map.h"
+#include "utilities/Error.h"
+#include "utilities/errors/Macro.h"
 
 #include <coro/task.hpp>
 #include <cstdint>
@@ -21,6 +25,8 @@ namespace bxt::Core::Application {
 
 class PackageService {
 public:
+    BXT_DECLARE_RESULT(CrudError);
+
     virtual ~PackageService() = default;
 
     struct Transaction {
@@ -28,12 +34,12 @@ public:
         std::vector<std::pair<PackageSectionDTO, std::string>> to_remove;
     };
 
-    virtual coro::task<bool>
+    virtual coro::task<Result<void>>
         commit_transaction(const Transaction transaction) = 0;
 
-    virtual coro::task<bool> add_package(const PackageDTO package) = 0;
+    virtual coro::task<Result<void>> add_package(const PackageDTO package) = 0;
 
-    virtual coro::task<std::vector<PackageDTO>>
+    virtual coro::task<Result<std::vector<PackageDTO>>>
         get_packages(const PackageSectionDTO section_dto) const = 0;
 };
 

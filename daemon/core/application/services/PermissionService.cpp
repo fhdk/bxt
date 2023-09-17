@@ -8,11 +8,15 @@
 
 namespace bxt::Core::Application {
 
-coro::task<void> PermissionService::add(const std::string &user_name,
-                                        const std::string &permission) {
+coro::task<PermissionService::Result<void>>
+    PermissionService::add(const std::string &user_name,
+                           const std::string &permission) {
     auto user = co_await m_repository.find_by_id_async(user_name);
 
-    if (!user) { co_return; }
+    if (!user.has_value()) {
+        co_return bxt::make_error_with_source<CrudError>(
+            std::move(user.error()), CrudError::ErrorType::EntityNotFound);
+    }
 
     auto perms = user->permissions();
 
@@ -22,15 +26,24 @@ coro::task<void> PermissionService::add(const std::string &user_name,
 
     auto task = m_repository.update_async(std::vector {*user});
 
-    co_await task;
+    auto result = co_await task;
 
-    co_return;
+    if (!result.has_value()) {
+        co_return bxt::make_error_with_source<CrudError>(
+            std::move(result.error()), CrudError::ErrorType::InternalError);
+    }
+
+    co_return {};
 }
-coro::task<void> PermissionService::remove(const std::string &user_name,
-                                           const std::string &permission) {
+coro::task<PermissionService::Result<void>>
+    PermissionService::remove(const std::string &user_name,
+                              const std::string &permission) {
     auto user = co_await m_repository.find_by_id_async(user_name);
 
-    if (!user) { co_return; }
+    if (!user.has_value()) {
+        co_return bxt::make_error_with_source<CrudError>(
+            std::move(user.error()), CrudError::ErrorType::EntityNotFound);
+    }
 
     auto perms = user->permissions();
     perms.erase(permission);
@@ -39,16 +52,24 @@ coro::task<void> PermissionService::remove(const std::string &user_name,
 
     auto task = m_repository.update_async(std::vector {*user});
 
-    co_await task;
+    auto result = co_await task;
 
-    co_return;
+    if (!result.has_value()) {
+        co_return bxt::make_error_with_source<CrudError>(
+            std::move(result.error()), CrudError::ErrorType::InternalError);
+    }
+
+    co_return {};
 }
 
-coro::task<std::vector<std::string>>
+coro::task<PermissionService::Result<std::vector<std::string>>>
     PermissionService::get(const std::string &user_name) {
     auto user = co_await m_repository.find_by_id_async(user_name);
 
-    if (!user) { co_return {}; }
+    if (!user.has_value()) {
+        co_return bxt::make_error_with_source<CrudError>(
+            std::move(user.error()), CrudError::ErrorType::EntityNotFound);
+    }
 
     std::vector<std::string> result;
     result.reserve(user->permissions().size());

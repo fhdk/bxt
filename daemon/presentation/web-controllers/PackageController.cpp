@@ -32,8 +32,15 @@ drogon::Task<drogon::HttpResponsePtr>
     if (key != m_key) { co_return HttpResponse::newHttpResponse(); }
 
     const auto result = HttpResponse::newHttpResponse();
-    result->setBody(std::to_string(co_await m_service.deploy_start()));
 
+    const auto start_ok = co_await m_service.deploy_start();
+
+    if (!start_ok.has_value()) {
+        result->setBody(start_ok.error().message());
+        co_return result;
+    }
+
+    result->setBody(std::to_string(*start_ok));
     co_return result;
 }
 
@@ -185,11 +192,17 @@ drogon::Task<drogon::HttpResponsePtr>
                                     const std::string &repository,
                                     const std::string &architecture) {
     PackageSectionDTO section {branch, repository, architecture};
+    Json::Value result;
 
     const auto packages = co_await m_package_service.get_packages(section);
 
-    Json::Value result;
-    for (const auto &package : packages) {
+    if (!packages.has_value()) {
+        result["status"] = "error";
+        result["message"] = packages.error().what();
+        co_return drogon::HttpResponse::newHttpJsonResponse(result);
+    }
+
+    for (const auto &package : *packages) {
         Json::Value package_json;
 
         package_json["name"] = package.name;

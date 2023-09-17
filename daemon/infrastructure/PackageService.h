@@ -21,12 +21,13 @@ public:
     PackageService(Core::Domain::PackageRepositoryBase& repository)
         : m_repository(repository) {}
 
-    virtual coro::task<bool>
+    virtual coro::task<Result<void>>
         commit_transaction(const Transaction transaction) override;
 
-    virtual coro::task<bool> add_package(const PackageDTO package) override;
+    virtual coro::task<Result<void>>
+        add_package(const PackageDTO package) override;
 
-    virtual coro::task<std::vector<PackageDTO>>
+    virtual coro::task<Result<std::vector<PackageDTO>>>
         get_packages(const PackageSectionDTO section_dto) const override;
 
 private:

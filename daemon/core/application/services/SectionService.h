@@ -8,9 +8,11 @@
 #pragma once
 
 #include "core/application/dtos/PackageSectionDTO.h"
+#include "core/application/errors/CrudError.h"
 #include "core/domain/entities/Section.h"
 #include "core/domain/repositories/RepositoryBase.h"
 #include "coro/task.hpp"
+#include "utilities/errors/Macro.h"
 
 #include <vector>
 
@@ -18,10 +20,11 @@ namespace bxt::Core::Application {
 
 class SectionService {
 public:
+    BXT_DECLARE_RESULT(CrudError)
     SectionService(Domain::ReadOnlyRepositoryBase<Domain::Section>& repository)
         : m_repository(repository) {}
 
-    coro::task<std::vector<PackageSectionDTO>> get_sections() const;
+    coro::task<Result<std::vector<PackageSectionDTO>>> get_sections() const;
 
 private:
     Domain::ReadOnlyRepositoryBase<Domain::Section>& m_repository;

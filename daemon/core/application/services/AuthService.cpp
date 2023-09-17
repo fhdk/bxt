@@ -6,16 +6,28 @@
  */
 #include "AuthService.h"
 
+#include "core/application/errors/AuthError.h"
 namespace bxt::Core::Application {
 
-coro::task<bool> AuthService::auth(const std::string &name,
-                                   const std::string &password) {
+coro::task<AuthService::Result<void>>
+    AuthService::auth(const std::string &name, const std::string &password) {
     auto entity = co_await m_user_repository.find_by_id_async(name);
 
-    co_return entity.has_value() && entity->password() == password;
+    if (!entity.has_value()) {
+        co_return bxt::make_error<AuthError>(
+            AuthError::ErrorType::UserNotFound);
+    }
+
+    if (entity->password() != password) {
+        co_return bxt::make_error<AuthError>(
+            AuthError::ErrorType::InvalidCredentials);
+    }
+
+    co_return {};
 }
 
-coro::task<bool> AuthService::verify(const std::string &token) const {
+coro::task<AuthService::Result<void>>
+    AuthService::verify(const std::string &token) const {
 }
 
 } // namespace bxt::Core::Application

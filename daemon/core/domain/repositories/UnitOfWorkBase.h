@@ -31,7 +31,7 @@ struct UnitOfWorkBase {
         }
 
     private:
-        static inline frozen::unordered_map<ErrorType, std::string_view, 2>
+        static inline frozen::unordered_map<ErrorType, std::string_view, 1>
             error_messages = {
                 {ErrorType::OperationError, "Operation error"},
             };

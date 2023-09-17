@@ -25,12 +25,13 @@ public:
     DeploymentService(bxt::Core::Application::PackageService& service)
         : m_package_service(service) {}
 
-    virtual coro::task<uint64_t> deploy_start() override;
-    virtual coro::task<void> deploy_push(PackageDTO package,
-                                         uint64_t session_id) override;
-    virtual coro::task<void> deploy_end(uint64_t session_id) override;
+    virtual coro::task<Result<uint64_t>> deploy_start() override;
+    virtual coro::task<Result<void>> deploy_push(PackageDTO package,
+                                                 uint64_t session_id) override;
+    virtual coro::task<Result<void>> deploy_end(uint64_t session_id) override;
 
-    virtual coro::task<bool> verify_session(uint64_t session_id) override;
+    virtual coro::task<Result<void>>
+        verify_session(uint64_t session_id) override;
 
 private:
     phmap::parallel_node_hash_map<uint64_t, std::vector<PackageDTO>>

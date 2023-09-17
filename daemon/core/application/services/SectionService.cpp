@@ -7,17 +7,23 @@
 #include "SectionService.h"
 
 #include "core/application/dtos/PackageSectionDTO.h"
+#include "core/application/errors/CrudError.h"
+#include "utilities/Error.h"
 
 #include <iterator>
 #include <ranges>
+namespace bxt::Core::Application {
 
-coro::task<std::vector<PackageSectionDTO>>
-    bxt::Core::Application::SectionService::get_sections() const {
+coro::task<SectionService::Result<std::vector<PackageSectionDTO>>>
+    SectionService::get_sections() const {
     std::vector<PackageSectionDTO> result;
 
-    const auto sections = co_await m_repository.all_async();
+    auto sections = co_await m_repository.all_async();
 
-    if (!sections.has_value()) { co_return result; }
+    if (!sections.has_value()) {
+        co_return bxt::make_error_with_source<CrudError>(
+            std::move(sections.error()), CrudError::ErrorType::EntityNotFound);
+    }
 
     result.reserve(sections->size());
 
@@ -26,3 +32,5 @@ coro::task<std::vector<PackageSectionDTO>>
 
     co_return result;
 }
+
+} // namespace bxt::Core::Application

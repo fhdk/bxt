@@ -16,7 +16,14 @@ drogon::Task<drogon::HttpResponsePtr>
 
     Json::Value result;
 
-    for (const auto& section : sections) {
+    if (!sections.has_value()) {
+        result["status"] = "error";
+        result["message"] = sections.error().what();
+
+        co_return drogon::HttpResponse::newHttpJsonResponse(result);
+    }
+
+    for (const auto& section : *sections) {
         Json::Value section_json;
 
         section_json["branch"] = section.branch;

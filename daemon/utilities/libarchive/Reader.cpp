@@ -55,8 +55,6 @@ Reader::Entry::Result<std::vector<uint8_t>> Reader::Entry::read_all() {
     do {
         const auto read_result = read_buffer(buffer, actual_size);
 
-        const auto err1 = LibArchiveError(m_reader);
-        const auto err2 = err1;
         if (!read_result.has_value()) {
             return nonstd::make_unexpected(read_result.error());
         }

@@ -18,13 +18,16 @@ drogon::Task<drogon::HttpResponsePtr>
     const auto password = json["password"].asString();
 
     bxt::Core::Application::UserDTO dto {name, password, {}};
-    if (!co_await m_service.add_user(dto)) {
-        auto response = drogon::HttpResponse::newHttpResponse();
-        response->setStatusCode(drogon::k400BadRequest);
-        co_return response;
+    Json::Value result;
+
+    const auto add_ok = co_await m_service.add_user(dto);
+
+    if (!add_ok.has_value()) {
+        result["status"] = "error";
+        result["message"] = add_ok.error().what();
+        co_return drogon::HttpResponse::newHttpJsonResponse(result);
     }
 
-    Json::Value result;
     result["status"] = "ok";
     co_return drogon::HttpResponse::newHttpJsonResponse(result);
 }
@@ -34,14 +37,16 @@ drogon::Task<drogon::HttpResponsePtr>
     auto json = *req->getJsonObject();
 
     const auto id = json["id"].asString();
+    Json::Value result;
 
-    if (!co_await m_service.remove_user(id)) {
-        auto response = drogon::HttpResponse::newHttpResponse();
-        response->setStatusCode(drogon::k400BadRequest);
-        co_return response;
+    const auto remove_ok = co_await m_service.remove_user(id);
+
+    if (!remove_ok.has_value()) {
+        result["status"] = "error";
+        result["message"] = remove_ok.error().what();
+        co_return drogon::HttpResponse::newHttpJsonResponse(result);
     }
 
-    Json::Value result;
     result["status"] = "ok";
     co_return drogon::HttpResponse::newHttpJsonResponse(result);
 }
@@ -50,7 +55,14 @@ drogon::Task<drogon::HttpResponsePtr>
     UserController::get_users(drogon::HttpRequestPtr req) {
     const auto users = co_await m_service.get_users();
     Json::Value result;
-    for (const auto& user : users) {
+
+    if (!users.has_value()) {
+        result["status"] = "error";
+        result["message"] = users.error().what();
+        co_return drogon::HttpResponse::newHttpJsonResponse(result);
+    }
+
+    for (const auto& user : *users) {
         Json::Value user_json;
 
         user_json["name"] = user.name;

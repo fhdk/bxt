@@ -7,6 +7,7 @@
 #include "DeploymentService.h"
 
 #include "infrastructure/PackageService.h"
+#include "utilities/Error.h"
 
 #include <filesystem>
 #include <fmt/format.h>
@@ -17,7 +18,8 @@
 
 namespace bxt::Infrastructure {
 
-coro::task<uint64_t> DeploymentService::deploy_start() {
+coro::task<DeploymentService::Result<uint64_t>>
+    DeploymentService::deploy_start() {
     std::mt19937_64 engine(std::random_device {}());
     std::uniform_int_distribution<uint64_t> distribution;
     auto session_id = distribution(engine);
@@ -27,36 +29,48 @@ coro::task<uint64_t> DeploymentService::deploy_start() {
     co_return session_id;
 }
 
-coro::task<void> DeploymentService::deploy_push(PackageDTO package,
-                                                uint64_t session_id) {
+coro::task<DeploymentService::Result<void>>
+    DeploymentService::deploy_push(PackageDTO package, uint64_t session_id) {
     if (!std::filesystem::exists(package.filepath)) {
-        throw std::invalid_argument("File not found");
+        co_return bxt::make_error<Error>(Error::ErrorType::PackagePushFailed);
     }
     if (package.signature_path) {
         if (!std::filesystem::exists(*package.signature_path)) {
-            throw std::invalid_argument("Invalid signature file");
+            co_return bxt::make_error<Error>(
+                Error::ErrorType::PackagePushFailed);
         }
     }
 
     m_session_packages.at(session_id).emplace_back(package);
 
-    co_return;
+    co_return {};
 }
 
-coro::task<bool> DeploymentService::verify_session(uint64_t session_id) {
-    co_return m_session_packages.count(session_id) > 0;
+coro::task<DeploymentService::Result<void>>
+    DeploymentService::verify_session(uint64_t session_id) {
+    if (m_session_packages.count(session_id) > 0) { co_return {}; }
+
+    co_return bxt::make_error<Error>(Error::ErrorType::InvalidSession);
 }
 
-coro::task<void> DeploymentService::deploy_end(uint64_t session_id) {
+coro::task<DeploymentService::Result<void>>
+    DeploymentService::deploy_end(uint64_t session_id) {
     const auto &packages = m_session_packages.at(session_id);
     PackageService::Transaction transaction;
     transaction.to_add = packages;
 
-    co_await m_package_service.commit_transaction(transaction);
+    auto commit_result =
+        co_await m_package_service.commit_transaction(transaction);
+
+    if (!commit_result.has_value()) {
+        co_return bxt::make_error_with_source<Error>(
+            std::move(commit_result.error()),
+            Error::ErrorType::DeploymentFailed);
+    }
 
     m_session_packages.erase(session_id);
 
-    co_return;
+    co_return {};
 }
 
 } // namespace bxt::Infrastructure
