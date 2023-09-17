@@ -112,7 +112,7 @@ nonstd::expected<Package, Package::ParsingError> Package::from_filepath(
         fmt::format("{}.sig", filepath.string());
 
     if (std::filesystem::exists(deduced_signature_path)) {
-        result->set_signature_path(signature_path);
+        result->set_signature_path(deduced_signature_path);
     }
     return result;
 }
