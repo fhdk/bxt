@@ -23,6 +23,7 @@
 #include "persistence/config/SectionRepository.h"
 #include "persistence/lmdb/PackageLogEntryRepository.h"
 #include "persistence/lmdb/UserRepository.h"
+#include "presentation/cli-controllers/DeploymentController.h"
 #include "presentation/web-controllers/AuthController.h"
 #include "presentation/web-controllers/LogController.h"
 #include "presentation/web-controllers/PackageController.h"
@@ -205,8 +206,12 @@ namespace Presentation {
     struct PackageController
         : kgr::shared_service<
               bxt::Presentation::PackageController,
-              kgr::dependency<di::Core::Application::DeploymentService,
-                              di::Core::Application::PackageService>> {};
+              kgr::dependency<di::Core::Application::PackageService>> {};
+
+    struct DeploymentController
+        : kgr::shared_service<
+              bxt::Presentation::DeploymentController,
+              kgr::dependency<di::Core::Application::DeploymentService>> {};
 
     struct AuthController
         : kgr::shared_service<

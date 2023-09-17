@@ -5,6 +5,7 @@
  *
  */
 
+#include "core/application/services/DeploymentService.h"
 #include "core/application/services/SectionService.h"
 #include "di.h"
 #include "drogon/HttpResponse.h"
@@ -79,7 +80,8 @@ void setup_di_container(kgr::container& ctr) {
 void setup_controllers(auto& app, kgr::container& ctr) {
     using namespace bxt::di::Presentation;
 
-    app.registerController(ctr.service<PackageController>())
+    app.registerController(ctr.service<DeploymentController>())
+        .registerController(ctr.service<PackageController>())
         .registerController(ctr.service<AuthController>())
         .registerController(ctr.service<UserController>())
         .registerController(ctr.service<PermissionController>())
