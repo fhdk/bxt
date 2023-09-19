@@ -15,20 +15,13 @@
 namespace Archive {
 
 struct InvalidEntryError : public bxt::Error {
-    const std::string message() const noexcept override {
-        return "The entry has no linked archive!";
-    }
+    InvalidEntryError() { message = "The entry has no linked archive!"; }
 };
 
 struct LibArchiveError : public bxt::Error {
     explicit LibArchiveError(archive* archive) {
-        error_string = archive_error_string(archive);
+        message = archive_error_string(archive);
     }
-
-    const std::string message() const noexcept override { return error_string; }
-
-private:
-    std::string error_string;
 };
 
 } // namespace Archive

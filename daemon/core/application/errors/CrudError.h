@@ -21,10 +21,8 @@ struct CrudError : public bxt::Error {
         InternalError
     };
 
-    CrudError(ErrorType error_type) : error_type(error_type) {}
-
-    const std::string message() const noexcept override {
-        return error_strings.at(error_type).data();
+    CrudError(ErrorType error_type) : error_type(error_type) {
+        message = error_strings.at(error_type).data();
     }
 
     ErrorType error_type;

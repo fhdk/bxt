@@ -19,18 +19,33 @@ struct Error {
     explicit Error(std::unique_ptr<bxt::Error>&& source)
         : source(std::move(source)) {}
 
-    Error(Error&& other) noexcept : source(std::move(other.source)) {}
+    Error(Error&& other) noexcept {
+        source = std::move(other.source);
+        message = std::move(other.message);
+    }
+
     Error(const Error& other) {
-        if (!other.source) { return; }
-        source = std::make_unique<bxt::Error>(*other.source);
+        if (other.source) {
+            source = std::make_unique<bxt::Error>(*other.source);
+        }
+        message = other.message;
     }
     Error& operator=(const Error& other) {
-        if (!other.source) { return *this; }
-        this->source = std::make_unique<bxt::Error>(*other.source);
+        if (this != &other) {
+            if (other.source) {
+                source = std::make_unique<bxt::Error>(*other.source);
+            } else {
+                source.reset();
+            }
+            message = other.message;
+        }
         return *this;
     }
     Error& operator=(Error&& other) noexcept {
-        this->source = std::make_unique<bxt::Error>(std::move(other));
+        if (this != &other) {
+            source = std::move(other.source);
+            message = std::move(other.message);
+        }
         return *this;
     }
 
@@ -38,15 +53,13 @@ struct Error {
 
     std::unique_ptr<bxt::Error> source = nullptr;
 
-    virtual const std::string message() const noexcept {
-        return "Unknown error";
-    }
-
     const std::string what() const noexcept {
-        auto result = message();
-        if (source) { result += fmt::format("\n\nFrom:\n{}", source->what()); }
+        auto result = message;
+        if (source) { result += fmt::format("\nFrom:\n{}\n", source->what()); }
         return result;
     }
+
+    std::string message = "Unknown error";
 };
 
 template<typename TError, typename TSource, typename... TArgs>

@@ -35,10 +35,8 @@ struct ReadError : public bxt::Error {
 
     ReadError(ErrorTypes error_type, const bxt::Error&& source)
         : bxt::Error(std::make_unique<bxt::Error>(std::move(source))),
-          error_type(error_type) {}
-
-    const std::string message() const noexcept override {
-        return error_messages.at(error_type).data();
+          error_type(error_type) {
+        message = error_messages.at(error_type).data();
     }
 
     ErrorTypes error_type;
@@ -172,10 +170,8 @@ struct WriteError : public bxt::Error {
 
     WriteError(ErrorTypes error_type, const bxt::Error&& source)
         : bxt::Error(std::make_unique<bxt::Error>(std::move(source))),
-          error_type(error_type) {}
-
-    const std::string message() const noexcept override {
-        return error_messages.at(error_type).data();
+          error_type(error_type) {
+        message = error_messages.at(error_type).data();
     }
 
     ErrorTypes error_type;

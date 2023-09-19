@@ -15,10 +15,8 @@ namespace bxt::Core::Application {
 struct AuthError : public bxt::Error {
     enum class ErrorType { InvalidCredentials, UserNotFound, InternalError };
 
-    AuthError(ErrorType error_type) : error_type(error_type) {}
-
-    const std::string message() const noexcept override {
-        return error_strings.at(error_type).data();
+    AuthError(ErrorType error_type) : error_type(error_type) {
+        message = error_strings.at(error_type).data();
     }
 
     ErrorType error_type;

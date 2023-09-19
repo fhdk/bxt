@@ -76,11 +76,9 @@ namespace bxt::Utilities::LMDB {
 
 struct BoostSerializationError : public bxt::Error {
     BoostSerializationError(boost::archive::archive_exception &&exception)
-        : exception(exception) {};
-
-    const std::string message() const noexcept override {
-        return exception.what();
-    }
+        : exception(exception) {
+        message = exception.what();
+    };
 
     boost::archive::archive_exception exception;
 };

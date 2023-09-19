@@ -71,10 +71,8 @@ public:
                 {ErrorCode::InvalidName, "Invalid package name"},
                 {ErrorCode::InvalidEpoch, "Invalid package epoch"}};
 
-        ParsingError(ErrorCode error_code) : error_code(error_code) {}
-
-        const std::string message() const noexcept override {
-            return error_messages.at(error_code).data();
+        ParsingError(ErrorCode error_code) : error_code(error_code) {
+            message = error_messages.at(error_code).data();
         }
     };
     using ParseResult = nonstd::expected<Package, ParsingError>;

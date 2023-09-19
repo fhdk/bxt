@@ -25,9 +25,8 @@ public:
             DeploymentFailed,
         };
 
-        Error(ErrorType error_type) : error_type(error_type) {}
-        const std::string message() const noexcept override {
-            return error_messages.at(error_type).data();
+        Error(ErrorType error_type) : error_type(error_type) {
+            message = error_messages.at(error_type).data();
         }
 
         ErrorType error_type;

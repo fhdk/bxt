@@ -14,20 +14,16 @@
 namespace bxt::Utilities::LMDB {
 
 struct Error : public bxt::Error {
-    Error(const lmdb::error&& error) : error(std::move(error)) {}
-
-    const std::string message() const noexcept override { return error.what(); }
+    Error(const lmdb::error&& error) : error(std::move(error)) {
+        message = error.what();
+    }
 
 private:
     lmdb::error error;
 };
 
 struct SerializationError : public bxt::Error {
-    SerializationError() = default;
-
-    const std::string message() const noexcept override {
-        return "Serialization/deserialization error";
-    }
+    SerializationError() { message = "Serialization/deserialization error"; }
 };
 
 } // namespace bxt::Utilities::LMDB

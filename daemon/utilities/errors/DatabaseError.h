@@ -19,21 +19,21 @@ public:
         InvalidEntityError,
         EntityNotFound
     };
-    DatabaseError(ErrorType error_type) : error_type(error_type) {}
+    DatabaseError(ErrorType error_type) : error_type(error_type) {
+        message = messages.at(error_type).data();
+    }
 
     DatabaseError(ErrorType error_type, const bxt::Error&& source)
         : bxt::Error(std::make_unique<bxt::Error>(std::move(source))),
-          error_type(error_type) {}
+          error_type(error_type) {
+        message = messages.at(error_type).data();
+    }
 
     static inline frozen::map<ErrorType, std::string_view, 4> messages {
         {ErrorType::IOError, "IO error"},
         {ErrorType::DatabaseMalformedError, "Database is malformed"},
         {ErrorType::InvalidEntityError, "Invalid entity"},
         {ErrorType::EntityNotFound, "Entity not found"}};
-
-    const std::string message() const noexcept override {
-        return messages.at(error_type).data();
-    }
 
 private:
     ErrorType error_type;

@@ -20,7 +20,7 @@ drogon::Task<drogon::HttpResponsePtr>
     const auto start_ok = co_await m_service.deploy_start();
 
     if (!start_ok.has_value()) {
-        result->setBody(start_ok.error().message());
+        result->setBody(start_ok.error().message);
         co_return result;
     }
 

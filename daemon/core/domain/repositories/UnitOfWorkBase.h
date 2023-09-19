@@ -22,13 +22,11 @@ struct UnitOfWorkBase {
 
         Error(ErrorType error_type, const bxt::Error&& result)
             : bxt::Error(std::make_unique<bxt::Error>(std::move(result))),
-              error_type(error_type) {}
+              error_type(error_type) {
+            message = error_messages.at(error_type).data();
+        }
 
         ErrorType error_type;
-
-        const std::string message() const noexcept override {
-            return error_messages.at(error_type).data();
-        }
 
     private:
         static inline frozen::unordered_map<ErrorType, std::string_view, 1>
