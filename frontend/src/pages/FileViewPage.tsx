@@ -135,7 +135,9 @@ const usePushCommitsHandler = (commits: ICommit[], reload: () => void) => {
 export default (props: any) => {
   const [sections, updateSections] = useSections();
 
-  const [path, setPath] = useState<string[]>(["root"]);
+  const [path, setPath] = useState<string[]>(JSON.parse(localStorage.getItem("path") ?? "undefined"));
+
+  useEffect(() => localStorage.setItem("path", JSON.stringify(path)), [path]);
 
   const [files, updateFiles] = useFilesFromSections(sections, path);
 

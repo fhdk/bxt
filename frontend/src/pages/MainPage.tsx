@@ -5,9 +5,21 @@ import {
   createBrowserRouter,
 } from "react-router-dom";
 import LogPage from "./LogPage";
-import { ToastContainer } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
+import { useLocalStorage } from "@uidotdev/usehooks";
+import LoginPage from "./LoginPage";
+import { useEffect, useState } from "react";
+
+declare module "@uidotdev/usehooks" {
+  export function useLocalStorage<T>(
+    key: string,
+    initialValue: T
+  ): [T, (v: T) => void];
+}
 
 export default (props: any) => {
+  const [userName, setUserName] = useLocalStorage("username", null);
+
   const side = (
     <div>
       <label htmlFor="my-drawer-2" className="drawer-overlay"></label>
@@ -34,6 +46,9 @@ export default (props: any) => {
         <Menu.Item>
           <a>Admin</a>
         </Menu.Item>
+        <Menu.Item onClick={(e) => setUserName(null)}>
+          <a>Logout</a>
+        </Menu.Item>
       </Menu>
     </div>
   );
@@ -47,14 +62,27 @@ export default (props: any) => {
       path: "/logs",
       element: <LogPage />,
     },
+
   ]);
+
+
+  if (!userName) {
+    return (
+      <div className="flex w-full items-center justify-center font-sans">
+        <ToastContainer />
+        <LoginPage />
+      </div>)
+  }
 
   return (
     <div className="flex w-full items-center justify-center font-sans">
       <ToastContainer />
-      <Drawer side={side} {...props} mobile={true}>
+      <Drawer open={!window.location.pathname.endsWith("/auth")}
+        side={side} {...props}
+        mobile={!window.location.pathname.endsWith("/auth")}>
         <RouterProvider router={router} />
       </Drawer>
     </div>
   );
 };
+
