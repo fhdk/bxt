@@ -3,6 +3,8 @@ import FileViewPage from "./FileViewPage";
 import {
   RouterProvider,
   createBrowserRouter,
+  Link,
+  Outlet
 } from "react-router-dom";
 import LogPage from "./LogPage";
 import { ToastContainer, toast } from "react-toastify";
@@ -20,48 +22,56 @@ declare module "@uidotdev/usehooks" {
 export default (props: any) => {
   const [userName, setUserName] = useLocalStorage("username", null);
 
-  const side = (
-    <div>
-      <label htmlFor="my-drawer-2" className="drawer-overlay"></label>
-      <Menu className="text-neutral h-screen p-4 w-60 bg-primary text-base-content">
-        <Menu.Item>
-          <a
-            href="/"
-            className="justify-start relative  h-20  overflow-hidden pb-2/3"
-          >
-            <img
-              src={`${process.env.PUBLIC_URL}/logo-full.png`}
-              className="absolute h-full w-40 object-contain"
-            />
-          </a>
-        </Menu.Item>
-
-        <Menu.Item>
-          <a>Compare</a>
-        </Menu.Item>
-        <Menu.Item>
-          <a href="/logs">Logs</a>
-        </Menu.Item>
-        <div className="grow"></div>
-        <Menu.Item>
-          <a>Admin</a>
-        </Menu.Item>
-        <Menu.Item onClick={(e) => setUserName(null)}>
-          <a>Logout</a>
-        </Menu.Item>
-      </Menu>
-    </div>
-  );
+  const DrawerLayout = () => {
+    return <Drawer
+      mobile={true}
+      side={
+        <Menu className="text-neutral h-screen p-4 w-60 bg-primary text-base-content">
+          <Menu.Item>
+            <Link
+              to="/"
+              className="justify-start relative  h-14  overflow-hidden pb-2/3"
+            >
+              <img
+                src={`${process.env.PUBLIC_URL}/logo-full.png`}
+                className="absolute h-full w-40 object-contain"
+              />
+            </Link>
+          </Menu.Item>
+          <div className="h-6"></div>
+          <Menu.Item>
+            <Link to="/compare">Compare</Link>
+          </Menu.Item>
+          <Menu.Item>
+            <Link to="/logs">Logs</Link>
+          </Menu.Item>
+          <div className="grow"></div>
+          <Menu.Item>
+            <Link to="/admin">Admin</Link>
+          </Menu.Item>
+          <Menu.Item>
+            <a>Logout</a>
+          </Menu.Item>
+        </Menu>}>
+      <Outlet />
+    </Drawer>
+  }
 
   const router = createBrowserRouter([
     {
-      path: "/",
-      element: <FileViewPage />,
+      element: <DrawerLayout />,
+      children: [
+        {
+          path: "",
+          element: <FileViewPage style={{ zIndex: 10 }} />,
+        },
+        {
+          path: "logs",
+          element: <LogPage />,
+        },
+      ]
     },
-    {
-      path: "/logs",
-      element: <LogPage />,
-    },
+
 
   ]);
 
@@ -77,11 +87,7 @@ export default (props: any) => {
   return (
     <div className="flex w-full items-center justify-center font-sans">
       <ToastContainer />
-      <Drawer open={!window.location.pathname.endsWith("/auth")}
-        side={side} {...props}
-        mobile={!window.location.pathname.endsWith("/auth")}>
-        <RouterProvider router={router} />
-      </Drawer>
+      <RouterProvider router={router} />
     </div>
   );
 };
