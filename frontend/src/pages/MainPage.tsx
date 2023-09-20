@@ -49,7 +49,7 @@ export default (props: any) => {
           <Menu.Item>
             <Link to="/admin">Admin</Link>
           </Menu.Item>
-          <Menu.Item>
+          <Menu.Item onClick={(e) => setUserName(null)}>
             <a>Logout</a>
           </Menu.Item>
         </Menu>}>
@@ -71,23 +71,12 @@ export default (props: any) => {
         },
       ]
     },
-
-
   ]);
-
-
-  if (!userName) {
-    return (
-      <div className="flex w-full items-center justify-center font-sans">
-        <ToastContainer />
-        <LoginPage />
-      </div>)
-  }
 
   return (
     <div className="flex w-full items-center justify-center font-sans">
       <ToastContainer />
-      <RouterProvider router={router} />
+      {userName != null ? <RouterProvider router={router} /> : <LoginPage />}
     </div>
   );
 };
