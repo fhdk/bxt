@@ -22,8 +22,12 @@ namespace bxt::Infrastructure {
 
 class DeploymentService : public bxt::Core::Application::DeploymentService {
 public:
-    DeploymentService(bxt::Core::Application::PackageService& service)
-        : m_package_service(service) {}
+    DeploymentService(
+        bxt::Core::Application::PackageService& service,
+        bxt::Core::Domain::ReadOnlyRepositoryBase<bxt::Core::Domain::Section>&
+            section_repository)
+        : m_package_service(service),
+          m_section_repository(section_repository) {}
 
     virtual coro::task<Result<uint64_t>> deploy_start() override;
     virtual coro::task<Result<void>> deploy_push(PackageDTO package,
@@ -37,6 +41,8 @@ private:
     phmap::parallel_node_hash_map<uint64_t, std::vector<PackageDTO>>
         m_session_packages;
     bxt::Core::Application::PackageService& m_package_service;
+    bxt::Core::Domain::ReadOnlyRepositoryBase<bxt::Core::Domain::Section>&
+        m_section_repository;
 };
 
 } // namespace bxt::Infrastructure

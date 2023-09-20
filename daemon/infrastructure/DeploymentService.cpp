@@ -6,6 +6,7 @@
  */
 #include "DeploymentService.h"
 
+#include "core/application/dtos/PackageSectionDTO.h"
 #include "infrastructure/PackageService.h"
 #include "utilities/Error.h"
 
@@ -34,6 +35,24 @@ coro::task<DeploymentService::Result<void>>
     if (!std::filesystem::exists(package.filepath)) {
         co_return bxt::make_error<Error>(Error::ErrorType::PackagePushFailed);
     }
+
+    const auto sections = co_await m_section_repository.all_async();
+
+    if (!sections.has_value()) {
+        co_return bxt::make_error<Error>(Error::ErrorType::DeploymentFailed);
+    }
+    bool found = false;
+    for (const auto section : *sections) {
+        if (SectionDTOMapper::to_dto(section) == package.section) {
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        co_return bxt::make_error<Error>(Error::ErrorType::InvalidArgument);
+    }
+
     if (package.signature_path) {
         if (!std::filesystem::exists(*package.signature_path)) {
             co_return bxt::make_error<Error>(

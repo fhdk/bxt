@@ -154,7 +154,8 @@ namespace Infrastructure {
     struct DeploymentService
         : kgr::single_service<
               bxt::Infrastructure::DeploymentService,
-              kgr::dependency<di::Core::Application::PackageService>>,
+              kgr::dependency<di::Core::Application::PackageService,
+                              di::Core::Domain::ReadOnlySectionRepository>>,
           kgr::overrides<di::Core::Application::DeploymentService> {};
 
     struct ArchRepoOptions
