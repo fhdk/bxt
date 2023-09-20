@@ -7,18 +7,25 @@
 
 #include "core/application/services/DeploymentService.h"
 #include "core/application/services/SectionService.h"
+#include "core/domain/entities/User.h"
+#include "core/domain/value_objects/Name.h"
+#include "coro/sync_wait.hpp"
 #include "di.h"
 #include "drogon/HttpResponse.h"
 #include "drogon/drogon_callbacks.h"
 #include "drogon/utils/FunctionTraits.h"
 #include "events.h"
 #include "presentation/web-controllers/SectionController.h"
+#include "utilities/Error.h"
+#include "utilities/errors/DatabaseError.h"
 
 #include <boost/log/trivial.hpp>
 #include <boost/log/utility/setup.hpp>
+#include <cstdlib>
 #include <drogon/HttpAppFramework.h>
 #include <filesystem>
 #include <kangaru/debug.hpp>
+#include <memory>
 
 void setup_logger() {
     using namespace boost::log;
@@ -91,6 +98,26 @@ void setup_controllers(auto& app, kgr::container& ctr) {
         .registerFilter(ctr.service<JwtFilter>());
 }
 
+void setup_defaults(kgr::container& ctr) {
+    using namespace bxt;
+
+    auto& repository = ctr.service<di::Core::Domain::UserRepository>();
+
+    const auto users = coro::sync_wait(repository.all_async());
+
+    if (!users.has_value()) {
+        BOOST_LOG_TRIVIAL(error) << users.error().what();
+        abort();
+    }
+
+    if (users->empty()) {
+        User defaultUser(Name("default"), "ILoveMacarons");
+
+        coro::sync_wait(repository.add_async(defaultUser));
+        coro::sync_wait(repository.commit_async());
+    }
+}
+
 int main() {
     setup_logger();
 
@@ -98,34 +125,38 @@ int main() {
 
     setup_di_container(ctr);
 
-    auto& app =
-        drogon::app()
-            .setDocumentRoot("../frontend/")
-            .registerPreRoutingAdvice([](const drogon::HttpRequestPtr& req,
-                                         drogon::AdviceCallback&& acb,
-                                         drogon::AdviceChainCallback&& accb) {
-                if (req->path().starts_with("/api/")) {
-                    accb();
-                    return;
-                }
+    setup_defaults(ctr);
 
-                const auto resource =
-                    drogon::app().getDocumentRoot() + "/" + req->path();
+    const auto serveFrontendAdvice = [](const drogon::HttpRequestPtr& req,
+                                        drogon::AdviceCallback&& acb,
+                                        drogon::AdviceChainCallback&& accb) {
+        if (req->path().starts_with("/api/")) {
+            accb();
+            return;
+        }
 
-                if (!std::filesystem::exists(resource) || req->path() == "/") {
-                    const auto indexPath = fmt::format(
-                        "{}/index.html", drogon::app().getDocumentRoot());
+        const auto resource =
+            drogon::app().getDocumentRoot() + "/" + req->path();
 
-                    acb(drogon::HttpResponse::newFileResponse(indexPath));
-                    return;
-                }
+        if (!std::filesystem::exists(resource) || req->path() == "/") {
+            const auto indexPath =
+                fmt::format("{}/index.html", drogon::app().getDocumentRoot());
 
-                acb(drogon::HttpResponse::newFileResponse(resource));
-            })
-            .addListener("0.0.0.0", 8080)
-            .setUploadPath("/tmp/bxt/")
-            .setClientMaxBodySize(256 * 1024 * 1024)
-            .setClientMaxMemoryBodySize(1024 * 1024);
+            acb(drogon::HttpResponse::newFileResponse(indexPath));
+            return;
+        }
+
+        acb(drogon::HttpResponse::newFileResponse(resource));
+    };
+
+    auto& app = drogon::app()
+
+                    .setDocumentRoot("../frontend/")
+                    .registerPreRoutingAdvice(serveFrontendAdvice)
+                    .addListener("0.0.0.0", 8080)
+                    .setUploadPath("/tmp/bxt/")
+                    .setClientMaxBodySize(256 * 1024 * 1024)
+                    .setClientMaxMemoryBodySize(1024 * 1024);
 
     setup_controllers(app, ctr);
 
