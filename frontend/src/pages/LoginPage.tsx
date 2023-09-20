@@ -42,7 +42,7 @@ export default (props: any) => {
         <Hero.Content className="flex-col lg:flex-row-reverse">
           <Card className="flex-shrink-0 w-full max-w-sm shadow-2xl bg-base-100">
             <Card.Body>
-              <div className="justify-start relative  h-20  overflow-hidden pb-2/3">
+              <div className="justify-start relative h-14 overflow-hidden pb-2/3">
                 <img
                   src={`${process.env.PUBLIC_URL}/logo-full.png`}
                   className="absolute h-full w-full object-contain"
