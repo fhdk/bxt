@@ -6,21 +6,38 @@
  */
 #include "DeploymentController.h"
 
+#include "core/application/services/DeploymentService.h"
+#include "drogon/HttpTypes.h"
+
 namespace bxt::Presentation {
 using namespace drogon;
 
 drogon::Task<drogon::HttpResponsePtr>
     DeploymentController::deploy_start(drogon::HttpRequestPtr req) {
-    const auto key = req->headers().at("key");
-
-    if (key != m_key) { co_return HttpResponse::newHttpResponse(); }
-
     const auto result = HttpResponse::newHttpResponse();
+    result->setContentTypeCode(drogon::CT_TEXT_PLAIN);
+
+    const auto key_it = req->headers().find("key");
+
+    if (key_it == req->headers().cend()) {
+        result->setBody("No API key");
+        result->setStatusCode(drogon::k401Unauthorized);
+        co_return result;
+    }
+    const auto key = key_it->second;
+
+    if (key != m_key) {
+        result->setBody("Invalid API key");
+        result->setStatusCode(drogon::k401Unauthorized);
+        co_return result;
+    }
 
     const auto start_ok = co_await m_service.deploy_start();
 
     if (!start_ok.has_value()) {
         result->setBody(start_ok.error().message);
+        result->setStatusCode(drogon::HttpStatusCode::k400BadRequest);
+
         co_return result;
     }
 
@@ -30,68 +47,128 @@ drogon::Task<drogon::HttpResponsePtr>
 
 drogon::Task<drogon::HttpResponsePtr>
     DeploymentController::deploy_push(drogon::HttpRequestPtr req) {
+    auto result = HttpResponse::newHttpResponse();
+    result->setContentTypeCode(drogon::CT_TEXT_PLAIN);
+
     MultiPartParser file_upload;
 
     int ok = file_upload.parse(req);
-    if (ok < 0) { co_return HttpResponse::newHttpResponse(); }
+    if (ok < 0) {
+        result->setBody("Invalid request");
+        result->setStatusCode(drogon::k400BadRequest);
+        co_return result;
+    }
 
     const auto headers = req->getHeaders();
 
-    auto session_id = std::stoull(headers.at("session"));
-    auto key = headers.at("key");
+    const auto session_id = std::stoull(headers.at("session"));
+    const auto key = headers.find("key");
 
-    if (key != m_key) { co_return HttpResponse::newHttpResponse(); }
-
-    if (!co_await m_service.verify_session(session_id)) {
-        co_return HttpResponse::newHttpResponse();
+    if (key == headers.end() || key->second != m_key) {
+        result->setBody("Invalid API key");
+        result->setStatusCode(drogon::k401Unauthorized);
+        co_return result;
     }
 
-    auto files_map = file_upload.getFilesMap();
-    auto file = files_map.at("file");
+    const auto verified = co_await m_service.verify_session(session_id);
 
-    auto signature = files_map.at("signature");
+    if (!verified.has_value()) {
+        result->setBody("Session is invalid");
+        result->setStatusCode(drogon::k400BadRequest);
+        co_return result;
+    }
 
-    auto params_map = file_upload.getParameters();
+    const auto files_map = file_upload.getFilesMap();
 
-    auto branch = params_map["branch"];
-    auto repo = params_map["repository"];
-    auto arch = params_map["architecture"];
+    const auto file = files_map.find("file");
+    const auto signature = files_map.find("signature");
 
-    auto section = PackageSectionDTO {
-        .branch = branch, .repository = repo, .architecture = arch};
+    if (signature == files_map.end() || file == files_map.end()) {
+        result->setBody("No package file or signature");
+        result->setStatusCode(drogon::k400BadRequest);
+        co_return result;
+    }
 
-    file.save();
-    signature.save();
+    const auto params_map = file_upload.getParameters();
 
-    auto name = file.getFileName();
+    const auto branch = params_map.find("branch");
+    const auto repo = params_map.find("repository");
+    const auto arch = params_map.find("architecture");
 
-    auto dto =
-        PackageDTO {section, name, app().getUploadPath() + "/" + name,
-                    app().getUploadPath() + "/" + signature.getFileName()};
+    if (branch == params_map.end() || repo == params_map.end()
+        || arch == params_map.end()) {
+        result->setBody("Ivalid section request");
+        result->setStatusCode(drogon::k400BadRequest);
+        co_return result;
+    }
 
-    co_await m_service.deploy_push(dto, session_id);
+    const auto section = PackageSectionDTO {.branch = branch->second,
+                                            .repository = repo->second,
+                                            .architecture = arch->second};
 
-    auto resp = HttpResponse::newHttpResponse();
+    file->second.save();
+    signature->second.save();
 
-    resp->setExpiredTime(0);
-    resp->setBody("ok");
+    const auto name = file->second.getFileName();
 
-    co_return resp;
+    auto dto = PackageDTO {section, name, app().getUploadPath() + "/" + name,
+                           app().getUploadPath() + "/"
+                               + signature->second.getFileName()};
+
+    const auto push_ok = co_await m_service.deploy_push(dto, session_id);
+
+    if (!push_ok.has_value()) {
+        result->setBody(
+            push_ok.error().error_type
+                    == DeploymentService::Error::ErrorType::InvalidArgument
+                ? "Invalid section"
+                : push_ok.error().message);
+
+        result->setStatusCode(drogon::k400BadRequest);
+        co_return result;
+    }
+
+    result->setStatusCode(drogon::k200OK);
+    result->setBody("ok");
+
+    co_return result;
 }
 
 drogon::Task<drogon::HttpResponsePtr>
     DeploymentController::deploy_end(drogon::HttpRequestPtr req) {
+    auto result = HttpResponse::newHttpResponse();
+    result->setContentTypeCode(drogon::CT_TEXT_PLAIN);
+
     const auto headers = req->getHeaders();
-    auto session_id = headers.at("session");
-    auto key = headers.at("key");
 
-    co_await m_service.deploy_end(std::stoull(session_id));
+    const auto session_id = std::stoull(headers.at("session"));
+    const auto key = headers.find("key");
 
-    auto resp = HttpResponse::newHttpResponse();
+    if (key == headers.end() || key->second != m_key) {
+        result->setBody("Invalid API key");
+        result->setStatusCode(drogon::k401Unauthorized);
+        co_return result;
+    }
 
-    resp->setBody("ok");
+    const auto verified = co_await m_service.verify_session(session_id);
 
-    co_return resp;
+    if (!verified.has_value()) {
+        result->setBody("Session is invalid");
+        result->setStatusCode(drogon::k400BadRequest);
+        co_return result;
+    }
+
+    const auto end_ok = co_await m_service.deploy_end(session_id);
+    if (!end_ok.has_value()) {
+        result->setBody(end_ok.error().message);
+        result->setStatusCode(drogon::k400BadRequest);
+        co_return result;
+    }
+
+    result->setStatusCode(drogon::k200OK);
+    result->setBody("ok");
+
+    co_return result;
 }
 
 } // namespace bxt::Presentation
