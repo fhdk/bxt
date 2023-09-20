@@ -63,8 +63,9 @@ void setup_di_container(kgr::container& ctr) {
         });
 
     ctr.service<di::Persistence::SectionRepository>();
-    ctr.service<di::Persistence::UserRepository>();
-    ctr.service<di::Persistence::PackageLogEntryRepository>();
+    ctr.emplace<di::Persistence::UserRepository>(std::string("Users"));
+    ctr.emplace<di::Persistence::PackageLogEntryRepository>(
+        std::string("PackageLogs"));
 
     ctr.service<di::Persistence::Box>();
 

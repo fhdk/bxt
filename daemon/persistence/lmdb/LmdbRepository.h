@@ -30,8 +30,9 @@ class LmdbRepositoryBase
     : public bxt::Core::Domain::ReadWriteRepositoryBase<TEntity> {
 public:
     LmdbRepositoryBase(
-        std::shared_ptr<bxt::Utilities::LMDB::Environment> environment)
-        : m_environment(environment), m_db(m_environment) {}
+        std::shared_ptr<bxt::Utilities::LMDB::Environment> environment,
+        const std::string &database_name)
+        : m_environment(environment), m_db(m_environment, database_name) {}
 
     using TResult =
         typename bxt::Core::Domain::ReadWriteRepositoryBase<TEntity>::TResult;

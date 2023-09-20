@@ -7,6 +7,7 @@
 #pragma once
 #include "BoostSerializer.h"
 #include "Environment.h"
+#include "lmdb.h"
 #include "nonstd/expected.hpp"
 #include "utilities/Error.h"
 #include "utilities/errors/DatabaseError.h"
@@ -26,8 +27,8 @@ public:
         : m_env(env) {
         auto txn = coro::sync_wait(m_env->begin_rw_txn());
 
-        m_dbi = name.empty() ? lmdb::dbi::open(txn->value)
-                             : lmdb::dbi::open(txn->value, name);
+        m_dbi = name.empty() ? lmdb::dbi::open(txn->value, nullptr, MDB_CREATE)
+                             : lmdb::dbi::open(txn->value, name, MDB_CREATE);
 
         txn->value.commit();
     }
