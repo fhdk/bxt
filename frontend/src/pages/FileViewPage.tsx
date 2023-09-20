@@ -135,7 +135,7 @@ const usePushCommitsHandler = (commits: ICommit[], reload: () => void) => {
 export default (props: any) => {
   const [sections, updateSections] = useSections();
 
-  const [path, setPath] = useState<string[]>(JSON.parse(localStorage.getItem("path") ?? "undefined"));
+  const [path, setPath] = useState<string[]>(JSON.parse(localStorage.getItem("path") ?? "[\"root\"]"));
 
   useEffect(() => localStorage.setItem("path", JSON.stringify(path)), [path]);
 
