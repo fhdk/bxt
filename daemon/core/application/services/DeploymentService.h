@@ -23,6 +23,7 @@ public:
             InvalidSession,
             PackagePushFailed,
             DeploymentFailed,
+            InvalidArgument
         };
 
         Error(ErrorType error_type) : error_type(error_type) {
@@ -32,11 +33,12 @@ public:
         ErrorType error_type;
 
     private:
-        static inline frozen::unordered_map<ErrorType, std::string, 3>
+        static inline frozen::unordered_map<ErrorType, std::string, 4>
             error_messages = {
                 {ErrorType::InvalidSession, "Invalid session."},
                 {ErrorType::PackagePushFailed, "Package push failed."},
-                {ErrorType::DeploymentFailed, "Deployment failed."}};
+                {ErrorType::DeploymentFailed, "Deployment failed."},
+                {ErrorType::InvalidArgument, "Invalid argument."}};
     };
     BXT_DECLARE_RESULT(Error)
 
