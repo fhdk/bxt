@@ -9,9 +9,9 @@
 #include "core/application/errors/AuthError.h"
 namespace bxt::Core::Application {
 
-coro::task<AuthService::Result<void>>
-    AuthService::auth(const std::string &name, const std::string &password) {
-    auto entity = co_await m_user_repository.find_by_id_async(name);
+coro::task<AuthService::Result<void>> AuthService::auth(std::string name,
+                                                        std::string password) {
+    const auto entity = co_await m_user_repository.find_by_id_async(name);
 
     if (!entity.has_value()) {
         co_return bxt::make_error<AuthError>(

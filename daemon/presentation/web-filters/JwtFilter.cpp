@@ -9,17 +9,16 @@
 #include <jwt-cpp/traits/nlohmann-json/defaults.h>
 
 namespace bxt::Presentation {
+using namespace drogon;
 
-void JwtFilter::doFilter(const drogon::HttpRequestPtr &request,
-                         drogon::FilterCallback &&fcb,
-                         drogon::FilterChainCallback &&fccb) {
-    using namespace drogon;
-
+void JwtFilter::doFilter(const HttpRequestPtr &request,
+                         FilterCallback &&fcb,
+                         FilterChainCallback &&fccb) {
     if (request->getMethod() == HttpMethod::Options) return fccb();
 
-    std::string token = request->getHeader("Authorization");
+    std::string token = request->getCookie("token");
 
-    if (token.length() < 7) {
+    if (token.empty()) {
         Json::Value resultJson;
         resultJson["error"] =
             "Authentification header is not found or malformed";
@@ -31,7 +30,6 @@ void JwtFilter::doFilter(const drogon::HttpRequestPtr &request,
         return fcb(res);
     }
 
-    token = token.substr(7);
     auto decoded = jwt::decode(token);
     auto verifier = jwt::verify()
                         .allow_algorithm(jwt::algorithm::hs256 {"secret"})
@@ -41,10 +39,9 @@ void JwtFilter::doFilter(const drogon::HttpRequestPtr &request,
 
     verifier.verify(decoded, ec);
 
-
     if (ec) {
         Json::Value resultJson;
-        resultJson["error"] = "Token is invalid!";
+        resultJson["message"] = "Token is invalid!";
         resultJson["status"] = "error";
 
         auto res = HttpResponse::newHttpJsonResponse(resultJson);

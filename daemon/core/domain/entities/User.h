@@ -12,12 +12,14 @@
 #include <set>
 #include <string>
 
-namespace bxt::Core::Domain
-{
+namespace bxt::Core::Domain {
 
 class User {
 public:
     User() : m_name("Unnamed") {}
+
+    User(const Name &name, const std::string &password)
+        : m_name(name), m_password(password) {};
 
     const Name &id() const { return m_name; }
     const Name &name() const { return m_name; }
@@ -28,10 +30,11 @@ public:
 
     void set_name(const std::string &new_name) { m_name = new_name; }
 
-    void set_password(const std::string &new_password) { m_password = new_password; }
+    void set_password(const std::string &new_password) {
+        m_password = new_password;
+    }
 
-    void set_permissions(const std::set<Permission> &new_permissions)
-    {
+    void set_permissions(const std::set<Permission> &new_permissions) {
         m_permissions = new_permissions;
     }
 

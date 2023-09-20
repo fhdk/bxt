@@ -6,6 +6,8 @@
  */
 #include "AuthController.h"
 
+#include "drogon/HttpTypes.h"
+
 #include <boost/json.hpp>
 #include <jwt-cpp/jwt.h>
 #include <jwt-cpp/traits/nlohmann-json/defaults.h>
@@ -14,10 +16,25 @@ namespace bxt::Presentation {
 
 drogon::Task<drogon::HttpResponsePtr>
     AuthController::auth(drogon::HttpRequestPtr req) {
+    if (!req->getJsonObject() || !req->getJsonObject()->isObject()) {
+        auto error_resp = drogon::HttpResponse::newHttpResponse();
+        error_resp->setStatusCode(drogon::k400BadRequest);
+        co_return error_resp;
+    }
+
     auto json = *req->getJsonObject();
 
-    const std::string name = json["name"].asString();
-    const std::string password = json["password"].asString();
+    const auto name_json = json["name"];
+    const auto password_json = json["password"];
+
+    if (name_json.isNull() || password_json.isNull()) {
+        auto error_resp = drogon::HttpResponse::newHttpResponse();
+        error_resp->setStatusCode(drogon::k400BadRequest);
+        co_return error_resp;
+    }
+
+    const std::string name = name_json.asString();
+    const std::string password = password_json.asString();
 
     if (!co_await m_service.auth(name, password)) {
         auto error_resp = drogon::HttpResponse::newHttpResponse();
@@ -27,12 +44,13 @@ drogon::Task<drogon::HttpResponsePtr>
     const auto token = jwt::create().set_issuer("auth0").set_type("JWS").sign(
         jwt::algorithm::hs256 {"secret"});
 
-    Json::Value result_json;
+    auto response = drogon::HttpResponse::newHttpResponse();
+    drogon::Cookie jwt_cookie("token", token);
 
-    result_json["status"] = "ok";
-    result_json["token"] = token;
+    jwt_cookie.setHttpOnly(true);
 
-    co_return drogon::HttpResponse::newHttpJsonResponse(result_json);
+    response->addCookie(jwt_cookie);
+    co_return response;
 }
 
 drogon::Task<drogon::HttpResponsePtr>

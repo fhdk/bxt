@@ -24,8 +24,7 @@ public:
     AuthService(Domain::UserRepository& user_repository)
         : m_user_repository(user_repository) {}
 
-    coro::task<Result<void>> auth(const std::string& name,
-                                  const std::string& password);
+    coro::task<Result<void>> auth(std::string name, std::string password);
 
     coro::task<Result<void>> verify(const std::string& token) const;
 
