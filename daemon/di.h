@@ -56,7 +56,8 @@ namespace Utilities {
     namespace LMDB {
 
         struct Environment
-            : kgr::shared_service<bxt::Utilities::LMDB::Environment> {};
+            : kgr::shared_service<bxt::Utilities::LMDB::Environment,
+                                  kgr::dependency<IOScheduler>> {};
 
     } // namespace LMDB
 

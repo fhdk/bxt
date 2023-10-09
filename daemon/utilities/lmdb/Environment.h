@@ -14,13 +14,13 @@
 #include <coro/task.hpp>
 #include <kangaru/autowire.hpp>
 #include <lmdbxx/lmdb++.h>
+#include <memory>
 
 namespace bxt::Utilities::LMDB {
 class Environment {
 public:
-    Environment()
-        : m_env(lmdb::env::create()),
-          m_mutex(std::make_shared<coro::io_scheduler>()) {}
+    Environment(std::shared_ptr<coro::io_scheduler> scheduler)
+        : m_env(lmdb::env::create()), m_mutex(scheduler) {}
 
     coro::task<std::unique_ptr<locked<lmdb::txn>>> begin_rw_txn() {
         auto result = std::make_unique<locked<lmdb::txn>>(
