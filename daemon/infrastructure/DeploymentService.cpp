@@ -9,6 +9,7 @@
 #include "core/application/dtos/PackageSectionDTO.h"
 #include "infrastructure/PackageService.h"
 #include "utilities/Error.h"
+#include "utilities/box/PoolManager.h"
 
 #include <filesystem>
 #include <fmt/format.h>

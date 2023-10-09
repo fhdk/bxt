@@ -17,7 +17,8 @@ public:
         IOError,
         DatabaseMalformedError,
         InvalidEntityError,
-        EntityNotFound
+        EntityNotFound,
+        InvalidArgument
     };
     DatabaseError(ErrorType error_type) : error_type(error_type) {
         message = messages.at(error_type).data();
@@ -29,11 +30,12 @@ public:
         message = messages.at(error_type).data();
     }
 
-    static inline frozen::map<ErrorType, std::string_view, 4> messages {
+    static inline frozen::map<ErrorType, std::string_view, 5> messages {
         {ErrorType::IOError, "IO error"},
         {ErrorType::DatabaseMalformedError, "Database is malformed"},
         {ErrorType::InvalidEntityError, "Invalid entity"},
-        {ErrorType::EntityNotFound, "Entity not found"}};
+        {ErrorType::EntityNotFound, "Entity not found"},
+        {ErrorType::InvalidArgument, "Invalid argument"}};
 
 private:
     ErrorType error_type;

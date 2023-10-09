@@ -11,8 +11,10 @@
 #include "core/domain/repositories/PackageRepositoryBase.h"
 #include "core/domain/repositories/RepositoryBase.h"
 #include "core/domain/repositories/UnitOfWorkBase.h"
+#include "coro/io_scheduler.hpp"
 #include "persistence/alpm/BoxOptions.h"
 #include "utilities/alpmdb/Database.h"
+#include "utilities/box/Database.h"
 
 #include <coro/sync_wait.hpp>
 #include <functional>
@@ -21,23 +23,9 @@ namespace bxt::Persistence {
 
 class Box : public Core::Domain::PackageRepositoryBase {
 public:
-    Box(ReadOnlyRepositoryBase<Section> &section_repository)
-        : m_section_repository(section_repository) {
-        auto sections = coro::sync_wait(m_section_repository.all_async());
-        if (!sections.has_value()) { return; }
-
-        for (const auto &section : *sections) {
-            auto dto = SectionDTOMapper::to_dto(section);
-
-            auto path_for_section =
-                fmt::format("{}/{}", m_options.location, std::string(dto));
-
-            std::filesystem::create_directories(path_for_section);
-
-            m_map.emplace(dto, Utilities::AlpmDb::Database {path_for_section,
-                                                            dto.repository});
-        }
-    };
+    Box(std::shared_ptr<bxt::Utilities::LMDB::Environment> environment,
+        std::shared_ptr<coro::io_scheduler> scheduler,
+        ReadOnlyRepositoryBase<Section> &section_repository);
 
     virtual coro::task<TResult> find_by_id_async(TId id) override;
     virtual coro::task<TResult>
@@ -56,11 +44,11 @@ public:
     virtual coro::task<WriteResult<void>> remove_async(const TId id) override;
 
     virtual coro::task<TResults>
-        find_by_section_async(const Section section) const override;
+        find_by_section_async(const Section section) override;
 
     virtual coro::task<TResults> find_by_section_async(
         const Section section,
-        const std::function<bool(const Package &)> predicate) const override;
+        const std::function<bool(const Package &)> predicate) override;
 
     virtual coro::task<UnitOfWorkBase::Result<void>> commit_async() override;
     virtual coro::task<UnitOfWorkBase::Result<void>> rollback_async() override;
@@ -69,11 +57,8 @@ public:
 
 private:
     BoxOptions m_options;
-    ReadOnlyRepositoryBase<Section> &m_section_repository;
 
-    phmap::parallel_flat_hash_map<Core::Application::PackageSectionDTO,
-                                  Utilities::AlpmDb::Database>
-        m_map;
+    bxt::Box::Database m_database;
 
     std::filesystem::path m_root_path;
 

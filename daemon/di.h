@@ -13,6 +13,7 @@
 #include "core/application/services/SectionService.h"
 #include "core/application/services/UserService.h"
 #include "core/domain/entities/PackageLogEntry.h"
+#include "coro/io_scheduler.hpp"
 #include "infrastructure/DeploymentService.h"
 #include "infrastructure/DispatchingUnitOfWork.h"
 #include "infrastructure/PackageService.h"
@@ -49,6 +50,8 @@ namespace Utilities {
     struct EventBusDispatcher
         : kgr::single_service<bxt::Utilities::EventBusDispatcher,
                               kgr::dependency<di::Utilities::EventBus>> {};
+
+    struct IOScheduler : kgr::shared_service<coro::io_scheduler> {};
 
     namespace LMDB {
 
@@ -187,7 +190,9 @@ namespace Persistence {
     struct Box
         : kgr::single_service<
               bxt::Infrastructure::DispatchingUnitOfWork<bxt::Persistence::Box>,
-              kgr::dependency<di::Core::Domain::ReadOnlySectionRepository>>,
+              kgr::dependency<di::Utilities::LMDB::Environment,
+                              di::Utilities::IOScheduler,
+                              di::Core::Domain::ReadOnlySectionRepository>>,
           kgr::overrides<di::Core::Domain::PackageRepositoryBase>,
           kgr::autocall<
               kgr::invoke<method<&bxt::Infrastructure::DispatchingUnitOfWork<

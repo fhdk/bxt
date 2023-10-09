@@ -7,6 +7,8 @@
 #pragma once
 #include "BoostSerializer.h"
 #include "Environment.h"
+#include "core/application/errors/CrudError.h"
+#include "coro/sync_wait.hpp"
 #include "lmdb.h"
 #include "nonstd/expected.hpp"
 #include "utilities/Error.h"
@@ -17,10 +19,12 @@
 #include <exception>
 #include <lmdbxx/lmdb++.h>
 namespace bxt::Utilities::LMDB {
+enum class NavigationAction { Next, Previous, Stop };
 
 template<typename TEntity, typename TSerializer = BoostSerializer<TEntity>>
 class Database {
 public:
+    using Serializer = TSerializer;
     BXT_DECLARE_RESULT(bxt::DatabaseError)
 
     Database(std::shared_ptr<Environment> env, std::string_view name = "")
@@ -112,7 +116,46 @@ public:
         }
     }
 
+    coro::task<Result<void>>
+        accept(std::function<NavigationAction(std::string_view key,
+                                              const TEntity& value)> visitor) {
+        auto rotxn = lmdb::txn::begin(m_env->env(), nullptr, MDB_RDONLY);
+
+        {
+            auto cursor = lmdb::cursor::open(rotxn, m_dbi);
+
+            std::string_view key, value;
+            MDB_cursor_op operation = MDB_NEXT;
+            if (cursor.get(key, value, MDB_FIRST)) {
+                do {
+                    auto res = TSerializer::deserialize(value);
+
+                    if (!res.has_value()) {
+                        co_return bxt::make_error_with_source<DatabaseError>(
+                            std::move(res.error()),
+                            DatabaseError::ErrorType::InvalidEntityError);
+                    }
+
+                    const auto result = visitor(key, *res);
+
+                    switch (result) {
+                    case NavigationAction::Next: operation = MDB_NEXT; break;
+                    case NavigationAction::Previous:
+                        operation = MDB_PREV;
+                        break;
+                    case NavigationAction::Stop: co_return {};
+                    }
+
+                } while (cursor.get(key, value, operation));
+            }
+        }
+
+        co_return {};
+    }
+
     lmdb::dbi& dbi() { return m_dbi; }
+
+    std::shared_ptr<Environment> env() { return m_env; };
 
 private:
     std::shared_ptr<Environment> m_env;

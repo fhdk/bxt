@@ -9,7 +9,10 @@
 #include "utilities/Error.h"
 #include "utilities/alpmdb/Desc.h"
 #include "utilities/errors/DatabaseError.h"
+#include "utilities/libarchive/Writer.h"
 
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
 #include <boost/log/trivial.hpp>
 #include <coro/event.hpp>
 #include <coro/io_scheduler.hpp>
@@ -26,70 +29,42 @@
 #include <parallel_hashmap/phmap.h>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 
-namespace bxt::Utilities::AlpmDb {
+namespace bxt::Utilities::AlpmDb::DatabaseUtils {
 
-class Database {
-public:
-    BXT_DECLARE_RESULT(DatabaseError)
+BXT_DECLARE_RESULT(DatabaseError)
 
-    explicit Database(const std::filesystem::path& path = "./",
-                      const std::string& name = "")
-        : m_path(std::filesystem::absolute(path)), m_name(name) {
-        if (name == "") { m_name = m_path.parent_path().filename(); }
-        const auto load_result = coro::sync_wait(load());
+coro::task<Result<phmap::parallel_flat_hash_map<std::string, Desc>>>
+    parse_packages(std::set<std::string> files);
 
-        if (!load_result.has_value()) {
-            BOOST_LOG_TRIVIAL(warning)
-                << fmt::format("Database '{}' is not readable or doesn't "
-                               "exist. Error is {}",
-                               m_path.string(), load_result.error().what());
-        }
-    }
+coro::task<Result<phmap::parallel_flat_hash_map<std::string, Desc>>>
+    load(std::filesystem::path path);
 
-    coro::task<Result<void>> add(const std::set<std::string>& files);
-    coro::task<Result<void>> remove(const std::set<std::string>& packages);
-    std::set<std::string> packages() const {
-        std::set<std::string> packages;
-        std::ranges::transform(m_descriptions,
-                               std::inserter(packages, packages.begin()),
-                               [](const auto& value) { return value.first; });
+coro::task<Result<void>>
+    accept(std::set<std::string> files,
+           std::function<void(const std::string& name, const Desc& description)>
+               visitor);
 
-        return packages;
-    }
+template<typename TBuffer>
+void write_buffer_to_archive(Archive::Writer& writer,
+                             const std::string& name,
+                             const TBuffer& buffer) {
+    auto header = Archive::Header::default_file();
 
-    Result<std::vector<std::string>>
-        description_values(const std::string& key) const {
-        std::vector<std::string> values;
-        values.reserve(m_descriptions.size());
+    archive_entry_set_pathname(header, name.c_str());
+    archive_entry_set_size(header, buffer.size());
 
-        for (const auto& [current_key, value] : m_descriptions) {
-            const auto result = value.get(key);
+    auto entry = writer.start_write(header);
 
-            if (!result.has_value()) { continue; }
+    if (!entry.has_value()) { return; }
 
-            values.push_back(*result);
-        }
+    entry->write({buffer.begin(), buffer.end()});
+    entry->finish();
+}
 
-        return values;
-    }
+coro::task<Result<void>>
+    save(phmap::parallel_flat_hash_map<std::string, Desc> descriptions,
+         std::filesystem::path path);
 
-    coro::task<Result<void>> load();
-
-private:
-    coro::task<Result<void>> save_async();
-
-    bool package_exists(const std::string& package_name) const;
-    void create_symlinks() const;
-
-    constexpr static frozen::set<frozen::string, 3>
-        supported_package_extensions = {"pkg.tar.gz", "pkg.tar.xz",
-                                        "pkg.tar.zst"};
-
-    std::filesystem::path m_path;
-    std::unique_ptr<coro::mutex> m_file_lock = std::make_unique<coro::mutex>();
-
-    std::string m_name;
-    phmap::parallel_node_hash_map<std::string, Desc> m_descriptions;
-};
-} // namespace bxt::Utilities::AlpmDb
+} // namespace bxt::Utilities::AlpmDb::DatabaseUtils

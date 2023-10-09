@@ -6,17 +6,91 @@
  */
 #include "Box.h"
 
+#include "core/application/dtos/PackageDTO.h"
+#include "core/application/dtos/PackageSectionDTO.h"
+#include "core/domain/entities/Package.h"
+#include "core/domain/entities/Section.h"
 #include "core/domain/events/PackageEvents.h"
+#include "core/domain/repositories/RepositoryBase.h"
 #include "coro/sync_wait.hpp"
 #include "fmt/core.h"
+#include "utilities/Error.h"
+#include "utilities/StaticDTOMapper.h"
 #include "utilities/alpmdb/Database.h"
+#include "utilities/box/Package.h"
 
 #include <fmt/format.h>
 #include <functional>
 #include <infrastructure/PackageFile.h>
 #include <string>
+#include <vector>
+
+template<typename T>
+inline constexpr std::optional<T>
+    boost_opt_to_std(const boost::optional<T> &opt) {
+    if (opt.has_value()) {
+        return std::make_optional(std::forward<decltype(opt)>(opt).value());
+    } else {
+        return std::nullopt;
+    }
+}
+
+template<typename T>
+inline constexpr boost::optional<T>
+    std_opt_to_boost(const std::optional<T> &opt) {
+    if (opt.has_value()) {
+        return boost::make_optional(std::forward<decltype(opt)>(opt).value());
+    } else {
+        return boost::none;
+    }
+}
+
+template<> struct bxt::Utilities::StaticDTOMapper<Package, bxt::Box::Package> {
+    static bxt::Box::Package to_dto(const Package &from) {
+        return bxt::Box::Package {.name = from.name(),
+                                  .filepath = from.filepath(),
+                                  .signature_path =
+                                      std_opt_to_boost(from.signature_path()),
+                                  .location = from.location()};
+    }
+    static Package::ParseResult to_entity(const Section &section,
+                                          const bxt::Box::Package &from) {
+        auto result = Package::from_filepath(section, from.filepath);
+
+        result->set_signature_path(boost_opt_to_std(from.signature_path));
+        result->set_pool_location(from.location);
+        return result;
+    }
+};
+
+using BoxPackageMapper =
+    bxt::Utilities::StaticDTOMapper<Package, bxt::Box::Package>;
 
 namespace bxt::Persistence {
+
+auto get_sections_from_repository(
+    ReadOnlyRepositoryBase<Section> &section_repository) {
+    std::vector<PackageSectionDTO> result;
+    auto sections = coro::sync_wait(section_repository.all_async());
+    if (!sections.has_value()) { return result; }
+
+    result.reserve(sections->size());
+
+    for (const auto &section : *sections) {
+        result.emplace_back(SectionDTOMapper::to_dto(section));
+    }
+    return result;
+}
+
+Box::Box(std::shared_ptr<bxt::Utilities::LMDB::Environment> environment,
+         std::shared_ptr<coro::io_scheduler> scheduler,
+         ReadOnlyRepositoryBase<Section> &section_repository)
+    : m_database(environment,
+                 scheduler,
+                 get_sections_from_repository(section_repository),
+                 "bxt::Box") {
+
+    };
 
 coro::task<Box::TResult> Box::find_by_id_async(TId id) {
 }
@@ -54,22 +128,28 @@ coro::task<Box::WriteResult<void>> Box::update_async(const Package entity) {
 }
 
 coro::task<Box::TResults>
-    Box::find_by_section_async(const Core::Domain::Section section) const {
-    auto packages = m_map.at(SectionDTOMapper::to_dto(section))
-                        .description_values("FILENAME");
+    Box::find_by_section_async(const Core::Domain::Section section) {
+    auto packages =
+        co_await m_database.find_by_section(SectionDTOMapper::to_dto(section));
 
-    if (!packages.has_value()) co_return {};
+    if (!packages.has_value()) {
+        co_return bxt::make_error_with_source<ReadError>(
+            std::move(packages.error()),
+            ReadError::ErrorTypes::InvalidArgument);
+    };
 
     std::vector<Core::Domain::Package> result;
     result.reserve(packages->size());
 
-    for (const auto &package_name : *packages) {
-        const auto package = Core::Domain::Package::from_filepath(
-            section, fmt::format("{}/{}/{}/{}/{}", m_options.location,
-                                 section.branch(), section.repository(),
-                                 section.architecture(), package_name));
+    for (const auto &package : *packages) {
+        auto entity = BoxPackageMapper::to_entity(section, package);
 
-        if (package.has_value()) { result.emplace_back(*package); }
+        if (!entity.has_value()) {
+            co_return bxt::make_error_with_source<ReadError>(
+                std::move(entity.error()),
+                ReadError::ErrorTypes::EntityFindError);
+        }
+        result.emplace_back(*entity);
     }
 
     co_return result;
@@ -77,21 +157,27 @@ coro::task<Box::TResults>
 
 coro::task<Box::TResults> Box::find_by_section_async(
     const Section section,
-    const std::function<bool(const Package &)> predicate) const {
-    auto packages = m_map.at(SectionDTOMapper::to_dto(section))
-                        .description_values("FILENAME");
+    const std::function<bool(const Package &)> predicate) {
+    auto packages =
+        co_await m_database.find_by_section(SectionDTOMapper::to_dto(section));
 
-    if (!packages.has_value()) { co_return {}; }
+    if (!packages.has_value()) {
+        co_return bxt::make_error_with_source<ReadError>(
+            std::move(packages.error()),
+            ReadError::ErrorTypes::InvalidArgument);
+    };
 
     std::vector<Core::Domain::Package> result;
     result.reserve(packages->size());
 
-    for (const auto &package_name : *packages) {
-        const auto package =
-            Core::Domain::Package::from_filename(section, package_name);
-        if (package.has_value() && predicate(*package)) {
-            result.emplace_back(*package);
+    for (const auto &package : *packages) {
+        auto entity = BoxPackageMapper::to_entity(section, package);
+        if (!entity.has_value()) {
+            co_return bxt::make_error_with_source<ReadError>(
+                std::move(entity.error()),
+                ReadError::ErrorTypes::EntityFindError);
         }
+        if (predicate(*entity)) { result.emplace_back(*entity); }
     }
 
     co_return result;
@@ -99,42 +185,18 @@ coro::task<Box::TResults> Box::find_by_section_async(
 
 coro::task<UnitOfWorkBase::Result<void>> Box::commit_async() {
     phmap::node_hash_map<PackageSectionDTO, std::set<std::string>> paths_to_add;
+    std::vector<coro::task<decltype(m_database)::Result<void>>> tasks;
+
+    tasks.reserve(paths_to_add.size());
 
     for (const auto &entity : m_to_add) {
+        auto dto = BoxPackageMapper::to_dto(entity);
         auto section_dto = SectionDTOMapper::to_dto(entity.section());
-
-        std::cout << fmt::format("Symlinking {}/{}\n", std::string(section_dto),
-                                 entity.filepath().filename().string());
-
-        std::error_code ec;
-
-        auto target_path = std::filesystem::absolute(fmt::format(
-            "{}/{}/{}", m_options.location, std::string(section_dto),
-            entity.filepath().filename().string()));
-
-        auto source_path = std::filesystem::relative(entity.filepath(),
-                                                     target_path.parent_path());
-
-        std::filesystem::create_symlink(source_path, target_path, ec);
-
-        if (entity.signature_path()) {
-            std::filesystem::create_symlink(
-                *entity.signature_path(),
-                fmt::format("{}.sig", target_path.string()), ec);
-        }
-
-        paths_to_add[section_dto].emplace(entity.filepath().string());
+        tasks.emplace_back(m_database.add(section_dto, dto));
 
         auto event = std::make_shared<Events::PackageAdded>(entity);
 
         m_event_store.emplace_back(event);
-    }
-    std::vector<coro::task<Utilities::AlpmDb::Database::Result<void>>> tasks;
-
-    tasks.reserve(paths_to_add.size());
-
-    for (const auto &[section, values] : paths_to_add) {
-        tasks.emplace_back(m_map.at(section).add(values));
     }
 
     phmap::node_hash_map<PackageSectionDTO, std::set<std::string>>

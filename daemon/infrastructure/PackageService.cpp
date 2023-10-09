@@ -13,23 +13,6 @@
 
 #include <vector>
 
-bool move_file(const std::filesystem::path &from,
-               const std::filesystem::path &to) {
-    std::error_code ec;
-
-    std::filesystem::rename(from, to, ec);
-
-    // try copy + remove original
-    if (ec) {
-        std::filesystem::copy(
-            from, to, std::filesystem::copy_options::overwrite_existing, ec);
-
-        std::filesystem::remove(from);
-    }
-
-    return ec.value() != 0;
-}
-
 namespace bxt::Infrastructure {
 
 coro::task<PackageService::Result<void>> PackageService::commit_transaction(
@@ -62,8 +45,6 @@ coro::task<PackageService::Result<void>> PackageService::commit_transaction(
 
 coro::task<PackageService::Result<void>>
     PackageService::add_package(const PackageDTO package) {
-    std::filesystem::create_directories(m_options.pool(package.section));
-
     auto deployed_entity = PackageDTOMapper::to_entity(package);
 
     if (!deployed_entity.has_value()) {
@@ -87,26 +68,8 @@ coro::task<PackageService::Result<void>>
         co_return bxt::make_error<CrudError>(
             CrudError::ErrorType::EntityAlreadyExists);
     }
-    auto renamed_package = package;
 
-    move_file(package.filepath,
-              m_options.pool(package.section) / package.filepath.filename());
-
-    renamed_package.filepath =
-        m_options.pool(package.section) / package.filepath.filename();
-
-    if (package.signature_path) {
-        const auto signature_path =
-            fmt::format("{}/{}.sig", m_options.pool(package.section).string(),
-                        package.filepath.filename().string());
-
-        move_file(*package.signature_path, signature_path);
-
-        renamed_package.signature_path = signature_path;
-    }
-
-    co_await m_repository.add_async(
-        *PackageDTOMapper::to_entity(renamed_package));
+    co_await m_repository.add_async(*PackageDTOMapper::to_entity(package));
 
     co_return {};
 }

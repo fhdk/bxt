@@ -13,6 +13,7 @@
 #include "core/domain/value_objects/PackageVersion.h"
 #include "frozen/map.h"
 #include "utilities/Error.h"
+#include "utilities/box/PoolManager.h"
 
 #include <filesystem>
 #include <nonstd/expected.hpp>
@@ -33,17 +34,20 @@ public:
     const PackageVersion& version() const { return m_version; }
     const std::string& architecture() const { return m_architecture; }
     const std::filesystem::path& filepath() const { return m_filepath; }
+    const Box::PoolManager::PoolLocation location() const { return m_location; }
 
     Package(const Section& section,
             const std::string& name,
             const PackageVersion& version,
             const PackageArchitecture& arch,
-            const std::filesystem::path& path)
+            const std::filesystem::path& path,
+            Box::PoolManager::PoolLocation location)
         : m_section(section),
           m_name(name),
           m_version(version),
           m_architecture(arch),
-          m_filepath(path) {}
+          m_filepath(path),
+          m_location(location) {}
 
     virtual ~Package() = default;
 
@@ -111,6 +115,10 @@ public:
         m_signature_path = signature_path;
     }
 
+    void set_pool_location(Box::PoolManager::PoolLocation location) {
+        m_location = location;
+    }
+
 private:
     Section m_section;
 
@@ -119,6 +127,7 @@ private:
     PackageArchitecture m_architecture;
     std::filesystem::path m_filepath;
     std::optional<std::filesystem::path> m_signature_path = {};
+    Box::PoolManager::PoolLocation m_location;
 };
 
 } // namespace bxt::Core::Domain

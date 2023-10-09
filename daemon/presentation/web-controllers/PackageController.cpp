@@ -15,6 +15,7 @@
 #include "drogon/HttpTypes.h"
 #include "drogon/utils/FunctionTraits.h"
 #include "jwt-cpp/traits/nlohmann-json/defaults.h"
+#include "utilities/box/PoolManager.h"
 
 #include "json/value.h"
 #include <drogon/MultiPart.h>
@@ -88,6 +89,7 @@ drogon::Task<drogon::HttpResponsePtr>
 
     PackageService::Transaction transaction;
     for (auto &package : packages) {
+        package.second.location = Box::PoolManager::PoolLocation::Overlay;
         transaction.to_add.emplace_back(std::move(package.second));
     }
 

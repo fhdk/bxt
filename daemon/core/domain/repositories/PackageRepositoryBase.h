@@ -23,7 +23,7 @@ struct PackageRepositoryBase : public ReadWriteRepositoryBase<Package> {
     using WriteResult = ReadWriteRepositoryBase<Package>::Result<T>;
 
     virtual coro::task<TResults>
-        find_by_section_async(const Section section) const = 0;
+        find_by_section_async(const Section section) = 0;
 
     virtual TResults find_by_section(const Section& section) {
         return coro::sync_wait(find_by_section_async(section));
@@ -31,11 +31,11 @@ struct PackageRepositoryBase : public ReadWriteRepositoryBase<Package> {
 
     virtual coro::task<TResults> find_by_section_async(
         const Section section,
-        const std::function<bool(const Package& pkg)> predicate) const = 0;
+        const std::function<bool(const Package& pkg)> predicate) = 0;
 
     virtual TResults find_by_section(
         const Section section,
-        const std::function<bool(const Package& pkg)> predicate) const {
+        const std::function<bool(const Package& pkg)> predicate) {
         return coro::sync_wait(find_by_section_async(section, predicate));
     }
 };

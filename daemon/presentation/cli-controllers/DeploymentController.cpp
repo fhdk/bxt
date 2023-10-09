@@ -113,7 +113,8 @@ drogon::Task<drogon::HttpResponsePtr>
 
     auto dto = PackageDTO {section, name, app().getUploadPath() + "/" + name,
                            app().getUploadPath() + "/"
-                               + signature->second.getFileName()};
+                               + signature->second.getFileName(),
+                           Box::PoolManager::PoolLocation::Automated};
 
     const auto push_ok = co_await m_service.deploy_push(dto, session_id);
 

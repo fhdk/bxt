@@ -5,10 +5,12 @@
  *
  */
 
+#include "core/application/dtos/PackageSectionDTO.h"
 #include "core/application/services/DeploymentService.h"
 #include "core/application/services/SectionService.h"
 #include "core/domain/entities/User.h"
 #include "core/domain/value_objects/Name.h"
+#include "coro/io_scheduler.hpp"
 #include "coro/sync_wait.hpp"
 #include "di.h"
 #include "drogon/HttpResponse.h"
@@ -26,6 +28,7 @@
 #include <filesystem>
 #include <kangaru/debug.hpp>
 #include <memory>
+#include <vector>
 
 void setup_logger() {
     using namespace boost::log;
@@ -43,6 +46,10 @@ void setup_logger() {
 
 void setup_di_container(kgr::container& ctr) {
     using namespace bxt;
+
+    ctr.emplace<di::Utilities::IOScheduler>(coro::io_scheduler::options {
+        .thread_strategy = coro::io_scheduler::thread_strategy_t::manual,
+    });
 
     ctr.service<di::Utilities::EventBus>();
 
@@ -70,9 +77,9 @@ void setup_di_container(kgr::container& ctr) {
         });
 
     ctr.service<di::Persistence::SectionRepository>();
-    ctr.emplace<di::Persistence::UserRepository>(std::string("Users"));
+    ctr.emplace<di::Persistence::UserRepository>(std::string("bxt::Users"));
     ctr.emplace<di::Persistence::PackageLogEntryRepository>(
-        std::string("PackageLogs"));
+        std::string("bxt::PackageLogs"));
 
     ctr.service<di::Persistence::Box>();
 
@@ -96,6 +103,11 @@ void setup_controllers(auto& app, kgr::container& ctr) {
         .registerController(ctr.service<LogController>())
         .registerController(ctr.service<SectionController>())
         .registerFilter(ctr.service<JwtFilter>());
+}
+
+void setup_scheduler(auto& app, auto scheduler) {
+    app.getLoop()->runEvery(1.0,
+                            [scheduler]() { scheduler->process_events(); });
 }
 
 void setup_defaults(kgr::container& ctr) {
@@ -150,7 +162,6 @@ int main() {
     };
 
     auto& app = drogon::app()
-
                     .setDocumentRoot("../frontend/")
                     .registerPreRoutingAdvice(serveFrontendAdvice)
                     .addListener("0.0.0.0", 8080)
@@ -158,6 +169,7 @@ int main() {
                     .setClientMaxBodySize(256 * 1024 * 1024)
                     .setClientMaxMemoryBodySize(1024 * 1024);
 
+    setup_scheduler(app, ctr.service<bxt::di::Utilities::IOScheduler>());
     setup_controllers(app, ctr);
 
     app.run();

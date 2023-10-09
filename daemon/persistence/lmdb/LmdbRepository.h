@@ -69,29 +69,11 @@ public:
     virtual coro::task<TResults> all_async() override {
         TEntities results;
 
-        auto rotxn =
-            lmdb::txn::begin(m_environment->env(), nullptr, MDB_RDONLY);
-
-        {
-            auto cursor = lmdb::cursor::open(rotxn, m_db.dbi());
-
-            std::string_view key, value;
-            if (cursor.get(key, value, MDB_FIRST)) {
-                do {
-                    auto res =
-                        Utilities::LMDB::BoostSerializer<TDTO>::deserialize(
-                            value);
-
-                    if (!res.has_value()) {
-                        co_return bxt::make_error_with_source<ReadError>(
-                            std::move(res.error()),
-                            ReadError::ErrorTypes::EntityFindError);
-                    }
-
-                    results.emplace_back(TMapper::to_entity(*res));
-                } while (cursor.get(key, value, MDB_NEXT));
-            }
-        }
+        m_db.accept(
+            [&results]([[maybe_unused]] std::string_view key, const TDTO &e) {
+                results.push_back(TMapper::to_entity(e));
+                return Utilities::LMDB::NavigationAction::Next;
+            });
 
         co_return results;
     }

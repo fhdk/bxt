@@ -90,7 +90,8 @@ nonstd::expected<Package, Package::ParsingError>
     } catch (const std::invalid_argument& art) { epoch_int = std::nullopt; }
     return Package(section, name,
                    {.epoch = epoch_int, .version = version, .release = release},
-                   PackageArchitecture(), filename);
+                   PackageArchitecture(), filename,
+                   Box::PoolManager::PoolLocation::Unknown);
 }
 
 nonstd::expected<Package, Package::ParsingError> Package::from_filepath(

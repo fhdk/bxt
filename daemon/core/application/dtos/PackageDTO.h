@@ -9,6 +9,7 @@
 #include "PackageSectionDTO.h"
 #include "core/domain/entities/Package.h"
 #include "utilities/StaticDTOMapper.h"
+#include "utilities/box/PoolManager.h"
 
 #include <filesystem>
 #include <optional>
@@ -20,6 +21,7 @@ struct PackageDTO {
     std::string name;
     std::filesystem::path filepath;
     std::optional<std::filesystem::path> signature_path = {};
+    Box::PoolManager::PoolLocation location;
 
     auto operator<=>(const PackageDTO& other) const = default;
 };
@@ -40,13 +42,15 @@ template<> struct bxt::Utilities::StaticDTOMapper<Package, PackageDTO> {
             .section = SectionDTOMapper::to_dto(from.section()),
             .name = from.name(),
             .filepath = from.filepath(),
-            .signature_path = from.signature_path()};
+            .signature_path = from.signature_path(),
+            .location = from.location()};
     }
     static Package::ParseResult to_entity(const PackageDTO& from) {
         auto section = SectionDTOMapper::to_entity(from.section);
         auto result = Package::from_filepath(section, from.filepath);
 
         result->set_signature_path(from.signature_path);
+        result->set_pool_location(from.location);
         return result;
     }
 };

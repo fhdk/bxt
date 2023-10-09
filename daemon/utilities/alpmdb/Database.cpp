@@ -7,7 +7,10 @@
 #include "Database.h"
 
 #include "nonstd/expected.hpp"
+#include "parallel_hashmap/phmap.h"
 #include "utilities/Error.h"
+#include "utilities/alpmdb/Desc.h"
+#include "utilities/errors/DatabaseError.h"
 #include "utilities/libarchive/Error.h"
 
 #include <algorithm>
@@ -16,102 +19,73 @@
 #include <boost/algorithm/string/split.hpp>
 #include <coro/latch.hpp>
 #include <execution>
+#include <filesystem>
 #include <fmt/format.h>
 #include <iterator>
 #include <utilities/libarchive/Reader.h>
 #include <utilities/libarchive/Writer.h>
 
-namespace bxt::Utilities::AlpmDb {
+namespace bxt::Utilities::AlpmDb::DatabaseUtils {
 
-coro::task<Database::Result<void>>
-    Database::add(const std::set<std::string>& packages) {
+constexpr static frozen::set<frozen::string, 3> supported_package_extensions = {
+    "pkg.tar.gz", "pkg.tar.xz", "pkg.tar.zst"};
+
+coro::task<Result<phmap::parallel_flat_hash_map<std::string, Desc>>>
+    parse_packages(const std::set<std::string>& packages) {
+    phmap::parallel_flat_hash_map<std::string, Desc> descriptions;
+
     coro::latch latch {static_cast<ptrdiff_t>(packages.size())};
 
-    for (const auto& package : packages) {
-        auto description = Desc::parse_package(package);
-        if (!description.has_value()) {
-            co_return nonstd::unexpected(
-                DatabaseError(DatabaseError::ErrorType::InvalidEntityError));
-        }
-        const auto name = description->get("NAME");
-
-        const auto version = description->get("VERSION");
-
-        if (!name.has_value() || !version.has_value()) { continue; }
-
-        m_descriptions.lazy_emplace_l(
-            fmt::format("{}-{}", *name, *version),
+    accept(packages, [&descriptions, &latch](const std::string& name,
+                                             const Desc& description) {
+        descriptions.lazy_emplace_l(
+            name,
             [description, &latch, name](auto& value) {
-                value.second = *description;
+                value.second = description;
                 latch.count_down();
             },
-            [description, &latch, name, version](const auto& ctor) {
-                ctor(fmt::format("{}-{}", *name, *version), *description);
+            [description, &latch, name](const auto& ctor) {
+                ctor(name, description);
                 latch.count_down();
             });
-    }
+    });
 
     co_await latch;
 
-    co_await save_async();
-
-    co_return {};
+    co_return descriptions;
 }
 
-coro::task<Database::Result<void>>
-    Database::remove(const std::set<std::string>& packages) {
-    coro::latch latch {static_cast<ptrdiff_t>(packages.size())};
+void create_symlinks(std::filesystem::path path) {
+    std::string name = path.stem();
 
-    for (const auto& pkgname : packages) {
-        m_descriptions.erase_if(pkgname, [&latch](const auto& value) {
-            latch.count_down();
-            return true;
-        });
-    }
+    std::error_code ec;
+    std::filesystem::create_symlink(
+        path.parent_path() / fmt::format("{}.db.tar.zst", name),
+        path.parent_path() / fmt::format("{}.db", name), ec);
 
-    co_await latch;
-
-    co_await save_async();
-
-    co_return {};
+    std::filesystem::create_symlink(
+        path.parent_path() / fmt::format("{}.files.tar.zst", name),
+        path.parent_path() / fmt::format("{}.files", name), ec);
 }
 
-template<typename TBuffer>
-void write_buffer_to_archive(Archive::Writer& writer,
-                             const std::string& name,
-                             const TBuffer& buffer) {
-    auto header = Archive::Header::default_file();
-
-    archive_entry_set_pathname(header, name.c_str());
-    archive_entry_set_size(header, buffer.size());
-
-    auto entry = writer.start_write(header);
-
-    if (!entry.has_value()) { return; }
-
-    entry->write({buffer.begin(), buffer.end()});
-    entry->finish();
-}
-
-coro::task<Database::Result<void>> Database::save_async() {
-    auto lock = co_await m_file_lock->lock();
-
+coro::task<Result<void>>
+    save(phmap::parallel_flat_hash_map<std::string, Desc> descriptions,
+         std::filesystem::path path) {
     Archive::Writer db_writer, files_writer;
 
-    std::cout << fmt::format("Adding new entries to {}.db.tar.zst...\n",
-                             (m_path / m_name).string());
+    std::cout << fmt::format("Saving entries to {}.db.tar.zst...\n",
+                             path.string());
 
     archive_write_add_filter_zstd(db_writer);
     archive_write_set_format_pax_restricted(db_writer);
 
-    db_writer.open_filename(m_path / fmt::format("{}.db.tar.zst", m_name));
+    db_writer.open_filename(path);
 
     archive_write_add_filter_zstd(files_writer);
     archive_write_set_format_pax_restricted(files_writer);
-    files_writer.open_filename(m_path
-                               / fmt::format("{}.files.tar.zst", m_name));
+    files_writer.open_filename(path);
 
-    for (const auto& [name, description] : m_descriptions) {
+    for (const auto& [name, description] : descriptions) {
         std::cout << fmt::format("Description for {} is being added...\n",
                                  name);
 
@@ -122,36 +96,24 @@ coro::task<Database::Result<void>> Database::save_async() {
                                 description.files());
     }
 
-    create_symlinks();
+    create_symlinks(path);
 
     co_return {};
 }
 
-void Database::create_symlinks() const {
-    std::error_code ec;
-    std::filesystem::create_symlink(m_path
-                                        / fmt::format("{}.db.tar.zst", m_name),
-                                    m_path / fmt::format("{}.db", m_name), ec);
-
-    std::filesystem::create_symlink(
-        m_path / fmt::format("{}.files.tar.zst", m_name),
-        m_path / fmt::format("{}.files", m_name), ec);
-}
-
-coro::task<Database::Result<void>> Database::load() {
-    auto lock = co_await m_file_lock->lock();
-
+coro::task<Result<phmap::parallel_flat_hash_map<std::string, Desc>>>
+    load(std::filesystem::path path) {
+    phmap::parallel_flat_hash_map<std::string, Desc> descriptions;
     Archive::Reader db_reader;
 
     archive_read_support_format_all(db_reader);
     archive_read_support_filter_all(db_reader);
 
-    const auto opened =
-        db_reader.open_filename(m_path / fmt::format("{}.db.tar.zst", m_name));
+    auto opened = db_reader.open_filename(path);
 
     if (!opened.has_value()) {
-        co_return nonstd::unexpected(DatabaseError {
-            DatabaseError::ErrorType::IOError, std::move(opened.error())});
+        co_return bxt::make_error_with_source<DatabaseError>(
+            std::move(opened.error()), DatabaseError::ErrorType::IOError);
     }
 
     for (auto& [header, data] : db_reader) {
@@ -167,27 +129,47 @@ coro::task<Database::Result<void>> Database::load() {
 
         if (parts[1] != "desc") continue;
 
-        const auto buffer = data.read_all();
+        auto buffer = data.read_all();
         if (!buffer.has_value()) {
             if (const auto& buffer_err =
                     std::get_if<Archive::InvalidEntryError>(&buffer.error())) {
-                co_return nonstd::unexpected(DatabaseError(
-                    DatabaseError::ErrorType::DatabaseMalformedError,
-                    std::move(*buffer_err)));
+                co_return bxt::make_error_with_source<DatabaseError>(
+                    std::move(*buffer_err),
+                    DatabaseError::ErrorType::DatabaseMalformedError);
             } else {
-                co_return nonstd::unexpected(DatabaseError(
-                    DatabaseError::ErrorType::DatabaseMalformedError,
+                co_return bxt::make_error_with_source<DatabaseError>(
                     std::move(*std::get_if<Archive::LibArchiveError>(
-                        &buffer.error()))));
+                        &buffer.error())),
+                    DatabaseError::ErrorType::DatabaseMalformedError);
             }
         }
 
         Desc desc({buffer->begin(), buffer->end()});
 
-        m_descriptions[parts[0]] = desc;
+        descriptions[parts[0]] = desc;
     }
 
     co_return {};
 }
 
-} // namespace bxt::Utilities::AlpmDb
+coro::task<Result<void>>
+    accept(std::set<std::string> files,
+           std::function<void(const std::string& name, const Desc& description)>
+               visitor) {
+    for (const auto& package : files) {
+        auto description = Desc::parse_package(package);
+        if (!description.has_value()) {
+            co_return bxt::make_error<DatabaseError>(
+                DatabaseError::ErrorType::InvalidEntityError);
+        }
+        const auto name = description->get("NAME");
+
+        const auto version = description->get("VERSION");
+
+        if (!name.has_value() || !version.has_value()) { continue; }
+
+        visitor(fmt::format("{}-{}", *name, *version), *description);
+    }
+}
+
+} // namespace bxt::Utilities::AlpmDb::DatabaseUtils
