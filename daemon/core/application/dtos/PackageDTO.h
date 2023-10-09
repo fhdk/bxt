@@ -19,6 +19,7 @@ namespace bxt::Core::Application {
 struct PackageDTO {
     PackageSectionDTO section;
     std::string name;
+    std::string version;
     std::filesystem::path filepath;
     std::optional<std::filesystem::path> signature_path = {};
     Box::PoolManager::PoolLocation location;
@@ -41,6 +42,7 @@ template<> struct bxt::Utilities::StaticDTOMapper<Package, PackageDTO> {
         return Core::Application::PackageDTO {
             .section = SectionDTOMapper::to_dto(from.section()),
             .name = from.name(),
+            .version = from.version().string(),
             .filepath = from.filepath(),
             .signature_path = from.signature_path(),
             .location = from.location()};

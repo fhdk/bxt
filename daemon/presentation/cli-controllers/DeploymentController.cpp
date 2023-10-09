@@ -111,7 +111,10 @@ drogon::Task<drogon::HttpResponsePtr>
 
     const auto name = file->second.getFileName();
 
-    auto dto = PackageDTO {section, name, app().getUploadPath() + "/" + name,
+    auto dto = PackageDTO {section,
+                           name,
+                           "",
+                           app().getUploadPath() + "/" + name,
                            app().getUploadPath() + "/"
                                + signature->second.getFileName(),
                            Box::PoolManager::PoolLocation::Automated};

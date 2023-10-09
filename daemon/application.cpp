@@ -6,6 +6,7 @@
  */
 
 #include "core/application/dtos/PackageSectionDTO.h"
+#include "core/application/services/CompareService.h"
 #include "core/application/services/DeploymentService.h"
 #include "core/application/services/SectionService.h"
 #include "core/domain/entities/User.h"
@@ -90,6 +91,7 @@ void setup_di_container(kgr::container& ctr) {
     ctr.service<di::Infrastructure::DeploymentService>();
 
     ctr.service<di::Infrastructure::ArchRepoSyncService>();
+    ctr.service<di::Core::Application::CompareService>();
 }
 
 void setup_controllers(auto& app, kgr::container& ctr) {
@@ -97,6 +99,7 @@ void setup_controllers(auto& app, kgr::container& ctr) {
 
     app.registerController(ctr.service<DeploymentController>())
         .registerController(ctr.service<PackageController>())
+        .registerController(ctr.service<CompareController>())
         .registerController(ctr.service<AuthController>())
         .registerController(ctr.service<UserController>())
         .registerController(ctr.service<PermissionController>())

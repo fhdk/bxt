@@ -7,6 +7,7 @@
 #pragma once
 
 #include "core/application/services/AuthService.h"
+#include "core/application/services/CompareService.h"
 #include "core/application/services/PackageLogEntryService.h"
 #include "core/application/services/PackageService.h"
 #include "core/application/services/PermissionService.h"
@@ -26,6 +27,7 @@
 #include "persistence/lmdb/UserRepository.h"
 #include "presentation/cli-controllers/DeploymentController.h"
 #include "presentation/web-controllers/AuthController.h"
+#include "presentation/web-controllers/CompareController.h"
 #include "presentation/web-controllers/LogController.h"
 #include "presentation/web-controllers/PackageController.h"
 #include "presentation/web-controllers/PermissionController.h"
@@ -139,12 +141,16 @@ namespace Core {
                   kgr::dependency<
                       di::Core::Domain::ReadOnlySectionRepository>> {};
 
+        struct CompareService
+            : kgr::single_service<
+                  bxt::Core::Application::CompareService,
+                  kgr::dependency<di::Core::Application::PackageService>> {};
+
     } // namespace Application
 
 } // namespace Core
 
 namespace Infrastructure {
-
     struct EventLogger
         : kgr::single_service<bxt::Infrastructure::EventLogger,
                               kgr::dependency<di::Utilities::EventBus>> {};
@@ -175,7 +181,6 @@ namespace Infrastructure {
 } // namespace Infrastructure
 
 namespace Persistence {
-
     struct UserRepository
         : kgr::single_service<
               bxt::Persistence::LMDB::UserRepository,
@@ -219,6 +224,11 @@ namespace Presentation {
         : kgr::shared_service<
               bxt::Presentation::DeploymentController,
               kgr::dependency<di::Core::Application::DeploymentService>> {};
+
+    struct CompareController
+        : kgr::shared_service<
+              bxt::Presentation::CompareController,
+              kgr::dependency<di::Core::Application::CompareService>> {};
 
     struct AuthController
         : kgr::shared_service<

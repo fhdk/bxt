@@ -5,3 +5,24 @@
  *
  */
 #include "CompareService.h"
+
+namespace bxt::Core::Application {
+coro::task<CompareService::Result<CompareService::CompareResult>>
+    CompareService::compare(const std::vector<PackageSectionDTO> sections) {
+    CompareResult result;
+
+    for (const auto& section : sections) {
+        const auto packages = co_await m_package_service.get_packages(section);
+
+        if (!packages.has_value() || packages->empty()) { continue; }
+
+        result.sections.emplace_back(section);
+
+        for (const auto& package : *packages) {
+            result.compare_table[{package.name, section}] = package.version;
+        }
+    }
+
+    co_return result;
+}
+} // namespace bxt::Core::Application
