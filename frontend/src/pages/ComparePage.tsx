@@ -21,6 +21,7 @@ import {
     faFileText,
     faKeyboard,
     faParagraph,
+    faPlus,
     faTrash
 } from "@fortawesome/free-solid-svg-icons";
 
@@ -41,10 +42,6 @@ export default (props: any) => {
     };
 
     useEffect(() => {
-        getCompareResults([]);
-    }, [sections]);
-
-    useEffect(() => {
         setSelectedSections(compareResults?.sections || []);
     }, [compareResults]);
 
@@ -55,7 +52,7 @@ export default (props: any) => {
             id: "0",
             header: "Name"
         }),
-        ...selectedSections.map((section, index) =>
+        ...(compareResults?.sections.map((section, index) =>
             columnHelper.accessor(
                 (compare: ICompareEntry) => {
                     if (
@@ -72,7 +69,7 @@ export default (props: any) => {
                     header: `${section.branch}/${section.repository}/${section.architecture}`
                 }
             )
-        )
+        ) || [])
     ];
 
     const data = useMemo(
@@ -92,7 +89,7 @@ export default (props: any) => {
     return (
         <div className="w-full h-full overflow-x-auto">
             <div className="p-3 bg-base-200">
-                <span className="p-5 space-x-2 inline-flex w-full justify-between">
+                <span className="p-5 space-x-2 inline-flex w-full justify-start">
                     {selectedSections.map((section, index) => (
                         <div className="flex items-end h-fit" key={index}>
                             <SectionSelect
@@ -136,14 +133,32 @@ export default (props: any) => {
                                 className="rounded-none rounded-r-lg"
                                 size="sm"
                                 color="error"
+                                onClick={() =>
+                                    setSelectedSections([
+                                        ...selectedSections.slice(0, index),
+                                        ...selectedSections.slice(index + 1)
+                                    ])
+                                }
                             >
                                 <FontAwesomeIcon icon={faTrash} />
                             </Button>
                         </div>
                     ))}
                 </span>
-                <div className="w-full flex justify-end">
-                    <Button color="primary">
+                <div className="w-full flex justify-end space-x-2">
+                    <Button
+                        color="neutral"
+                        onClick={() =>
+                            setSelectedSections([...selectedSections, {}])
+                        }
+                    >
+                        <FontAwesomeIcon className="mr-2" icon={faPlus} />
+                        Add section
+                    </Button>
+                    <Button
+                        color="primary"
+                        onClick={() => getCompareResults(selectedSections)}
+                    >
                         <FontAwesomeIcon
                             className="mr-2"
                             icon={faCodeCompare}
