@@ -53,7 +53,11 @@ export default forwardRef<HTMLDialogElement, CommitModalProps>(
                 <Modal.Body>
                     <Form>
                         <Form.Label title="Section" />
-                        <SectionSelect className="w-full" />
+                        <SectionSelect
+                            sections={props.sections || []}
+                            selectedSection={section}
+                            className="w-full"
+                        />
                         <Form.Label title="Packages" />
 
                         <Table

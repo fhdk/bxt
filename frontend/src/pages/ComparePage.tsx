@@ -96,6 +96,8 @@ export default (props: any) => {
                     {selectedSections.map((section, index) => (
                         <div className="flex items-end h-fit" key={index}>
                             <SectionSelect
+                                sections={sections}
+                                selectedSection={section}
                                 plainTextMode={plainTextSelectorMode?.get(
                                     section
                                 )}

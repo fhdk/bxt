@@ -5,24 +5,23 @@ import {
     architecturesForBranchAndRepo
 } from "../utils/SectionUtils";
 import { useSections } from "../hooks/BxtHooks";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { HTMLAttributes, useCallback, useEffect, useState } from "react";
 
-interface ISectionSelectorProps extends React.HTMLAttributes<HTMLDivElement> {
+type ISectionSelectorProps = HTMLAttributes<HTMLDivElement> & {
+    sections: ISection[];
+    selectedSection?: ISection;
     onSelected?: (section: ISection | undefined) => void;
     plainTextMode?: boolean;
-}
+};
 
 export default (props: ISectionSelectorProps) => {
-    const [sections, updateSections] = useSections();
-    const [selectedSection, setSelectedSection] = useState<ISection>();
-
     const [plainTextInput, setPlainTextInput] = useState<string>();
 
     useEffect(() => {
         setPlainTextInput(
-            `${selectedSection?.branch}/${selectedSection?.repository}/${selectedSection?.architecture}`
+            `${props.selectedSection?.branch}/${props.selectedSection?.repository}/${props.selectedSection?.architecture}`
         );
-    }, [selectedSection]);
+    }, [props.selectedSection]);
 
     const setSectionFromPlainText = useCallback(
         (plainTextSection: string | undefined) => {
@@ -36,25 +35,26 @@ export default (props: ISectionSelectorProps) => {
             section.repository = parts[1];
             section.architecture = parts[2];
 
-            setSelectedSection(section);
+            if (props.onSelected) props.onSelected(section);
         },
-        [setSelectedSection]
+        [props.onSelected]
     );
 
     const updateSection = useCallback(
         (update: any) => {
-            setSelectedSection({ ...selectedSection, ...update });
+            if (props.onSelected)
+                props.onSelected({ ...props.selectedSection, ...update });
         },
-        [setSelectedSection, sections]
+        [props.onSelected, props.sections]
     );
 
     useEffect(() => {
-        if (props.onSelected) props.onSelected(selectedSection);
-    }, [selectedSection]);
-
-    useEffect(() => {
-        setSelectedSection({ ...sections[0], ...selectedSection });
-    }, [sections]);
+        if (props.onSelected)
+            props.onSelected({
+                ...props.sections[0],
+                ...props.selectedSection
+            });
+    }, [props.sections]);
 
     return (
         <div className="w-72" {...props}>
@@ -79,10 +79,10 @@ export default (props: ISectionSelectorProps) => {
                     </span>
                     <Select
                         className="rounded-none rounded-l-lg"
-                        value={selectedSection?.branch}
+                        value={props.selectedSection?.branch}
                         size="sm"
                     >
-                        {branches(sections).map((value) => (
+                        {branches(props.sections).map((value) => (
                             <option
                                 onClick={() => updateSection({ branch: value })}
                             >
@@ -95,33 +95,34 @@ export default (props: ISectionSelectorProps) => {
                     </span>
                     <Select
                         className="rounded-none"
-                        value={selectedSection?.repository}
+                        value={props.selectedSection?.repository}
                         size="sm"
                     >
-                        {reposForBranch(sections, selectedSection?.branch).map(
-                            (value) => (
-                                <option
-                                    onClick={() =>
-                                        updateSection({ repository: value })
-                                    }
-                                >
-                                    {value}
-                                </option>
-                            )
-                        )}
+                        {reposForBranch(
+                            props.sections,
+                            props.selectedSection?.branch
+                        ).map((value) => (
+                            <option
+                                onClick={() =>
+                                    updateSection({ repository: value })
+                                }
+                            >
+                                {value}
+                            </option>
+                        ))}
                     </Select>
                     <span className="px-2 text-xs/6 text-base-content/50">
                         Architecture
                     </span>
                     <Select
                         className="rounded-none rounded-r-lg"
-                        value={selectedSection?.architecture}
+                        value={props.selectedSection?.architecture}
                         size="sm"
                     >
                         {architecturesForBranchAndRepo(
-                            sections,
-                            selectedSection?.branch,
-                            selectedSection?.repository
+                            props.sections,
+                            props.selectedSection?.branch,
+                            props.selectedSection?.repository
                         ).map((value) => (
                             <option
                                 onClick={() =>
