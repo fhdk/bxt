@@ -53,8 +53,8 @@ coro::task<Database::Result<void>>
                                  .location = package.location,
                                  .description = std::move(*desc)};
 
-    auto moved_path =
-        m_manager.move_to(package_entity.filepath, package_entity.location);
+    auto moved_path = m_manager.move_to(
+        package_entity.filepath, package_entity.location, section.architecture);
 
     if (!moved_path.has_value()) {
         co_return bxt::make_error_with_source<DatabaseError>(
@@ -64,8 +64,9 @@ coro::task<Database::Result<void>>
     package_entity.filepath = *moved_path;
 
     if (package_entity.signature_path.has_value()) {
-        auto signature_moved_path = m_manager.move_to(
-            *package_entity.signature_path, package_entity.location);
+        auto signature_moved_path =
+            m_manager.move_to(*package_entity.signature_path,
+                              package_entity.location, section.architecture);
 
         if (!signature_moved_path.has_value()) {
             co_return bxt::make_error_with_source<DatabaseError>(

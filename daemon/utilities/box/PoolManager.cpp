@@ -14,26 +14,31 @@
 #include <system_error>
 #include <vector>
 namespace bxt::Box {
-PoolManager::PoolManager(const std::filesystem::path& pool_path)
-    : m_pool_path(pool_path) {
+PoolManager::PoolManager(const std::filesystem::path& pool_path,
+                         const std::set<std::string> architectures)
+    : m_pool_path(pool_path), m_architectures(architectures) {
     std::error_code ec;
     for (const auto& location : m_location_paths) {
-        const auto target = std::filesystem::absolute(
-            fmt::format("{}/{}", m_pool_path.string(), location.second.data()));
-        std::filesystem::create_directories(target, ec);
+        for (const auto& architecture : m_architectures) {
+            const auto target = std::filesystem::absolute(
+                fmt::format("{}/{}/{}", m_pool_path.string(),
+                            location.second.data(), architecture));
+            std::filesystem::create_directories(target, ec);
+        }
     }
 }
 
 PoolManager::Result<std::filesystem::path>
     PoolManager::move_to(const std::filesystem::path& from,
-                         PoolLocation location) {
+                         PoolLocation location,
+                         const std::string& arch) {
     std::error_code ec;
 
     std::filesystem::path target = std::filesystem::absolute(
-        fmt::format("{}/{}/{}", m_pool_path.string(),
+        fmt::format("{}/{}/{}/{}", m_pool_path.string(),
                     std::string(m_location_paths.at(location).data(),
                                 m_location_paths.at(location).size()),
-                    from.filename().string()));
+                    arch, from.filename().string()));
 
     std::filesystem::rename(from, target, ec);
 
@@ -52,11 +57,12 @@ PoolManager::Result<std::filesystem::path>
 }
 
 PoolManager::Result<std::vector<std::filesystem::path>>
-    PoolManager::packages(PoolLocation location) {
+    PoolManager::packages(PoolLocation location, const std::string& arch) {
     std::vector<std::filesystem::path> result;
 
-    const auto location_path = fmt::format(
-        "{}/{}", m_pool_path.string(), m_location_paths.at(location).data());
+    const auto location_path =
+        fmt::format("{}/{}/{}", m_pool_path.string(),
+                    m_location_paths.at(location).data(), arch);
 
     std::error_code ec;
     const auto iterator = std::filesystem::directory_iterator(m_pool_path, ec);

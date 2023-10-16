@@ -21,6 +21,7 @@
 #include <filesystem>
 #include <memory>
 #include <string_view>
+#include <vector>
 namespace bxt::Box {
 
 class Database {
@@ -32,7 +33,8 @@ public:
              std::vector<Core::Application::PackageSectionDTO> sections,
              const std::string_view name)
         : m_root_path("./box/"),
-          m_manager(m_root_path / "pool"),
+          m_manager(m_root_path / "pool",
+                    architectures_from_sections(sections)),
           m_db(env, name),
           m_archiver(scheduler, sections, m_root_path, *this) {}
 
@@ -54,6 +56,15 @@ public:
     Utilities::LMDB::Database<bxt::Box::Package>& lmdb_handle() { return m_db; }
 
 private:
+    std::set<std::string> architectures_from_sections(
+        const std::vector<PackageSectionDTO>& sections) {
+        std::set<std::string> architectures;
+
+        for (const auto& section : sections) {
+            architectures.emplace(section.architecture);
+        }
+        return architectures;
+    }
     std::filesystem::path m_root_path;
     PoolManager m_manager;
     Utilities::LMDB::Database<bxt::Box::Package> m_db;

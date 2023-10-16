@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "core/domain/value_objects/PackageArchitecture.h"
 #include "frozen/map.h"
 #include "frozen/string.h"
 #include "frozen/unordered_map.h"
@@ -15,6 +16,7 @@
 
 #include <filesystem>
 #include <mutex>
+#include <set>
 #include <shared_mutex>
 #include <string>
 #include <system_error>
@@ -28,13 +30,16 @@ public:
     };
     BXT_DECLARE_RESULT(FsError);
 
-    PoolManager(const std::filesystem::path& pool_path);
+    PoolManager(const std::filesystem::path& pool_path,
+                const std::set<std::string> architectures);
     enum class PoolLocation { Unknown, Sync, Overlay, Automated };
 
     Result<std::filesystem::path> move_to(const std::filesystem::path& from,
-                                          PoolLocation location);
+                                          PoolLocation location,
+                                          const std::string& arch);
 
-    Result<std::vector<std::filesystem::path>> packages(PoolLocation location);
+    Result<std::vector<std::filesystem::path>>
+        packages(PoolLocation location, const std::string& arch);
 
 private:
     constexpr static frozen::unordered_map<PoolLocation, frozen::string, 3>
@@ -43,6 +48,7 @@ private:
                             {PoolLocation::Automated, "/automated/"}};
 
     std::filesystem::path m_pool_path;
+    std::set<std::string> m_architectures;
     std::shared_mutex m_pool_mutex;
 };
 
