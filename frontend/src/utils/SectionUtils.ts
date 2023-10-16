@@ -24,7 +24,7 @@ export const branches = (sections: ISection[]): string[] => {
 
 export const reposForBranch = (
   sections: ISection[],
-  branchName: string
+  branchName: string | undefined
 ): string[] => {
   return filteredValues(
     sections,
@@ -35,8 +35,8 @@ export const reposForBranch = (
 
 export const architecturesForBranchAndRepo = (
   sections: ISection[],
-  branchName: string,
-  repoName: string
+  branchName: string | undefined,
+  repoName: string | undefined
 ): string[] => {
   return filteredValues(
     sections,
