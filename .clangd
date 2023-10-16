@@ -4,3 +4,4 @@ CompileFlags:
         - "-fcoroutines-ts"
     Remove:
         - "-fcoroutines"
+        - "-fconcepts"
