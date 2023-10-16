@@ -6,6 +6,8 @@
  */
 #include "ArchRepoSyncService.h"
 
+#include "boost/uuid/name_generator.hpp"
+#include "boost/uuid/uuid_io.hpp"
 #include "coro/sync_wait.hpp"
 #include "coro/when_all.hpp"
 #include "utilities/alpmdb/Desc.h"
@@ -21,31 +23,31 @@ coro::task<void> ArchRepoSyncService::sync(const PackageSectionDTO& section) {
 
     std::vector<coro::task<PackageFile>> tasks;
 
-    auto task = [this,
-                 section](const auto& pkgname) -> coro::task<PackageFile> {
-        co_return co_await download_package(section, pkgname);
+    const auto uuid = boost::uuids::random_generator()();
+
+    auto task = [this, section,
+                 uuid](const auto& pkgname) -> coro::task<PackageFile> {
+        co_return co_await download_package(section, pkgname, uuid);
     };
 
     for (const auto& pkgname : remote_packages) {
         tasks.emplace_back(task(pkgname));
     }
 
-    auto files = co_await coro::when_all(std::move(tasks));
-
-    std::vector<Package> packages_to_add;
-    packages_to_add.reserve(tasks.size());
+    const auto files = co_await coro::when_all(std::move(tasks));
 
     for (const auto& file_task : files) {
         const auto file = file_task.return_value();
-        const auto package_result = Package::from_filepath(
+        auto package_result = Package::from_filepath(
             SectionDTOMapper::to_entity(file.section()), file.file_path());
+        package_result->set_pool_location(Box::PoolManager::PoolLocation::Sync);
 
         if (package_result.has_value()) {
-            packages_to_add.emplace_back(*package_result);
+            co_await m_package_repository.add_async(*package_result);
         }
     }
 
-    co_await m_package_repository.add_async(packages_to_add);
+    co_await m_package_repository.commit_async();
 
     co_return;
 }
@@ -65,19 +67,20 @@ coro::task<std::vector<std::string>>
         const PackageSectionDTO& section) {
     std::vector<std::string> result;
 
-    auto client = co_await get_client(m_options.sources[section].repo_url);
+    const auto client =
+        co_await get_client(m_options.sources[section].repo_url);
 
-    auto repository_name =
+    const auto repository_name =
         m_options.sources[section].repo_name.value_or(section.repository);
 
-    auto db_path_format =
+    const auto db_path_format =
         fmt::format("{}/{{repository}}.db",
                     m_options.sources[section].repo_structure_template);
 
-    auto path = fmt::format(fmt::runtime(db_path_format),
-                            fmt::arg("branch", section.branch),
-                            fmt::arg("repository", repository_name),
-                            fmt::arg("architecture", section.architecture));
+    const auto path = fmt::format(
+        fmt::runtime(db_path_format), fmt::arg("branch", section.branch),
+        fmt::arg("repository", repository_name),
+        fmt::arg("architecture", section.architecture));
 
     auto response = client->Get(
         path, httplib::Headers(), [](uint64_t current, uint64_t total) {
@@ -117,7 +120,8 @@ coro::task<std::vector<std::string>>
 
 coro::task<PackageFile>
     ArchRepoSyncService::download_package(const PackageSectionDTO& section,
-                                          const std::string& package_filename) {
+                                          const std::string& package_filename,
+                                          const boost::uuids::uuid& id) {
     auto client = co_await get_client(m_options.sources[section].repo_url);
 
     auto repository_name =
@@ -132,11 +136,13 @@ coro::task<PackageFile>
                             fmt::arg("architecture", section.architecture),
                             fmt::arg("pkgfname", package_filename));
 
-    auto filepath = m_options.sources[section].pool_path;
+    auto filepath = m_options.sources[section].download_path
+                    / std::string(boost::uuids::to_string(id));
 
     std::filesystem::create_directories(filepath);
 
-    auto full_filename = fmt::format("{}/{}", filepath, package_filename);
+    auto full_filename =
+        fmt::format("{}/{}", filepath.string(), package_filename);
 
     if (std::filesystem::exists(full_filename)) {
         co_return PackageFile(section, full_filename);

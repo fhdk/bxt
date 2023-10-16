@@ -8,7 +8,9 @@
 
 #include "utilities/repo-schema/SchemaExtension.h"
 
+#include <filesystem>
 #include <optional>
+#include <string>
 
 namespace bxt::Infrastructure {
 struct ArchRepoSource {
@@ -26,7 +28,8 @@ struct ArchRepoSource {
         result.repo_url = get_if_defined("repo-url", result.repo_url);
         result.repo_structure_template = get_if_defined(
             "repo-structure-template", result.repo_structure_template);
-        result.pool_path = get_if_defined("pool-path", result.pool_path);
+        result.download_path = get_if_defined.operator()<std::string>(
+            "pool-path", result.download_path);
 
         return result;
     };
@@ -34,7 +37,7 @@ struct ArchRepoSource {
     std::string repo_url = "cloudflaremirrors.com";
     std::string repo_structure_template =
         "/archlinux/{repository}/os/{architecture}";
-    std::string pool_path = "box/pool/sync";
+    std::filesystem::path download_path = "/var/tmp/bxt/";
 
     std::optional<std::string> repo_name;
 };

@@ -7,6 +7,7 @@
 #pragma once
 
 #include "ArchRepoOptions.h"
+#include "boost/uuid/uuid.hpp"
 #include "core/application/services/SyncService.h"
 #include "core/domain/repositories/PackageRepositoryBase.h"
 #include "infrastructure/PackageFile.h"
@@ -29,9 +30,10 @@ public:
 
 protected:
     coro::task<std::vector<std::string>>
-        get_available_packages(const PackageSectionDTO& section);
+        get_available_packages(const PackageSectionDTO& sectio);
     coro::task<PackageFile> download_package(const PackageSectionDTO& section,
-                                             const std::string& name);
+                                             const std::string& name,
+                                             const boost::uuids::uuid& id);
 
     coro::task<std::unique_ptr<httplib::SSLClient>>
         get_client(const std::string& url);
