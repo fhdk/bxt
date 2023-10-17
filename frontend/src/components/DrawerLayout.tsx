@@ -5,6 +5,11 @@ import { useCallback, useRef, useState } from "react";
 import { useLocalStorage } from "@uidotdev/usehooks";
 import { createPortal } from "react-dom";
 import { ProgressBar } from "react-toastify/dist/components";
+import axios from "axios";
+
+const triggerSync = async () => {
+    await axios.post("/api/sync");
+};
 
 export default () => {
     let modalRef = useRef<HTMLDialogElement>(null);
@@ -66,6 +71,7 @@ export default () => {
                 onCancel={() => modalRef.current?.close()}
                 onConfirm={() => {
                     setSyncInProgress(true);
+                    triggerSync();
                     modalRef.current?.close();
                 }}
                 ref={modalRef}

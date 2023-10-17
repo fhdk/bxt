@@ -8,6 +8,7 @@
 
 #include "core/application/services/DeploymentService.h"
 #include "core/application/services/PackageService.h"
+#include "core/application/services/SyncService.h"
 #include "drogon/utils/FunctionTraits.h"
 #include "drogon/utils/coroutine.h"
 #include "utilities/drogon/Macro.h"
@@ -21,8 +22,9 @@ namespace bxt::Presentation {
 class PackageController
     : public drogon::HttpController<PackageController, false> {
 public:
-    PackageController(Core::Application::PackageService &package_service)
-        : m_package_service(package_service) {};
+    PackageController(Core::Application::PackageService &package_service,
+                      Core::Application::SyncService &sync_service)
+        : m_package_service(package_service), m_sync_service(sync_service) {};
 
     METHOD_LIST_BEGIN
 
@@ -56,6 +58,7 @@ public:
 
 private:
     Core::Application::PackageService &m_package_service;
+    Core::Application::SyncService &m_sync_service;
 };
 
 } // namespace bxt::Presentation

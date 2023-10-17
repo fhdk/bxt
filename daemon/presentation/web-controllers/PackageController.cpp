@@ -28,6 +28,9 @@ using namespace drogon;
 
 drogon::Task<HttpResponsePtr>
     PackageController::sync(drogon::HttpRequestPtr req) {
+    co_await m_sync_service.sync_all();
+
+    co_return HttpResponse::newHttpResponse();
 }
 
 drogon::Task<drogon::HttpResponsePtr>

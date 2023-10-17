@@ -218,7 +218,8 @@ namespace Presentation {
     struct PackageController
         : kgr::shared_service<
               bxt::Presentation::PackageController,
-              kgr::dependency<di::Core::Application::PackageService>> {};
+              kgr::dependency<di::Core::Application::PackageService,
+                              di::Core::Application::SyncService>> {};
 
     struct DeploymentController
         : kgr::shared_service<
