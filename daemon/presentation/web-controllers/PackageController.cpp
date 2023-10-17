@@ -133,4 +133,47 @@ drogon::Task<drogon::HttpResponsePtr>
     co_return drogon::HttpResponse::newHttpJsonResponse(result);
 }
 
+drogon::Task<drogon::HttpResponsePtr>
+    PackageController::snap(drogon::HttpRequestPtr req) {
+    const auto sections_json = *req->getJsonObject();
+    Json::Value result;
+
+    if (sections_json.empty() || sections_json["source"].empty()
+        || sections_json["target"].empty()) {
+        result["error"] = "Invalid arguments";
+        result["status"] = "error";
+
+        auto response = drogon::HttpResponse::newHttpJsonResponse(result);
+        response->setStatusCode(drogon::k400BadRequest);
+
+        co_return response;
+    }
+
+    PackageSectionDTO source_branch {
+        .branch = sections_json["source"]["branch"].asString(),
+        .repository = sections_json["source"]["repository"].asString(),
+        .architecture = sections_json["source"]["architecture"].asString()};
+
+    PackageSectionDTO target_branch {
+        .branch = sections_json["target"]["branch"].asString(),
+        .repository = sections_json["target"]["repository"].asString(),
+        .architecture = sections_json["target"]["architecture"].asString()};
+
+    const auto snap_ok =
+        co_await m_package_service.snap(source_branch, target_branch);
+
+    if (snap_ok.has_value()) {
+        result["error"] = "Snap failed";
+        result["status"] = "error";
+
+        auto response = drogon::HttpResponse::newHttpJsonResponse(result);
+        response->setStatusCode(drogon::k400BadRequest);
+
+        co_return response;
+    }
+
+    result["status"] = "ok";
+    co_return drogon::HttpResponse::newHttpJsonResponse(result);
+}
+
 } // namespace bxt::Presentation

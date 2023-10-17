@@ -41,6 +41,10 @@ public:
 
     virtual coro::task<Result<std::vector<PackageDTO>>>
         get_packages(const PackageSectionDTO section_dto) const = 0;
+
+    virtual coro::task<Result<void>>
+        snap(const PackageSectionDTO from_section,
+             const PackageSectionDTO to_section) = 0;
 };
 
 } // namespace bxt::Core::Application

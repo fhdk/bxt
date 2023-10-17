@@ -37,6 +37,8 @@ public:
 
     BXT_JWT_ADD_METHOD_TO(PackageController::sync, "/api/sync", drogon::Post);
 
+    BXT_JWT_ADD_METHOD_TO(PackageController::snap, "/api/snap", drogon::Post);
+
     METHOD_LIST_END
 
     drogon::Task<drogon::HttpResponsePtr> sync(drogon::HttpRequestPtr req);
@@ -49,6 +51,8 @@ public:
                      const std::string &branch,
                      const std::string &repository,
                      const std::string &architecture);
+
+    drogon::Task<drogon::HttpResponsePtr> snap(drogon::HttpRequestPtr req);
 
 private:
     Core::Application::PackageService &m_package_service;

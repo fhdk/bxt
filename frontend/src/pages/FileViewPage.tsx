@@ -16,7 +16,9 @@ import CommitCard from "../components/CommitCard";
 import { IUpdateFiles, useFilesFromSections } from "../hooks/BxtFsHooks";
 import * as uuid from "uuid";
 import { toast } from "react-toastify";
-import SnapshotModal from "../components/SnapshotModal";
+import SnapshotModal, {
+    ISnapshotModalProps
+} from "../components/SnapshotModal";
 import {
     SnapshotAction,
     SnapshotActionPayload,
@@ -172,13 +174,25 @@ export default (props: any) => {
         useState<boolean>(false);
 
     const snapshotModalRef = useRef<HTMLDialogElement>(null);
-    const [snapshotModalBranches, setSnapshotModalBranches] = useState<{
-        sourceBranch: string | undefined;
-        targetBranch: string | undefined;
-    }>({
-        sourceBranch: undefined,
-        targetBranch: undefined
-    });
+    const [snapshotModalProps, setSnapshotModalProps] =
+        useState<ISnapshotModalProps>({
+            sections: sections
+        });
+
+    useEffect(() => {
+        setSnapshotModalProps({
+            ...snapshotModalProps,
+            repository: path[1],
+            architecture: path[2]
+        });
+    }, [path]);
+
+    useEffect(() => {
+        setSnapshotModalProps({
+            ...snapshotModalProps,
+            sections
+        });
+    }, [sections]);
 
     const openModalWithCommitHandler = (isNew: boolean) => {
         return (commit: ICommit) => {
@@ -197,13 +211,13 @@ export default (props: any) => {
     const openSnapshotModalWithBranchHandler = () => {
         return (sourceBranch?: string, targetBranch?: string) => {
             if (sourceBranch)
-                setSnapshotModalBranches({
-                    ...snapshotModalBranches,
+                setSnapshotModalProps({
+                    ...snapshotModalProps,
                     sourceBranch
                 });
             if (targetBranch)
-                setSnapshotModalBranches({
-                    ...snapshotModalBranches,
+                setSnapshotModalProps({
+                    ...snapshotModalProps,
                     targetBranch
                 });
 
@@ -227,9 +241,7 @@ export default (props: any) => {
             />
             <SnapshotModal
                 ref={snapshotModalRef}
-                sourceBranch={snapshotModalBranches.sourceBranch}
-                targetBranch={snapshotModalBranches.targetBranch}
-                sections={sections}
+                {...snapshotModalProps}
                 backdrop={true}
             />
 

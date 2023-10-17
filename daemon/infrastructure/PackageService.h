@@ -30,6 +30,10 @@ public:
     virtual coro::task<Result<std::vector<PackageDTO>>>
         get_packages(const PackageSectionDTO section_dto) const override;
 
+    virtual coro::task<Result<void>>
+        snap(const PackageSectionDTO from_section,
+             const PackageSectionDTO to_section) override;
+
 private:
     PackageServiceOptions m_options;
     Core::Domain::PackageRepositoryBase& m_repository;

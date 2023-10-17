@@ -1,13 +1,16 @@
-import { forwardRef, useEffect, useState } from "react";
+import { forwardRef, useCallback, useEffect, useState } from "react";
 import { Button, Form, Modal, ModalProps, Select } from "react-daisyui";
 import { toast } from "react-toastify";
 import { branches } from "../utils/SectionUtils";
 import { createPortal } from "react-dom";
+import axios from "axios";
 
 export type ISnapshotModalProps = ModalProps & {
     sections: ISection[];
     sourceBranch?: string;
     targetBranch?: string;
+    repository?: string;
+    architecture?: string;
 };
 
 export default forwardRef<HTMLDialogElement, ISnapshotModalProps>(
@@ -15,14 +18,51 @@ export default forwardRef<HTMLDialogElement, ISnapshotModalProps>(
         const [sourceBranch, setSourceBranch] = useState(props.sourceBranch);
 
         useEffect(() => {
-            setSourceBranch(props.sourceBranch);
-        }, [props.sourceBranch]);
+            if (props.sourceBranch) {
+                setSourceBranch(props.sourceBranch);
+            } else if (props.sections.at(0)) {
+                setSourceBranch(props.sections[0].branch);
+            }
+        }, [props.sourceBranch, props.sections]);
 
         const [targetBranch, setTargetBranch] = useState(props.targetBranch);
 
         useEffect(() => {
-            setTargetBranch(props.targetBranch);
-        }, [props.targetBranch]);
+            if (props.targetBranch) {
+                setTargetBranch(props.targetBranch);
+            } else if (props.sections.at(0)) {
+                setTargetBranch(props.sections[0].branch);
+            }
+        }, [props.targetBranch, props.sections]);
+
+        const doSnap = useCallback(
+            async (source?: string, target?: string) => {
+                if (!source || !target) return;
+                try {
+                    await axios.post("/api/snap", {
+                        source: {
+                            branch: source,
+                            repository:
+                                props.repository ||
+                                props.sections[0].repository,
+                            architecture:
+                                props.architecture ||
+                                props.sections[0].architecture
+                        },
+                        target: {
+                            branch: target,
+                            repository:
+                                props.repository ||
+                                props.sections[0].repository,
+                            architecture:
+                                props.architecture ||
+                                props.sections[0].architecture
+                        }
+                    });
+                } catch (error) {}
+            },
+            [props.repository, props.architecture, props.sections]
+        );
 
         return createPortal(
             <Modal ref={ref} {...props}>
@@ -61,9 +101,7 @@ export default forwardRef<HTMLDialogElement, ISnapshotModalProps>(
                         <Button
                             type="button"
                             color="primary"
-                            onClick={(e) => {
-                                toast.success(`Snapped to ${targetBranch}`);
-                            }}
+                            onClick={(e) => doSnap(sourceBranch, targetBranch)}
                         >
                             Snap
                         </Button>
