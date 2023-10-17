@@ -1,11 +1,12 @@
 import FileViewPage from "./FileViewPage";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import LogPage from "./LogPage";
-import { ToastContainer } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
 import { useLocalStorage } from "@uidotdev/usehooks";
 import LoginPage from "./LoginPage";
 import ComparePage from "./ComparePage";
 import DrawerLayout from "../components/DrawerLayout";
+import axios from "axios";
 
 declare module "@uidotdev/usehooks" {
     export function useLocalStorage<T>(
@@ -15,6 +16,15 @@ declare module "@uidotdev/usehooks" {
 }
 export default (props: any) => {
     const [userName, setUserName] = useLocalStorage("username", null);
+
+    axios.interceptors.response.use(
+        (response) => response,
+        (error) => {
+            toast.error(`Response error: ${error.response?.data?.error}`, {
+                autoClose: false
+            });
+        }
+    );
 
     const router = createBrowserRouter([
         {

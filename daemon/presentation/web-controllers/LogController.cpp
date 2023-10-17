@@ -6,13 +6,25 @@
  */
 #include "LogController.h"
 
+#include "drogon/HttpTypes.h"
+
 namespace bxt::Presentation {
 
-drogon::Task<drogon::HttpResponsePtr> LogController::get_package_logs(drogon::HttpRequestPtr req)
-{
+drogon::Task<drogon::HttpResponsePtr>
+    LogController::get_package_logs(drogon::HttpRequestPtr req) {
     Json::Value result;
 
     auto dtos = co_await m_service.events();
+
+    if (dtos.empty()) {
+        result["status"] = "error";
+        result["error"] = "No events found";
+
+        auto response = drogon::HttpResponse::newHttpJsonResponse(result);
+        response->setStatusCode(drogon::k400BadRequest);
+
+        co_return response;
+    }
 
     for (const auto &dto : dtos) {
         Json::Value json_value;

@@ -8,6 +8,7 @@
 
 #include "core/application/dtos/PackageSectionDTO.h"
 #include "drogon/HttpResponse.h"
+#include "drogon/HttpTypes.h"
 
 #include "json/value.h"
 #include <vector>
@@ -15,6 +16,17 @@ namespace bxt::Presentation {
 drogon::Task<drogon::HttpResponsePtr>
     CompareController::compare(drogon::HttpRequestPtr req) {
     const auto sections_json = *req->getJsonObject();
+    Json::Value result;
+
+    if (sections_json.empty()) {
+        result["error"] = "No sections to compare provided";
+        result["status"] = "error";
+
+        auto response = drogon::HttpResponse::newHttpJsonResponse(result);
+        response->setStatusCode(drogon::k400BadRequest);
+
+        co_return response;
+    }
 
     std::vector<PackageSectionDTO> sections;
 
@@ -27,7 +39,16 @@ drogon::Task<drogon::HttpResponsePtr>
 
     const auto compare_result = co_await m_compare_service.compare(sections);
 
-    Json::Value result;
+    if (compare_result->sections.empty()
+        || compare_result->compare_table.empty()) {
+        result["error"] = "No compare data found (all sections are empty)";
+        result["status"] = "error";
+
+        auto response = drogon::HttpResponse::newHttpJsonResponse(result);
+        response->setStatusCode(drogon::k400BadRequest);
+
+        co_return response;
+    }
 
     for (const auto& section : compare_result->sections) {
         Json::Value section_json;

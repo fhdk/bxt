@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import packages from "./packages.json";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 export interface IUpdateSections {
     (): void;
@@ -24,22 +25,26 @@ export const useSections = (): [ISection[], IUpdateSections] => {
     return [sections, updateSections];
 };
 
-export const usePackageLogs = (): ILogEntry[] => {
+export const usePackageLogs = (): [ILogEntry[], () => void] => {
     const [entries, setEntries] = useState<ILogEntry[]>([]);
 
-    useEffect(() => {
-        axios
-            .get(`${process.env.PUBLIC_URL}/api/logs/packages`)
-            .then((response) => {
-                const entries = response.data.map((value: any) => {
-                    value.time = new Date(value.time);
-                    return value;
-                });
-                setEntries(entries);
-            });
-    }, []);
+    const updateEntries = useCallback(async () => {
+        try {
+            const result = await axios.get(
+                `${process.env.PUBLIC_URL}/api/logs/packages`
+            );
 
-    return entries;
+            const entries = result.data.map((value: any) => {
+                value.time = new Date(value.time);
+                return value;
+            });
+            setEntries(entries);
+        } catch (error) {
+            setEntries([]);
+        }
+    }, [setEntries]);
+
+    return [entries, updateEntries];
 };
 
 export interface IGetCompareResults {
@@ -54,23 +59,27 @@ export const useCompareResults = (): [
 
     const updateResults: IGetCompareResults = useCallback(
         async (sections: ISection[]) => {
-            const result = await axios.post(
-                `${process.env.PUBLIC_URL}/api/compare`,
-                sections
-            );
+            try {
+                const result = await axios.post(
+                    `${process.env.PUBLIC_URL}/api/compare`,
+                    sections
+                );
 
-            const compareEntries: ICompareEntry[] = [];
+                const compareEntries: ICompareEntry[] = [];
 
-            Object.keys(result.data["compare_table"]).forEach((value) => {
-                const versions = { ...result.data["compare_table"] }[value];
+                Object.keys(result.data["compare_table"]).forEach((value) => {
+                    const versions = { ...result.data["compare_table"] }[value];
 
-                compareEntries.push({ name: value, ...versions });
-            });
+                    compareEntries.push({ name: value, ...versions });
+                });
 
-            setResults({
-                sections: result.data.sections,
-                compareTable: compareEntries
-            });
+                setResults({
+                    sections: result.data.sections,
+                    compareTable: compareEntries
+                });
+            } catch (error) {
+                setResults({ sections: [], compareTable: [] });
+            }
         },
         [setResults]
     );

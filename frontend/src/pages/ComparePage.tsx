@@ -8,7 +8,7 @@ import {
     useReactTable
 } from "@tanstack/react-table";
 import { useCompareResults, useSections } from "../hooks/BxtHooks";
-import { Button, Select, Table } from "react-daisyui";
+import { Button, Loading, RadialProgress, Select, Table } from "react-daisyui";
 import {
     architecturesForBranchAndRepo,
     branches,
@@ -33,6 +33,8 @@ export default (props: any) => {
         Map<ISection, boolean>
     >(new Map());
 
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+
     const updateSectionAt = (index: number, update: any) => {
         setSelectedSections((prevSections) => [
             ...prevSections.slice(0, index),
@@ -42,7 +44,7 @@ export default (props: any) => {
     };
 
     useEffect(() => {
-        setSelectedSections(compareResults?.sections || []);
+        setIsLoading(false);
     }, [compareResults]);
 
     const columnHelper = createColumnHelper<ICompareEntry>();
@@ -87,8 +89,8 @@ export default (props: any) => {
     });
 
     return (
-        <div className="w-full h-full overflow-x-auto">
-            <div className="p-3 bg-base-200">
+        <div className="flex flex-col w-full h-full overflow-x-auto">
+            <div className="grow-0 p-3 bg-base-200">
                 <span className="p-5 space-x-2 inline-flex w-full justify-start">
                     {selectedSections.map((section, index) => (
                         <div className="flex items-end h-fit" key={index}>
@@ -115,17 +117,11 @@ export default (props: any) => {
                                         )
                                     );
                                 }}
-                                className="bg-transparent 
-                                    text-blue-dark 
-                                    font-semibold 
-                                    hover:text-white 
-                                    py-2 
-                                    border
-                                    border-base-content/20
-                                    hover:border-transparent 
+                                className="py-2 
                                     rounded-none 
                                     rounded-l-lg ml-2"
                                 size="sm"
+                                variant="outline"
                             >
                                 <FontAwesomeIcon icon={faParagraph} />
                             </Button>
@@ -157,7 +153,10 @@ export default (props: any) => {
                     </Button>
                     <Button
                         color="primary"
-                        onClick={() => getCompareResults(selectedSections)}
+                        onClick={() => {
+                            setIsLoading(true);
+                            getCompareResults(selectedSections);
+                        }}
                     >
                         <FontAwesomeIcon
                             className="mr-2"
@@ -167,38 +166,45 @@ export default (props: any) => {
                     </Button>
                 </div>
             </div>
-            <Table zebra={true} size="xs" className="w-full">
-                <Table.Head>
-                    {table
-                        .getHeaderGroups()
-                        .flatMap((headerGroup) =>
-                            headerGroup.headers.map((header) => (
-                                <span key={header.id}>
-                                    {header.isPlaceholder
-                                        ? null
-                                        : flexRender(
-                                              header.column.columnDef.header,
-                                              header.getContext()
-                                          )}
-                                </span>
-                            ))
-                        )}
-                </Table.Head>
-                <Table.Body>
-                    {table.getRowModel().rows.map((row) => (
-                        <Table.Row key={row.id}>
-                            {row.getVisibleCells().map((cell) => (
-                                <span key={cell.id}>
-                                    {flexRender(
-                                        cell.column.columnDef.cell,
-                                        cell.getContext()
-                                    )}
-                                </span>
-                            ))}
-                        </Table.Row>
-                    ))}
-                </Table.Body>
-            </Table>
+            {isLoading ? (
+                <div className="grow flex w-full justify-center content-center">
+                    <Loading variant="bars" className="w-20" />
+                </div>
+            ) : (
+                <Table zebra={true} size="xs" className="w-full">
+                    <Table.Head>
+                        {table
+                            .getHeaderGroups()
+                            .flatMap((headerGroup) =>
+                                headerGroup.headers.map((header) => (
+                                    <span key={header.id}>
+                                        {header.isPlaceholder
+                                            ? null
+                                            : flexRender(
+                                                  header.column.columnDef
+                                                      .header,
+                                                  header.getContext()
+                                              )}
+                                    </span>
+                                ))
+                            )}
+                    </Table.Head>
+                    <Table.Body>
+                        {table.getRowModel().rows.map((row) => (
+                            <Table.Row key={row.id}>
+                                {row.getVisibleCells().map((cell) => (
+                                    <span key={cell.id}>
+                                        {flexRender(
+                                            cell.column.columnDef.cell,
+                                            cell.getContext()
+                                        )}
+                                    </span>
+                                ))}
+                            </Table.Row>
+                        ))}
+                    </Table.Body>
+                </Table>
+            )}
         </div>
     );
 };
