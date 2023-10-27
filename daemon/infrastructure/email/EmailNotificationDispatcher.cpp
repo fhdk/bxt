@@ -22,8 +22,8 @@ void EmailNotificationDispatcher::dispatch(
 
     mailio::message msg;
 
-    msg.subject(notification.title());
-    msg.content(notification.content());
+    msg.subject(notification.title);
+    msg.content(notification.content);
 
     msg.sender({options.sender_name, options.sender_address});
 

@@ -9,22 +9,12 @@
 #include <string>
 
 namespace bxt::Core::Application {
-class Notification {
+struct Notification {
 public:
-    virtual ~Notification() = default;
+    std::string title;
+    std::string content;
 
-    const std::string &title() const { return m_title; }
-    void set_title(const std::string &new_title) { m_title = new_title; }
-
-    const std::string &content() const { return m_content; }
-    void set_content(const std::string &new_content) {
-        m_content = new_content;
-    }
-    virtual bool valid() const { return !m_title.empty(); }
-
-private:
-    std::string m_title;
-    std::string m_content;
+    bool valid() const { return !title.empty(); }
 };
 
 } // namespace bxt::Core::Application
