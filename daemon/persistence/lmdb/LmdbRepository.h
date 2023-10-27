@@ -116,11 +116,6 @@ public:
         co_return {};
     }
 
-    virtual std::vector<Core::Domain::Events::EventPtr>
-        event_store() const override {
-        return m_event_store;
-    };
-
 private:
     std::shared_ptr<bxt::Utilities::LMDB::Environment> m_environment;
     Utilities::LMDB::Database<TDTO> m_db;
@@ -128,8 +123,6 @@ private:
     std::vector<TEntity> m_to_add;
     std::vector<TId> m_to_remove;
     std::vector<TEntity> m_to_update;
-
-    std::vector<Core::Domain::Events::EventPtr> m_event_store;
 };
 
 } // namespace bxt::Persistence

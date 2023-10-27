@@ -206,6 +206,10 @@ coro::task<UnitOfWorkBase::Result<void>> Box::commit_async() {
 
     co_await coro::when_all(std::move(tasks));
 
+    m_to_add.clear();
+    m_to_remove.clear();
+    m_to_update.clear();
+
     co_return {};
 }
 
@@ -215,10 +219,6 @@ coro::task<UnitOfWorkBase::Result<void>> Box::rollback_async() {
     m_to_update.clear();
 
     co_return {};
-}
-
-std::vector<Events::EventPtr> Box::event_store() const {
-    return m_event_store;
 }
 
 } // namespace bxt::Persistence

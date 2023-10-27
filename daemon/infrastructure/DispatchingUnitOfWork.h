@@ -25,8 +25,10 @@ public:
         co_await TBase::commit_async();
 
         if (m_dispatcher) {
-            co_await m_dispatcher->dispatch_async(TBase::event_store());
+            co_await m_dispatcher->dispatch_async(TBase::m_event_store);
         }
+
+        TBase::m_event_store.clear();
 
         co_return {};
     }

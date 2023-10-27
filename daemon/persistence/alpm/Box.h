@@ -18,6 +18,7 @@
 
 #include <coro/sync_wait.hpp>
 #include <functional>
+#include <memory>
 
 namespace bxt::Persistence {
 
@@ -53,8 +54,6 @@ public:
     virtual coro::task<UnitOfWorkBase::Result<void>> commit_async() override;
     virtual coro::task<UnitOfWorkBase::Result<void>> rollback_async() override;
 
-    virtual std::vector<Events::EventPtr> event_store() const override;
-
 private:
     BoxOptions m_options;
 
@@ -65,8 +64,6 @@ private:
     std::vector<Package> m_to_add;
     std::vector<TId> m_to_remove;
     std::vector<Package> m_to_update;
-
-    std::vector<Events::EventPtr> m_event_store;
 };
 
 } // namespace bxt::Persistence

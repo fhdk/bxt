@@ -344,6 +344,7 @@ struct ReadWriteRepositoryBase : public ReadOnlyRepositoryBase<TEntity>,
         return coro::sync_wait(remove_async(ids));
     }
 
-    virtual std::vector<Events::EventPtr> event_store() const = 0;
+protected:
+    std::vector<Events::EventPtr> m_event_store;
 };
 } // namespace bxt::Core::Domain
