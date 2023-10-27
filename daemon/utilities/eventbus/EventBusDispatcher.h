@@ -20,18 +20,17 @@ public:
     EventBusDispatcher(std::shared_ptr<dexode::EventBus> evbus)
         : m_evbus(evbus) {}
 
-    inline void process(bxt::Core::Domain::Events::EventPtr eptr) {
+    template<typename TEvent> inline void process(TEvent eptr) {
         if (const auto it =
                 bxt::events::event_map.find(std::type_index(typeid(*eptr)));
             it != bxt::events::event_map.cend()) {
             auto tindex = std::type_index(typeid(*eptr));
             auto str = tindex.name();
-            it->second(eptr, *m_evbus);
+            it->second(eptr.get(), *m_evbus);
         }
     }
 
-    coro::task<void>
-        dispatch_async(std::vector<Core::Domain::Events::EventPtr> evlist) {
+    template<typename TList> coro::task<void> dispatch_async(TList evlist) {
         if (!m_evbus) co_return;
 
         for (const auto& event : evlist) {

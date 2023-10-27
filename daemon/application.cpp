@@ -89,6 +89,7 @@ void setup_di_container(kgr::container& ctr) {
 
     ctr.service<di::Infrastructure::PackageService>();
     ctr.service<di::Infrastructure::DeploymentService>();
+    ctr.service<di::Infrastructure::WSController>();
 
     ctr.service<di::Infrastructure::ArchRepoSyncService>();
     ctr.service<di::Core::Application::CompareService>();

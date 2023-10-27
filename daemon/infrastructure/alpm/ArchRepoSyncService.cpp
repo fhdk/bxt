@@ -8,12 +8,16 @@
 
 #include "boost/uuid/name_generator.hpp"
 #include "boost/uuid/uuid_io.hpp"
+#include "core/application/events/IntegrationEventBase.h"
+#include "core/application/events/SyncEvent.h"
 #include "coro/sync_wait.hpp"
 #include "coro/when_all.hpp"
+#include "httplib.h"
 #include "utilities/alpmdb/Desc.h"
 #include "utilities/libarchive/Reader.h"
 
 #include <coro/thread_pool.hpp>
+#include <initializer_list>
 
 namespace bxt::Infrastructure {
 
@@ -57,7 +61,19 @@ coro::task<void> ArchRepoSyncService::sync_all() {
     for (const auto& src : m_options.sources) {
         tasks.emplace_back(sync(src.first));
     }
+
+    const auto event = std::make_shared<Core::Application::Events::SyncEvent>();
+
+    std::initializer_list<Core::Application::Events::IntegrationEventPtr>
+        event_list {event};
+
+    event->started = true;
+    co_await m_dispatcher.dispatch_async(event_list);
+
     co_await coro::when_all(std::move(tasks));
+
+    event->started = false;
+    co_await m_dispatcher.dispatch_async(event_list);
 
     co_return;
 }
@@ -88,6 +104,8 @@ coro::task<std::vector<std::string>>
                                      total);
             return true;
         });
+
+    if (response.error() != httplib::Error::Success) { co_return {}; }
 
     if (response->status != 200) { co_return result; }
 

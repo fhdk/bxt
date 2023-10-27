@@ -6,6 +6,7 @@ import { useLocalStorage } from "@uidotdev/usehooks";
 import { createPortal } from "react-dom";
 import { ProgressBar } from "react-toastify/dist/components";
 import axios from "axios";
+import { useSyncMessage } from "../hooks/BxtWebSocketHooks";
 
 const triggerSync = async () => {
     await axios.post("/api/sync");
@@ -14,7 +15,7 @@ const triggerSync = async () => {
 export default () => {
     let modalRef = useRef<HTMLDialogElement>(null);
     const [userName, setUserName] = useLocalStorage("username", null);
-    const [syncInProgress, setSyncInProgress] = useState<boolean>(false);
+    const syncInProgress = useSyncMessage()?.started;
 
     const handleShow = useCallback(() => {
         modalRef.current?.showModal();
@@ -70,7 +71,6 @@ export default () => {
             <ConfirmSyncModal
                 onCancel={() => modalRef.current?.close()}
                 onConfirm={() => {
-                    setSyncInProgress(true);
                     triggerSync();
                     modalRef.current?.close();
                 }}

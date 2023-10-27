@@ -20,6 +20,7 @@
 #include "infrastructure/PackageService.h"
 #include "infrastructure/alpm/ArchRepoOptions.h"
 #include "infrastructure/alpm/ArchRepoSyncService.h"
+#include "infrastructure/ws/WSController.h"
 #include "kangaru/service.hpp"
 #include "persistence/alpm/Box.h"
 #include "persistence/config/SectionRepository.h"
@@ -155,6 +156,10 @@ namespace Infrastructure {
         : kgr::single_service<bxt::Infrastructure::EventLogger,
                               kgr::dependency<di::Utilities::EventBus>> {};
 
+    struct WSController
+        : kgr::shared_service<bxt::Infrastructure::WSController,
+                              kgr::dependency<di::Utilities::EventBus>> {};
+
     struct PackageService
         : kgr::single_service<
               bxt::Infrastructure::PackageService,
@@ -174,7 +179,8 @@ namespace Infrastructure {
     struct ArchRepoSyncService
         : kgr::single_service<
               bxt::Infrastructure::ArchRepoSyncService,
-              kgr::dependency<di::Core::Domain::PackageRepositoryBase,
+              kgr::dependency<di::Utilities::EventBusDispatcher,
+                              di::Core::Domain::PackageRepositoryBase,
                               di::Infrastructure::ArchRepoOptions>>,
           kgr::overrides<di::Core::Application::SyncService> {};
 

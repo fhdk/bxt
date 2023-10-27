@@ -10,9 +10,12 @@
 #include "boost/uuid/uuid.hpp"
 #include "core/application/services/SyncService.h"
 #include "core/domain/repositories/PackageRepositoryBase.h"
+#include "dexode/EventBus.hpp"
 #include "infrastructure/PackageFile.h"
+#include "utilities/eventbus/EventBusDispatcher.h"
 
 #include <coro/thread_pool.hpp>
+#include <memory>
 
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 #include <httplib.h>
@@ -21,9 +24,12 @@ namespace bxt::Infrastructure {
 
 class ArchRepoSyncService : public bxt::Core::Application::SyncService {
 public:
-    ArchRepoSyncService(PackageRepositoryBase& package_repository,
+    ArchRepoSyncService(Utilities::EventBusDispatcher& dispatcher,
+                        PackageRepositoryBase& package_repository,
                         ArchRepoOptions& options)
-        : m_package_repository(package_repository), m_options(options) {}
+        : m_dispatcher(dispatcher),
+          m_package_repository(package_repository),
+          m_options(options) {}
 
     virtual coro::task<void> sync(const PackageSectionDTO& section) override;
     virtual coro::task<void> sync_all() override;
@@ -39,6 +45,7 @@ protected:
         get_client(const std::string& url);
 
 private:
+    Utilities::EventBusDispatcher& m_dispatcher;
     PackageRepositoryBase& m_package_repository;
 
     ArchRepoOptions m_options;

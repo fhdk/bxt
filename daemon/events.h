@@ -6,6 +6,8 @@
  */
 #pragma once
 
+#include "core/application/events/IntegrationEventBase.h"
+#include "core/application/events/SyncEvent.h"
 #include "core/domain/events/EventBase.h"
 #include "core/domain/events/PackageEvents.h"
 
@@ -16,21 +18,24 @@
 
 namespace bxt::events {
 
-using eventbus_visitor =
-    std::function<void(bxt::Core::Domain::Events::EventPtr, dexode::EventBus&)>;
+using namespace bxt::Core::Domain::Events;
+using namespace bxt::Core::Application::Events;
 
-template<typename TEvent>
+using eventbus_visitor = std::function<void(std::any, dexode::EventBus&)>;
+
+template<typename TEvent, typename TEventBase>
 std::pair<std::type_index, eventbus_visitor> to_eventbus_visitor() {
-    return {
-        std::type_index(typeid(TEvent)),
-        [](bxt::Core::Domain::Events::EventPtr event, dexode::EventBus& evbus) {
-            evbus.postpone<TEvent>(*(static_cast<TEvent*>(event.get())));
-        }};
+    return {std::type_index(typeid(TEvent)),
+            [](std::any event, dexode::EventBus& evbus) {
+                auto event_base = std::any_cast<TEventBase*>(event);
+                evbus.postpone<TEvent>(*(dynamic_cast<TEvent*>(event_base)));
+            }};
 }
 
 static inline std::unordered_map<std::type_index, eventbus_visitor> event_map {
-    to_eventbus_visitor<bxt::Core::Domain::Events::PackageAdded>(),
-    to_eventbus_visitor<bxt::Core::Domain::Events::PackageRemoved>(),
-    to_eventbus_visitor<bxt::Core::Domain::Events::PackageUpdated>()};
+    to_eventbus_visitor<PackageAdded, EventBase>(),
+    to_eventbus_visitor<PackageRemoved, EventBase>(),
+    to_eventbus_visitor<PackageUpdated, EventBase>(),
+    to_eventbus_visitor<SyncEvent, IntegrationEventBase>()};
 
 } // namespace bxt::events

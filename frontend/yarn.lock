@@ -4922,6 +4922,7 @@ __metadata:
     react-router-dom: ^6.8.2
     react-scripts: 5.0.1
     react-toastify: ^9.1.2
+    react-use-websocket: ^4.5.0
     tailwindcss: ^3.2.7
     typescript: ^5.2.2
     uuid: ^9.0.0
@@ -12446,6 +12447,16 @@ __metadata:
     react: ">=16.6.0"
     react-dom: ">=16.6.0"
   checksum: 75602840106aa9c6545149d6d7ae1502fb7b7abadcce70a6954c4b64a438ff1cd16fc77a0a1e5197cdd72da398f39eb929ea06f9005c45b132ed34e056ebdeb1
+  languageName: node
+  linkType: hard
+
+"react-use-websocket@npm:^4.5.0":
+  version: 4.5.0
+  resolution: "react-use-websocket@npm:4.5.0"
+  peerDependencies:
+    react: ">= 18.0.0"
+    react-dom: ">= 18.0.0"
+  checksum: 0bae0716f0675fa9414736a3b7d846e7cab4e86dfc3933eb0fda74eef9477708b67cee4c1000a877d7db65c9125ee7d68215e43b5b9cdb82bfefb16e995b55b9
   languageName: node
   linkType: hard
 
