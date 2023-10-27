@@ -95,7 +95,7 @@ void setup_di_container(kgr::container& ctr) {
     ctr.service<di::Core::Application::CompareService>();
 }
 
-void setup_controllers(auto& app, kgr::container& ctr) {
+void setup_controllers(drogon::HttpAppFramework& app, kgr::container& ctr) {
     using namespace bxt::di::Presentation;
 
     app.registerController(ctr.service<DeploymentController>())
@@ -106,6 +106,8 @@ void setup_controllers(auto& app, kgr::container& ctr) {
         .registerController(ctr.service<PermissionController>())
         .registerController(ctr.service<LogController>())
         .registerController(ctr.service<SectionController>())
+        .registerController(
+            ctr.service<bxt::di::Infrastructure::WSController>())
         .registerFilter(ctr.service<JwtFilter>());
 }
 
