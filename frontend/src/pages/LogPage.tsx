@@ -1,9 +1,18 @@
-import { Loading, Table } from "react-daisyui";
-import logs from "./logs.json";
+import React, { useEffect, useState } from "react";
+import { Table, Loading } from "react-daisyui";
 import { usePackageLogs } from "../hooks/BxtHooks";
-import { useEffect, useState } from "react";
+import {
+    useReactTable,
+    createColumnHelper,
+    getCoreRowModel,
+    getPaginationRowModel,
+    getSortedRowModel,
+    flexRender,
+    SortingState,
+    Row
+} from "@tanstack/react-table";
 
-const dateCompare = (a: ILogEntry, b: ILogEntry): number => {
+const dateCompare = (a: ILogEntry, b: ILogEntry) => {
     if (a.time < b.time) {
         return -1;
     }
@@ -15,7 +24,10 @@ const dateCompare = (a: ILogEntry, b: ILogEntry): number => {
 
 export default (props: any) => {
     const [entries, updateEntries] = usePackageLogs();
-    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [sorting, setSorting] = React.useState<SortingState>([
+        { id: "Time", desc: true }
+    ]);
 
     useEffect(() => {
         updateEntries();
@@ -26,6 +38,51 @@ export default (props: any) => {
         setIsLoading(false);
     }, [entries]);
 
+    const columnHelper = createColumnHelper<ILogEntry>();
+
+    const columns = [
+        columnHelper.accessor("action", {
+            header: "Action"
+        }),
+        columnHelper.accessor("package.name", {
+            header: "Name"
+        }),
+
+        columnHelper.accessor("package.version", {
+            header: "Version"
+        }),
+        columnHelper.accessor("package.section.branch", {
+            header: "Branch"
+        }),
+        columnHelper.accessor("package.section.repository", {
+            header: "Repository"
+        }),
+        columnHelper.accessor("package.section.architecture", {
+            header: "Architecture"
+        }),
+        columnHelper.accessor((entry) => entry.time, {
+            header: "Time",
+            enableSorting: true,
+            sortingFn: "datetime"
+        })
+    ];
+
+    const table = useReactTable<ILogEntry>({
+        columns,
+        data: entries,
+        state: {
+            sorting
+        },
+        manualPagination: true,
+        sortDescFirst: true,
+        enableSorting: true,
+        onSortingChange: setSorting,
+        getCoreRowModel: getCoreRowModel(),
+        getPaginationRowModel: getPaginationRowModel(),
+        getSortedRowModel: getSortedRowModel(),
+        initialState: {}
+    });
+
     return (
         <div className="flex flex-col w-full h-full overflow-x-auto">
             {isLoading ? (
@@ -33,29 +90,42 @@ export default (props: any) => {
                     <Loading variant="bars" className="w-20" />
                 </div>
             ) : (
-                <Table zebra={true} className="w-full" {...props}>
+                <Table size="xs" zebra={true} className="w-full" {...props}>
                     <Table.Head>
-                        <span />
-                        <span>Id</span>
-                        <span>Package</span>
-                        <span>Time</span>
+                        {table
+                            .getHeaderGroups()
+                            .flatMap((headerGroup) =>
+                                headerGroup.headers.map((header) => (
+                                    <span key={header.id}>
+                                        {header.isPlaceholder
+                                            ? null
+                                            : flexRender(
+                                                  header.column.columnDef
+                                                      .header,
+                                                  header.getContext()
+                                              )}
+                                    </span>
+                                ))
+                            )}
                     </Table.Head>
 
                     <Table.Body>
-                        {entries
-                            .sort((a, b) => -dateCompare(a, b))
-                            .map((value, index) => {
-                                return (
-                                    <Table.Row>
-                                        <span>{index}</span>
-                                        <span>{value.id}</span>
-                                        <span>{value.package}</span>
-                                        <span>
-                                            {value.time.toLocaleString()}
-                                        </span>
-                                    </Table.Row>
-                                );
-                            })}
+                        {table.getRowModel().rows.map((row) => {
+                            return (
+                                <Table.Row key={row.id}>
+                                    {row.getVisibleCells().map((cell) => {
+                                        return (
+                                            <span key={cell.id}>
+                                                {flexRender(
+                                                    cell.column.columnDef.cell,
+                                                    cell.getContext()
+                                                )}
+                                            </span>
+                                        );
+                                    })}
+                                </Table.Row>
+                            );
+                        })}
                     </Table.Body>
                 </Table>
             )}

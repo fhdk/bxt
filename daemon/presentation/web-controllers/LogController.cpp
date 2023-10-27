@@ -31,7 +31,24 @@ drogon::Task<drogon::HttpResponsePtr>
 
         json_value["id"] = dto.id;
         json_value["time"] = dto.time;
-        json_value["package"] = dto.package.name;
+        json_value["package"]["name"] = dto.package.name;
+        json_value["package"]["version"] = dto.package.version;
+        json_value["package"]["hasSignature"] =
+            dto.package.signature_path.has_value();
+
+        json_value["package"]["section"]["branch"] = dto.package.section.branch;
+        json_value["package"]["section"]["repository"] =
+            dto.package.section.repository;
+        json_value["package"]["section"]["architecture"] =
+            dto.package.section.architecture;
+
+        json_value["action"] = [dto] {
+            switch (dto.type) {
+            case Core::Domain::Add: return "Add";
+            case Core::Domain::Remove: return "Remove";
+            case Core::Domain::Update: return "Update";
+            }
+        }();
 
         result.append(json_value);
     }

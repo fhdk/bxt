@@ -39,9 +39,7 @@ export const usePackageLogs = (): [ILogEntry[], () => void] => {
                 return value;
             });
             setEntries(entries);
-        } catch (error) {
-            setEntries([]);
-        }
+        } catch (error) {}
     }, [setEntries]);
 
     return [entries, updateEntries];

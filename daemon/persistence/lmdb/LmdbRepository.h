@@ -69,7 +69,7 @@ public:
     virtual coro::task<TResults> all_async() override {
         TEntities results;
 
-        m_db.accept(
+        co_await m_db.accept(
             [&results]([[maybe_unused]] std::string_view key, const TDTO &e) {
                 results.push_back(TMapper::to_entity(e));
                 return Utilities::LMDB::NavigationAction::Next;

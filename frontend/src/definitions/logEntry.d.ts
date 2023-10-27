@@ -1,5 +1,7 @@
 interface ILogEntry {
     id: string;
-    package: string;
+
+    action: string;
+    package: IPackage;
     time: Date;
 }
