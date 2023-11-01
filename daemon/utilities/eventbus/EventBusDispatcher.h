@@ -7,6 +7,7 @@
 #pragma once
 
 #include "events.h"
+#include "utilities/log/Logging.h"
 
 #include <coro/task.hpp>
 #include <dexode/EventBus.hpp>
@@ -35,6 +36,8 @@ public:
 
         for (const auto& event : evlist) {
             process(event);
+
+            logt(event->message());
         }
 
         m_evbus->process();

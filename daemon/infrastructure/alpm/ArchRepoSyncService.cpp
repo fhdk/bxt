@@ -15,6 +15,7 @@
 #include "httplib.h"
 #include "utilities/alpmdb/Desc.h"
 #include "utilities/libarchive/Reader.h"
+#include "utilities/log/Logging.h"
 
 #include <coro/thread_pool.hpp>
 #include <initializer_list>
@@ -98,12 +99,7 @@ coro::task<std::vector<std::string>>
         fmt::arg("repository", repository_name),
         fmt::arg("architecture", section.architecture));
 
-    auto response = client->Get(
-        path, httplib::Headers(), [](uint64_t current, uint64_t total) {
-            std::cout << fmt::format("Downloading database... {}/{}\n", current,
-                                     total);
-            return true;
-        });
+    auto response = client->Get(path, httplib::Headers());
 
     if (response.error() != httplib::Error::Success) { co_return {}; }
 
@@ -166,8 +162,7 @@ coro::task<PackageFile>
         co_return PackageFile(section, full_filename);
     }
 
-    std::cout << fmt::format("Downloading {} as {}...\n", package_filename,
-                             full_filename);
+    logd("Sync: Downloading {} as {}...", package_filename, full_filename);
 
     std::ofstream stream(full_filename);
 

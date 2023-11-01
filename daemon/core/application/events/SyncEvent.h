@@ -8,10 +8,16 @@
 
 #include "core/application/events/IntegrationEventBase.h"
 
+#include <fmt/format.h>
+
 namespace bxt::Core::Application::Events {
 
 struct SyncEvent : public IntegrationEventBase {
     bool started = false;
+
+    virtual std::string message() const {
+        return fmt::format("Sync {}", started ? "started" : "stopped");
+    }
 };
 
 } // namespace bxt::Core::Application::Events

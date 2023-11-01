@@ -12,6 +12,7 @@
 #include "utilities/alpmdb/Desc.h"
 #include "utilities/errors/DatabaseError.h"
 #include "utilities/libarchive/Error.h"
+#include "utilities/log/Logging.h"
 
 #include <algorithm>
 #include <boost/algorithm/string/join.hpp>
@@ -73,8 +74,7 @@ coro::task<Result<void>>
          std::filesystem::path path) {
     Archive::Writer db_writer, files_writer;
 
-    std::cout << fmt::format("Saving entries to {}.db.tar.zst...\n",
-                             path.string());
+    logd("Saving entries to {}.db.tar.zst...\n", path.string());
 
     archive_write_add_filter_zstd(db_writer);
     archive_write_set_format_pax_restricted(db_writer);
@@ -86,8 +86,7 @@ coro::task<Result<void>>
     files_writer.open_filename(path);
 
     for (const auto& [name, description] : descriptions) {
-        std::cout << fmt::format("Description for {} is being added...\n",
-                                 name);
+        logd("Description for {} is being added...", name);
 
         write_buffer_to_archive(db_writer, fmt::format("{}/desc", name),
                                 description.string());

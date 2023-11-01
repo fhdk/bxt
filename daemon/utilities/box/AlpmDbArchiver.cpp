@@ -13,6 +13,7 @@
 #include "utilities/box/Database.h"
 #include "utilities/libarchive/Writer.h"
 #include "utilities/lmdb/Database.h"
+#include "utilities/log/Logging.h"
 
 #include <coro/sync_wait.hpp>
 #include <filesystem>
@@ -71,6 +72,7 @@ coro::task<void> AlpmDbArchiver::writeback_to_disk() {
     phmap::parallel_flat_hash_map<PackageSectionDTO, Archive::Writer> writers;
 
     for (const auto& section : dirty_sections) {
+        logd("{}: Writeback started", std::string(section));
         writers.emplace(section, Archive::Writer());
 
         archive_write_add_filter_zstd(writers.at(section));
@@ -98,10 +100,12 @@ coro::task<void> AlpmDbArchiver::writeback_to_disk() {
                 return Utilities::LMDB::NavigationAction::Next;
             }
 
-            BOOST_LOG_TRIVIAL(info)
-                << fmt::format("Description for {}/{}-{} is being"
-                               " added...\n ",
-                               std::string(section), name, *version);
+            if (!writers.contains(section)) {
+                return Utilities::LMDB::NavigationAction::Next;
+            }
+
+            logd("{}: Description for {}-{} is being added...",
+                 std::string(section), name, *version);
 
             Utilities::AlpmDb::DatabaseUtils::write_buffer_to_archive(
                 writers[section], fmt::format("{}-{}/desc", name, *version),
@@ -109,6 +113,10 @@ coro::task<void> AlpmDbArchiver::writeback_to_disk() {
 
             return Utilities::LMDB::NavigationAction::Next;
         });
+
+    for (const auto& section : dirty_sections) {
+        logd("{}: Writeback finished", std::string(section));
+    }
 
     dirty_sections.clear();
 

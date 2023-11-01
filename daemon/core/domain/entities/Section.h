@@ -9,6 +9,8 @@
 #include "AggregateRoot.h"
 #include "core/domain/value_objects/Name.h"
 
+#include <fmt/format.h>
+
 namespace bxt::Core::Domain {
 
 class Section : public AggregateRoot<> {
@@ -31,6 +33,10 @@ public:
     Name architecture() const { return m_architecture; }
     void set_architecture(const Name& new_architecture) {
         m_architecture = new_architecture;
+    }
+
+    std::string string() const {
+        return fmt::format("{}/{}/{}", branch(), repository(), architecture());
     }
 
 private:

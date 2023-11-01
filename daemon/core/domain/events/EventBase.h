@@ -7,6 +7,7 @@
 #pragma once
 
 #include <chrono>
+#include <fmt/format.h>
 #include <memory>
 namespace bxt::Core::Domain::Events {
 struct EventBase {
@@ -14,6 +15,8 @@ struct EventBase {
 
     std::chrono::time_point<std::chrono::system_clock> when =
         std::chrono::system_clock::now();
+
+    virtual std::string message() const = 0;
 };
 
 using EventPtr = std::shared_ptr<EventBase>;
