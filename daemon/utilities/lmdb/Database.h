@@ -118,36 +118,41 @@ public:
 
     coro::task<Result<void>>
         accept(std::function<NavigationAction(std::string_view key,
-                                              const TEntity& value)> visitor) {
+                                              const TEntity& value)> visitor,
+               std::string_view prefix = "") {
         auto rotxn = lmdb::txn::begin(m_env->env(), nullptr, MDB_RDONLY);
 
         {
             auto cursor = lmdb::cursor::open(rotxn, m_dbi);
 
-            std::string_view key, value;
-            MDB_cursor_op operation = MDB_NEXT;
-            if (cursor.get(key, value, MDB_FIRST)) {
-                do {
-                    auto res = TSerializer::deserialize(value);
+            std::string_view key = prefix, value;
 
-                    if (!res.has_value()) {
-                        co_return bxt::make_error_with_source<DatabaseError>(
-                            std::move(res.error()),
-                            DatabaseError::ErrorType::InvalidEntityError);
-                    }
+            MDB_cursor_op operation =
+                prefix.empty() ? MDB_FIRST : MDB_SET_RANGE;
 
-                    const auto result = visitor(key, *res);
-
-                    switch (result) {
-                    case NavigationAction::Next: operation = MDB_NEXT; break;
-                    case NavigationAction::Previous:
-                        operation = MDB_PREV;
-                        break;
-                    case NavigationAction::Stop: co_return {};
-                    }
-
-                } while (cursor.get(key, value, operation));
+            if (!cursor.get(key, value, operation) && key.starts_with(prefix)) {
+                co_return {};
             }
+
+            do {
+                auto res = TSerializer::deserialize(value);
+
+                if (!res.has_value()) {
+                    co_return bxt::make_error_with_source<DatabaseError>(
+                        std::move(res.error()),
+                        DatabaseError::ErrorType::InvalidEntityError);
+                }
+
+                const auto result = visitor(key, *res);
+
+                switch (result) {
+                case NavigationAction::Next: operation = MDB_NEXT; break;
+                case NavigationAction::Previous: operation = MDB_PREV; break;
+                case NavigationAction::Stop: co_return {};
+                }
+
+            } while (cursor.get(key, value, operation)
+                     && key.starts_with(prefix));
         }
 
         co_return {};
