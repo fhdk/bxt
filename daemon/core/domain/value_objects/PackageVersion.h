@@ -7,26 +7,54 @@
 #pragma once
 
 #include "core/domain/value_objects/Name.h"
+#include "scn/scn.h"
+#include "scn/tuple_return/tuple_return.h"
+#include "utilities/Error.h"
 
+#include <fmt/format.h>
+#include <frozen/map.h>
+#include <frozen/string.h>
 #include <optional>
 #include <string>
 
-#include <fmt/format.h>
-
 namespace bxt::Core::Domain {
 
-struct PackageVersion
-{
+struct PackageVersion {
+    struct ParsingError : public bxt::Error {
+        enum class ErrorCode {
+            InvalidFormat,
+            InvalidVersion,
+            InvalidReleaseTag,
+            InvalidEpoch
+        };
+
+        const ErrorCode error_code;
+
+        static inline const frozen::map<ErrorCode, frozen::string, 4>
+            error_messages = {
+                {ErrorCode::InvalidFormat, "Invalid format"},
+                {ErrorCode::InvalidVersion, "Invalid version"},
+                {ErrorCode::InvalidReleaseTag, "Invalid release tag"},
+                {ErrorCode::InvalidEpoch, "Invalid epoch"}};
+
+        ParsingError(ErrorCode error_code) : error_code(error_code) {
+            message = error_messages.at(error_code).data();
+        }
+    };
+    using ParseResult = nonstd::expected<PackageVersion, ParsingError>;
+
     static std::strong_ordering compare(const PackageVersion& lh,
                                         const PackageVersion& rh);
 
     auto operator<=>(const PackageVersion& rh) const {
         return compare(*this, rh);
     };
+
+    static ParseResult from_string(std::string_view str);
     std::string string() const;
 
-    std::optional<int> epoch;
     Name version;
+    std::optional<int> epoch;
     std::string release;
 };
 

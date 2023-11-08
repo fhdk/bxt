@@ -6,19 +6,37 @@
  */
 #include "Package.h"
 
+#include "core/domain/value_objects/PackageVersion.h"
+#include "fmt/core.h"
+#include "scn/tuple_return/tuple_return.h"
+#include "utilities/Error.h"
+
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <cctype>
 #include <filesystem>
 #include <fmt/format.h>
+#include <ranges>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
+bool check_valid_name(std::string_view name) {
+    if (name.empty()) { return false; }
+
+    static constexpr std::string_view valid = "@._+-";
+    return name[0] != '-' && name[0] != '.'
+           && std::ranges::all_of(name, [](const char& ch) {
+                  return (std::isalpha(ch) && std::islower(ch))
+                         || std::isdigit(ch)
+                         || (valid.find(ch) != std::string::npos);
+              });
+}
+
 namespace bxt::Core::Domain {
-nonstd::expected<Package, Package::ParsingError>
-    Package::from_filename(const Section& section,
-                           const std::string& filename) {
+Package::ParseResult Package::from_filename(const Section& section,
+                                            const std::string& filename) {
     std::vector<std::string> substrings;
 
     boost::split(substrings, filename, boost::is_any_of("-"));
@@ -26,75 +44,37 @@ nonstd::expected<Package, Package::ParsingError>
     auto subsize = substrings.size();
 
     if (subsize < 4) {
-        return nonstd::make_unexpected(Package::ParsingError(
-            Package::ParsingError::ErrorCode::InvalidFilename));
+        return bxt::make_error<ParsingError>(
+            ParsingError::ErrorCode::InvalidFilename);
     }
 
-    auto release = substrings[subsize - 2];
+    auto release_substr = substrings[subsize - 2];
     auto version_substr = substrings[subsize - 3];
 
     auto version_pos = filename.find(version_substr);
     auto name = filename.substr(0, version_pos - 1);
 
-    std::string epoch = "0";
-    auto version = version_substr;
+    auto valid_name = check_valid_name(name);
 
-    auto epoch_pos = version_substr.find(":");
-
-    if (epoch_pos != std::string::npos) {
-        epoch = version_substr.substr(0, epoch_pos);
-        version = version_substr.substr(epoch_pos + 1, version_substr.size());
+    if (!valid_name) {
+        return bxt::make_error<ParsingError>(
+            ParsingError::ErrorCode::InvalidName);
     }
 
-    static const auto digit_validator = [](const char& ch) {
-        return std::isdigit(ch);
-    };
+    auto version = PackageVersion::from_string(
+        fmt::format("{}-{}", version_substr, release_substr));
 
-    static const auto release_tag_validator = [](const char& ch) {
-        return std::isalnum(ch) || ch == '.';
-    };
-
-    auto valid_epoch =
-        std::ranges::all_of(epoch.begin(), epoch.end(), digit_validator);
-    auto valid_version = std::ranges::all_of(release.begin(), release.end(),
-                                             release_tag_validator);
-    auto valid_release = std::ranges::all_of(release.begin(), release.end(),
-                                             release_tag_validator);
-    auto valid_name =
-        std::ranges::all_of(name.begin(), name.end(), [](const char& ch) {
-            static std::string valid = "@._+-";
-            return (std::isalpha(ch) && std::islower(ch)) || std::isdigit(ch)
-                   || (valid.find(ch) != std::string::npos);
-        });
-
-    valid_name = valid_name && !name.starts_with("-") && !name.starts_with(".");
-
-    if (!(valid_epoch && valid_release && valid_name && valid_version)) {
-        Package::ParsingError::ErrorCode error_code =
-            Package::ParsingError::ErrorCode::InvalidFilename;
-        if (!valid_epoch) {
-            error_code = Package::ParsingError::ErrorCode::InvalidEpoch;
-        } else if (!valid_version) {
-            error_code = Package::ParsingError::ErrorCode::InvalidVersion;
-        } else if (!valid_release) {
-            error_code = Package::ParsingError::ErrorCode::InvalidReleaseTag;
-        } else if (!valid_name) {
-            error_code = Package::ParsingError::ErrorCode::InvalidName;
-        }
-        return nonstd::make_unexpected(Package::ParsingError(error_code));
+    if (!version.has_value()) {
+        return bxt::make_error_with_source<ParsingError>(
+            std::move(version.error()),
+            ParsingError::ErrorCode::InvalidVersion);
     }
 
-    std::optional<int> epoch_int;
-    try {
-        epoch_int = std::stoi(epoch);
-    } catch (const std::invalid_argument& art) { epoch_int = std::nullopt; }
-    return Package(section, name,
-                   {.epoch = epoch_int, .version = version, .release = release},
-                   PackageArchitecture(), filename,
+    return Package(section, name, *version, PackageArchitecture(), filename,
                    Box::PoolManager::PoolLocation::Unknown);
 }
 
-nonstd::expected<Package, Package::ParsingError> Package::from_filepath(
+Package::ParseResult Package::from_filepath(
     const Section& section,
     const std::filesystem::path& filepath,
     const std::optional<std::filesystem::path>& signature_path) {

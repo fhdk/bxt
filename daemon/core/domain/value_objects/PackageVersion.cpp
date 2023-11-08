@@ -6,6 +6,14 @@
  */
 #include "PackageVersion.h"
 
+#include "core/domain/entities/Package.h"
+#include "scn/tuple_return/tuple_return.h"
+#include "utilities/Error.h"
+
+#include <optional>
+#include <scn/scn.h>
+#include <scn/tuple_return.h>
+
 namespace bxt::Core::Domain {
 
 // naive rewrite of original rpmvercmp from alpm
@@ -119,6 +127,39 @@ std::strong_ordering PackageVersion::compare(const PackageVersion& lh,
     }
 
     return ret;
+}
+
+PackageVersion::ParseResult
+    PackageVersion::from_string(std::string_view version_str) {
+    auto [scan_ok, version, epoch_int, release] =
+        scn::scan_tuple<std::string, int, std::string>(
+            version_str, "{:[:alnum:.]}\:{}-{:[:alnum:.]}");
+    std::optional<int> epoch = std::nullopt;
+
+    if (!scan_ok) {
+        if (!scn::scan(version_str, "{:[:alnum:.]}-{}", version, release)) {
+            return bxt::make_error<ParsingError>(
+                ParsingError::ErrorCode::InvalidFormat);
+        }
+    } else {
+        epoch = epoch_int;
+    }
+
+    static constexpr auto version_validator = [](const char& ch) {
+        return std::isalnum(ch) || ch == '.';
+    };
+
+    if (!std::ranges::all_of(version, version_validator)) {
+        return bxt::make_error<ParsingError>(
+            ParsingError::ErrorCode::InvalidVersion);
+    }
+
+    if (!std::ranges::all_of(release, version_validator)) {
+        return bxt::make_error<ParsingError>(
+            ParsingError::ErrorCode::InvalidReleaseTag);
+    }
+
+    return PackageVersion {version, epoch, release};
 }
 
 std::string PackageVersion::string() const {
