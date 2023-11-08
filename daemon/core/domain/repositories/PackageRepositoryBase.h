@@ -33,10 +33,16 @@ struct PackageRepositoryBase : public ReadWriteRepositoryBase<Package> {
         const Section section,
         const std::function<bool(const Package& pkg)> predicate) = 0;
 
+    virtual coro::task<TResult> find_by_section_async(const Section section,
+                                                      const Name name) = 0;
+
     virtual TResults find_by_section(
         const Section section,
         const std::function<bool(const Package& pkg)> predicate) {
         return coro::sync_wait(find_by_section_async(section, predicate));
+    }
+    virtual TResult find_by_section(const Section section, const Name name) {
+        return coro::sync_wait(find_by_section_async(section, name));
     }
 };
 } // namespace bxt::Core::Domain

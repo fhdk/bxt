@@ -18,6 +18,7 @@
 #include "utilities/StaticDTOMapper.h"
 #include "utilities/alpmdb/Database.h"
 #include "utilities/box/Package.h"
+#include "utilities/lmdb/Database.h"
 
 #include <fmt/format.h>
 #include <functional>
@@ -181,6 +182,30 @@ coro::task<Box::TResults> Box::find_by_section_async(
     }
 
     co_return result;
+}
+
+coro::task<Box::TResult> Box::find_by_section_async(const Section section,
+                                                    const Name name) {
+    std::optional<Core::Domain::Package> result;
+
+    co_await m_database.lmdb_handle().accept(
+        [&result, &section](std::string_view key, const auto &entity) {
+            auto package = BoxPackageMapper::to_entity(section, entity);
+            if (!package.has_value()) {
+                return Utilities::LMDB::NavigationAction::Next;
+            }
+            result = *package;
+
+            return Utilities::LMDB::NavigationAction::Stop;
+        },
+        fmt::format("{}/{}", section.string(), name));
+
+    if (result.has_value()) {
+        co_return *result;
+    } else {
+        co_return bxt::make_error<ReadError>(
+            ReadError::ErrorTypes::EntityNotFound);
+    }
 }
 
 coro::task<UnitOfWorkBase::Result<void>> Box::commit_async() {

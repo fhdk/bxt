@@ -51,6 +51,9 @@ public:
         const Section section,
         const std::function<bool(const Package &)> predicate) override;
 
+    virtual coro::task<TResult> find_by_section_async(const Section section,
+                                                      const Name name) override;
+
     virtual coro::task<UnitOfWorkBase::Result<void>> commit_async() override;
     virtual coro::task<UnitOfWorkBase::Result<void>> rollback_async() override;
 
