@@ -27,7 +27,7 @@ public:
             it != bxt::events::event_map.cend()) {
             auto tindex = std::type_index(typeid(*eptr));
             auto str = tindex.name();
-            it->second(eptr.get(), *m_evbus);
+            it->second(eptr.get(), m_evbus);
         }
     }
 

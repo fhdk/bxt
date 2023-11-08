@@ -21,14 +21,15 @@ namespace bxt::events {
 using namespace bxt::Core::Domain::Events;
 using namespace bxt::Core::Application::Events;
 
-using eventbus_visitor = std::function<void(std::any, dexode::EventBus&)>;
+using eventbus_visitor =
+    std::function<void(std::any, std::shared_ptr<dexode::EventBus>&)>;
 
 template<typename TEvent, typename TEventBase>
 std::pair<std::type_index, eventbus_visitor> to_eventbus_visitor() {
     return {std::type_index(typeid(TEvent)),
-            [](std::any event, dexode::EventBus& evbus) {
+            [](std::any event, std::shared_ptr<dexode::EventBus> evbus) {
                 auto event_base = std::any_cast<TEventBase*>(event);
-                evbus.postpone<TEvent>(*(dynamic_cast<TEvent*>(event_base)));
+                evbus->postpone<TEvent>(*(dynamic_cast<TEvent*>(event_base)));
             }};
 }
 
