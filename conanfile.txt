@@ -17,6 +17,7 @@ lmdb/0.9.29
 expected-lite/0.6.3
 nlohmann_json/3.11.2
 c-ares/1.19.1
+scnlib/1.1.2
 
 [generators]
 cmake
