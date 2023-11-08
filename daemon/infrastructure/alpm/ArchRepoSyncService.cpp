@@ -22,7 +22,7 @@
 
 namespace bxt::Infrastructure {
 
-coro::task<void> ArchRepoSyncService::sync(const PackageSectionDTO& section) {
+coro::task<void> ArchRepoSyncService::sync(const PackageSectionDTO section) {
     if (!m_options.sources.contains(section)) { co_return; }
     const auto remote_packages = co_await get_available_packages(section);
 
@@ -81,7 +81,7 @@ coro::task<void> ArchRepoSyncService::sync_all() {
 
 coro::task<std::vector<std::string>>
     ArchRepoSyncService::get_available_packages(
-        const PackageSectionDTO& section) {
+        const PackageSectionDTO section) {
     std::vector<std::string> result;
 
     const auto client =

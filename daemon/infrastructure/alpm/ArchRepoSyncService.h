@@ -31,12 +31,12 @@ public:
           m_package_repository(package_repository),
           m_options(options) {}
 
-    virtual coro::task<void> sync(const PackageSectionDTO& section) override;
+    virtual coro::task<void> sync(const PackageSectionDTO section) override;
     virtual coro::task<void> sync_all() override;
 
 protected:
     coro::task<std::vector<std::string>>
-        get_available_packages(const PackageSectionDTO& sectio);
+        get_available_packages(const PackageSectionDTO section);
     coro::task<PackageFile> download_package(const PackageSectionDTO& section,
                                              const std::string& name,
                                              const boost::uuids::uuid& id);

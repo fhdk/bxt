@@ -16,7 +16,7 @@ class SyncService {
 public:
     virtual ~SyncService() = default;
 
-    virtual coro::task<void> sync(const PackageSectionDTO& section) = 0;
+    virtual coro::task<void> sync(const PackageSectionDTO section) = 0;
     virtual coro::task<void> sync_all() = 0;
 };
 
