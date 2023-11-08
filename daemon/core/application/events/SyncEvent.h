@@ -13,6 +13,8 @@
 namespace bxt::Core::Application::Events {
 
 struct SyncEvent : public IntegrationEventBase {
+    SyncEvent() = default;
+    SyncEvent(bool started) : started(started) {};
     bool started = false;
 
     virtual std::string message() const {

@@ -39,8 +39,15 @@ public:
 
             logt(event->message());
         }
+    }
 
-        m_evbus->process();
+    template<typename TEventBase>
+    coro::task<void> dispatch_single_async(TEventBase event) {
+        if (!m_evbus) co_return;
+
+        process(event);
+
+        logt(event->message());
     }
 
 private:

@@ -58,23 +58,20 @@ coro::task<void> ArchRepoSyncService::sync(const PackageSectionDTO section) {
 }
 
 coro::task<void> ArchRepoSyncService::sync_all() {
+    using namespace Core::Application::Events;
+
     std::vector<coro::task<void>> tasks;
     for (const auto& src : m_options.sources) {
         tasks.emplace_back(sync(src.first));
     }
 
-    const auto event = std::make_shared<Core::Application::Events::SyncEvent>();
-
-    std::initializer_list<Core::Application::Events::IntegrationEventPtr>
-        event_list {event};
-
-    event->started = true;
-    co_await m_dispatcher.dispatch_async(event_list);
+    co_await m_dispatcher.dispatch_single_async<IntegrationEventPtr>(
+        std::make_shared<SyncEvent>(true));
 
     co_await coro::when_all(std::move(tasks));
 
-    event->started = false;
-    co_await m_dispatcher.dispatch_async(event_list);
+    co_await m_dispatcher.dispatch_single_async<IntegrationEventPtr>(
+        std::make_shared<SyncEvent>(false));
 
     co_return;
 }
