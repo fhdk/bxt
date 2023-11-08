@@ -111,9 +111,11 @@ void setup_controllers(drogon::HttpAppFramework& app, kgr::container& ctr) {
         .registerFilter(ctr.service<JwtFilter>());
 }
 
-void setup_scheduler(auto& app, auto scheduler) {
-    app.getLoop()->runEvery(1.0,
-                            [scheduler]() { scheduler->process_events(); });
+void setup_scheduler(auto& app, auto scheduler, auto eventbus) {
+    app.getLoop()->runEvery(1.0, [scheduler, eventbus]() {
+        scheduler->process_events();
+        eventbus->process();
+    });
 }
 
 void setup_defaults(kgr::container& ctr) {
@@ -175,7 +177,8 @@ int main() {
                     .setClientMaxBodySize(256 * 1024 * 1024)
                     .setClientMaxMemoryBodySize(1024 * 1024);
 
-    setup_scheduler(app, ctr.service<bxt::di::Utilities::IOScheduler>());
+    setup_scheduler(app, ctr.service<bxt::di::Utilities::IOScheduler>(),
+                    ctr.service<bxt::di::Utilities::EventBus>());
     setup_controllers(app, ctr);
 
     app.run();
