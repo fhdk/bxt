@@ -195,9 +195,15 @@ namespace Persistence {
 
     struct PackageLogEntryRepository
         : kgr::single_service<
-              bxt::Persistence::LMDB::PackageLogEntryRepository,
+              bxt::Infrastructure::DispatchingUnitOfWork<
+                  bxt::Persistence::LMDB::PackageLogEntryRepository>,
               kgr::dependency<di::Utilities::LMDB::Environment>>,
-          kgr::overrides<di::Core::Domain::PackageLogEntryRepository> {};
+          kgr::overrides<di::Core::Domain::PackageLogEntryRepository>,
+          kgr::autocall<
+              kgr::invoke<method<&bxt::Infrastructure::DispatchingUnitOfWork<
+                              bxt::Persistence::LMDB::
+                                  PackageLogEntryRepository>::init_dispatcher>,
+                          di::Utilities::EventBusDispatcher>> {};
 
     struct Box
         : kgr::single_service<
