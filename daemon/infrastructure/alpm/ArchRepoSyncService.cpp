@@ -126,9 +126,31 @@ coro::task<std::vector<std::string>>
 
         const auto filename = desc.get("FILENAME");
         if (!filename.has_value()) { continue; }
-        result.emplace_back(*filename);
-    }
 
+        const auto name = desc.get("NAME");
+        if (!name.has_value()) { continue; }
+
+        auto version_field = desc.get("VERSION");
+
+        if (!version_field.has_value()) { co_return {}; }
+
+        const auto version =
+            Core::Domain::PackageVersion::from_string(*version_field);
+
+        if (!version.has_value()) { continue; }
+
+        const auto existing_package =
+            co_await m_package_repository.find_by_section_async(
+                SectionDTOMapper::to_entity(section), *name);
+
+        if (existing_package.has_value()) {
+            if (existing_package->version() < *version) {
+                result.emplace_back(*filename);
+            }
+        } else {
+            result.emplace_back(*filename);
+        }
+    }
     co_return result;
 }
 
