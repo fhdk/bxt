@@ -16,6 +16,7 @@
 #include "utilities/alpmdb/Desc.h"
 #include "utilities/box/Package.h"
 #include "utilities/errors/DatabaseError.h"
+#include "utilities/lmdb/Database.h"
 
 #include <optional>
 #include <string>
@@ -111,29 +112,13 @@ coro::task<Database::Result<void>>
 coro::task<Database::Result<std::vector<Package>>>
     bxt::Box::Database::find_by_section(PackageSectionDTO section) {
     std::vector<Package> result;
-    auto txn = co_await m_db.env()->begin_ro_txn();
 
-    auto cursor = lmdb::cursor::open(txn->value, m_db.dbi());
-
-    const auto prefix = std::string(section);
-
-    std::string_view key = prefix;
-    std::string_view value;
-
-    if (cursor.get(key, value, MDB_SET_RANGE) && key.starts_with(prefix)) {
-        do {
-            const auto deserialized_value =
-                decltype(m_db)::Serializer::deserialize(value);
-
-            if (!deserialized_value.has_value()) {
-                co_return bxt::make_error<DatabaseError>(
-                    DatabaseError::ErrorType::InvalidEntityError);
-            }
-
-            result.emplace_back(*deserialized_value);
-
-        } while (cursor.get(key, value, MDB_NEXT) && key.starts_with(prefix));
-    }
+    co_await lmdb_handle().accept(
+        [this, &result](std::string_view key, const auto& value) {
+            result.emplace_back(value);
+            return Utilities::LMDB::NavigationAction::Next;
+        },
+        std::string(section));
 
     co_return result;
 }
