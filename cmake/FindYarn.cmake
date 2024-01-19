@@ -35,4 +35,11 @@ function(yarn_add_cra_project package_name working_dir)
     COMMENT "Building ${package_name}"
     USES_TERMINAL
   )
+
+  add_custom_target("${package_name}_install" ALL
+    COMMAND ${CMAKE_COMMAND} -E env BUILD_PATH='${CMAKE_CURRENT_BINARY_DIR}' ${YARN_EXECUTABLE} install
+    WORKING_DIRECTORY ${working_dir}
+    COMMENT "Building ${package_name}"
+    USES_TERMINAL
+  )
 endfunction()
