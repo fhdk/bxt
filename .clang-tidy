@@ -1,0 +1,8 @@
+Checks: "-*,modernize-*,cppcoreguidelines-*, -modernize-use-nodiscard, -modernize-use-trailing-return-type"
+CheckOptions:
+  - key: modernize-use-nullptr.NullMacros
+    value: "NULL"
+  - key: modernize-pass-by-value.IncludeStyle
+    value: "llvm"
+  - key: modernize-use-auto.MinTypeNameLength
+    value: "3"
