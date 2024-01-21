@@ -28,7 +28,7 @@ struct PackageVersion {
             InvalidEpoch
         };
 
-        const ErrorCode error_code;
+        ErrorCode error_code;
 
         static inline const frozen::map<ErrorCode, frozen::string, 4>
             error_messages = {
