@@ -14,9 +14,11 @@
 #include "utilities/StaticDTOMapper.h"
 #include "utilities/box/PoolManager.h"
 
+#include <cereal/types/optional.hpp>
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <utilities/CerealFsPath.h>
 
 namespace bxt::Core::Application {
 
@@ -28,6 +30,9 @@ struct PackagePoolEntryDTO {
 
     auto operator<=>(const PackagePoolEntryDTO& other) const = default;
 
+    template<class Archive> void serialize(Archive& ar) {
+        ar(version, filepath, signature_path);
+    }
 };
 
 struct PackageDTO {
@@ -38,6 +43,10 @@ struct PackageDTO {
         pool_entries;
 
     auto operator<=>(const PackageDTO& other) const = default;
+
+    template<class Archive> void serialize(Archive& ar) {
+        ar(section, name, pool_entries);
+    }
 };
 
 using PackageDTOMapper =

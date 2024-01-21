@@ -14,6 +14,7 @@
 
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
+#include <cereal/access.hpp>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -49,12 +50,8 @@ public:
     };
     BXT_DECLARE_RESULT(ParseError)
 
-    friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive& ar, const unsigned int version) {
-        ar& m_desc;
-        ar& m_files;
-    }
+    friend class cereal::access;
+    template<class Archive> void serialize(Archive& ar) { ar(m_desc, m_files); }
 
     Desc() = default;
     explicit Desc(const std::string& contents, const std::string& files = "");

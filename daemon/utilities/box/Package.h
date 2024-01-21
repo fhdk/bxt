@@ -10,6 +10,10 @@
 #include "utilities/alpmdb/Desc.h"
 #include "utilities/box/PoolManager.h"
 
+#define USE_CEREAL 1
+#include <cereal/cereal.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/types/unordered_map.hpp>
 #include <filesystem>
 #include <parallel_hashmap/phmap.h>
 
@@ -20,17 +24,14 @@ struct PackageDescription {
     std::optional<std::filesystem::path> signature_path = {};
     Utilities::AlpmDb::Desc descfile;
 
+    template<typename Archive> void serialize(Archive& ar) {
+        ar(filepath, signature_path, descfile);
+    }
 };
 
 struct Package {
-    friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive& ar, const unsigned int version) {
-        ar& name;
-        ar& filepath;
-        ar& signature_path;
-        ar& location;
-        ar& description;
+    template<class Archive> void serialize(Archive& ar) {
+        ar(name, descriptions);
     }
     std::string name;
     bool is_any_architecture;

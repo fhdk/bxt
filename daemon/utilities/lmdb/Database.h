@@ -5,7 +5,6 @@
  *
  */
 #pragma once
-#include "BoostSerializer.h"
 #include "Environment.h"
 #include "core/application/errors/CrudError.h"
 #include "coro/sync_wait.hpp"
@@ -14,6 +13,7 @@
 #include "utilities/Error.h"
 #include "utilities/errors/DatabaseError.h"
 #include "utilities/errors/Macro.h"
+#include "utilities/lmdb/CerealSerializer.h"
 #include "utilities/lmdb/Error.h"
 
 #include <exception>
@@ -21,7 +21,7 @@
 namespace bxt::Utilities::LMDB {
 enum class NavigationAction { Next, Previous, Stop };
 
-template<typename TEntity, typename TSerializer = BoostSerializer<TEntity>>
+template<typename TEntity, typename TSerializer = CerealSerializer<TEntity>>
 class Database {
 public:
     using Serializer = TSerializer;
@@ -135,7 +135,7 @@ public:
             }
 
             do {
-                auto res = TSerializer::deserialize(value);
+                auto res = TSerializer::deserialize(std::string(value));
 
                 if (!res.has_value()) {
                     co_return bxt::make_error_with_source<DatabaseError>(

@@ -24,6 +24,10 @@ struct PackageSectionDTO {
     operator std::string() const {
         return fmt::format("{}/{}/{}", branch, repository, architecture);
     }
+
+    template<class Archive> void serialize(Archive& ar) {
+        ar(branch, repository, architecture);
+    }
 };
 
 using SectionDTOMapper =

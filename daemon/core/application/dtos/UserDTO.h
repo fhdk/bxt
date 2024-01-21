@@ -9,6 +9,7 @@
 #include "core/domain/entities/User.h"
 #include "utilities/StaticDTOMapper.h"
 
+#include <cereal/types/set.hpp>
 #include <ranges>
 
 namespace bxt::Core::Application {
@@ -16,6 +17,10 @@ struct UserDTO {
     std::string name;
     std::string password;
     std::set<std::string> permissions;
+
+    template<class Archive> void serialize(Archive& ar) {
+        ar(name, password, permissions);
+    }
 };
 
 using UserDTOMapper =

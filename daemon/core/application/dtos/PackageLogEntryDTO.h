@@ -19,6 +19,10 @@ struct PackageLogEntryDTO {
     uint64_t time;
     LogEntryType type;
     PackageDTO package;
+
+    template<class Archive> void serialize(Archive &ar) {
+        ar(id, time, type, package);
+    }
 };
 
 using PackageLogEntryDTOMapper =
