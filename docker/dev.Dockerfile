@@ -1,7 +1,6 @@
 FROM ubuntu:22.04
 
-RUN apt update --yes
-RUN apt install --yes ca-certificates curl gnupg
+RUN apt update --yes && apt install --yes ca-certificates curl gnupg
 
 RUN sed -i 's/htt[p|ps]:\/\/archive.ubuntu.com\/ubuntu\//mirror:\/\/mirrors.ubuntu.com\/mirrors.txt/g' /etc/apt/sources.list
 
