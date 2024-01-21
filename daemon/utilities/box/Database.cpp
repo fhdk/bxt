@@ -6,7 +6,7 @@
  */
 #include "Database.h"
 
-#include "boost/none.hpp"
+#include "boost/algorithm/string.hpp"
 #include "core/application/dtos/PackageDTO.h"
 #include "core/application/dtos/PackageSectionDTO.h"
 #include "fmt/core.h"
@@ -41,44 +41,28 @@ std::string Database::serialize_key(PackageSectionDTO section,
 }
 
 coro::task<Database::Result<void>>
-    Database::add(const PackageSectionDTO section, const Package package) {
-    auto desc = Utilities::AlpmDb::Desc::parse_package(package.filepath);
+    Database::add(const PackageSectionDTO section,
+                  const Package package_entity) {
+    auto moved_package =
+        m_manager.move_to(package_entity, section.architecture);
 
-    if (!desc.has_value()) {
+    if (!moved_package.has_value()) {
         co_return bxt::make_error_with_source<DatabaseError>(
-            std::move(desc.error()), DatabaseError::ErrorType::InvalidArgument);
-    }
-    Box::Package package_entity {.name = package.name,
-                                 .filepath = package.filepath,
-                                 .signature_path = package.signature_path,
-                                 .location = package.location,
-                                 .description = std::move(*desc)};
-
-    auto moved_path = m_manager.move_to(
-        package_entity.filepath, package_entity.location, section.architecture);
-
-    if (!moved_path.has_value()) {
-        co_return bxt::make_error_with_source<DatabaseError>(
-            std::move(moved_path.error()),
+            std::move(moved_package.error()),
             DatabaseError::ErrorType::InvalidArgument);
     }
-    package_entity.filepath = *moved_path;
 
-    if (package_entity.signature_path.has_value()) {
-        auto signature_moved_path =
-            m_manager.move_to(*package_entity.signature_path,
-                              package_entity.location, section.architecture);
+    const auto key = serialize_key(section, moved_package->name);
 
-        if (!signature_moved_path.has_value()) {
-            co_return bxt::make_error_with_source<DatabaseError>(
-                std::move(signature_moved_path.error()),
-                DatabaseError::ErrorType::InvalidArgument);
+    auto existing_package = co_await m_db.get(key);
+    if (existing_package.has_value()) {
+        for (const auto& [location, desc] : moved_package->descriptions) {
+            existing_package->descriptions[location] = desc;
         }
-        package_entity.signature_path = *signature_moved_path;
+        moved_package = *existing_package;
     }
 
-    auto result =
-        co_await m_db.put(serialize_key(section, package.name), package_entity);
+    auto result = co_await m_db.put(key, *moved_package);
 
     if (!result.has_value()) {
         co_return bxt::make_error_with_source<DatabaseError>(

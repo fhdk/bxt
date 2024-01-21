@@ -33,7 +33,9 @@ coro::task<DeploymentService::Result<uint64_t>>
 
 coro::task<DeploymentService::Result<void>>
     DeploymentService::deploy_push(PackageDTO package, uint64_t session_id) {
-    if (!std::filesystem::exists(package.filepath)) {
+    if (!std::filesystem::exists(
+            package.pool_entries[Box::PoolManager::PoolLocation::Automated]
+                .filepath)) {
         co_return bxt::make_error<Error>(Error::ErrorType::PackagePushFailed);
     }
 
@@ -54,8 +56,11 @@ coro::task<DeploymentService::Result<void>>
         co_return bxt::make_error<Error>(Error::ErrorType::InvalidArgument);
     }
 
-    if (package.signature_path) {
-        if (!std::filesystem::exists(*package.signature_path)) {
+    if (package.pool_entries[Box::PoolManager::PoolLocation::Automated]
+            .signature_path) {
+        if (!std::filesystem::exists(
+                *package.pool_entries[Box::PoolManager::PoolLocation::Automated]
+                     .signature_path)) {
             co_return bxt::make_error<Error>(
                 Error::ErrorType::PackagePushFailed);
         }

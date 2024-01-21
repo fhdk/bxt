@@ -8,6 +8,9 @@
 
 #include "PackageSectionDTO.h"
 #include "core/domain/entities/Package.h"
+#include "core/domain/value_objects/PackagePoolEntry.h"
+#include "core/domain/value_objects/PackageVersion.h"
+#include "parallel_hashmap/phmap.h"
 #include "utilities/StaticDTOMapper.h"
 #include "utilities/box/PoolManager.h"
 
@@ -16,13 +19,23 @@
 #include <string>
 
 namespace bxt::Core::Application {
+
+struct PackagePoolEntryDTO {
+    std::string version;
+
+    std::filesystem::path filepath;
+    std::optional<std::filesystem::path> signature_path = {};
+
+    auto operator<=>(const PackagePoolEntryDTO& other) const = default;
+
+};
+
 struct PackageDTO {
     PackageSectionDTO section;
     std::string name;
-    std::string version;
-    std::filesystem::path filepath;
-    std::optional<std::filesystem::path> signature_path = {};
-    Box::PoolManager::PoolLocation location;
+    bool is_any_architecture = false;
+    phmap::flat_hash_map<Box::PoolManager::PoolLocation, PackagePoolEntryDTO>
+        pool_entries;
 
     auto operator<=>(const PackageDTO& other) const = default;
 };
@@ -39,20 +52,46 @@ using namespace bxt::Core::Application;
 
 template<> struct bxt::Utilities::StaticDTOMapper<Package, PackageDTO> {
     static PackageDTO to_dto(const Package& from) {
-        return Core::Application::PackageDTO {
-            .section = SectionDTOMapper::to_dto(from.section()),
-            .name = from.name(),
-            .version = from.version().string(),
-            .filepath = from.filepath(),
-            .signature_path = from.signature_path(),
-            .location = from.location()};
-    }
-    static Package::ParseResult to_entity(const PackageDTO& from) {
-        auto section = SectionDTOMapper::to_entity(from.section);
-        auto result = Package::from_filepath(section, from.filepath);
+        PackageDTO dto;
+        dto.section = SectionDTOMapper::to_dto(from.section());
+        dto.name = from.name();
 
-        result->set_signature_path(from.signature_path);
-        result->set_pool_location(from.location);
-        return result;
+        for (const auto& [location, entry] : from.pool_entries()) {
+            dto.pool_entries.emplace(
+                location, PackagePoolEntryDTO {entry.version().string(),
+                                               entry.file_path(),
+                                               entry.signature_path()});
+        }
+        return dto;
+    }
+
+    static Package to_entity(const PackageDTO& from) {
+        Package package(
+            SectionDTOMapper::to_entity(from.section),
+            from.name.empty() ? *Package::parse_file_name(
+                from.pool_entries.begin()->second.filepath.filename())
+                              : from.name,
+            from.is_any_architecture);
+
+        for (const auto& entry : from.pool_entries) {
+            auto version = PackageVersion::from_string(entry.second.version);
+
+            if (!version.has_value()) {
+                auto entity = PackagePoolEntry::parse_file_path(
+                    entry.second.filepath, entry.second.signature_path);
+
+                if (entity.has_value()) {
+                    package.pool_entries().emplace(entry.first, *entity);
+                }
+
+                continue;
+            }
+
+            package.pool_entries().emplace(
+                entry.first,
+                PackagePoolEntry(entry.second.filepath,
+                                 entry.second.signature_path, *version));
+        }
+        return package;
     }
 };

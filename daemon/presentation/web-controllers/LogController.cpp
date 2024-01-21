@@ -9,7 +9,6 @@
 #include "drogon/HttpTypes.h"
 
 namespace bxt::Presentation {
-
 drogon::Task<drogon::HttpResponsePtr>
     LogController::get_package_logs(drogon::HttpRequestPtr req) {
     Json::Value result;
@@ -26,22 +25,41 @@ drogon::Task<drogon::HttpResponsePtr>
         co_return response;
     }
 
-    for (const auto &dto : dtos) {
+    for (const auto& dto : dtos) {
         Json::Value json_value;
 
         json_value["id"] = dto.id;
         json_value["time"] = dto.time;
         json_value["package"]["name"] = dto.package.name;
-        json_value["package"]["version"] = dto.package.version;
-        json_value["package"]["hasSignature"] =
-            dto.package.signature_path.has_value();
 
+        // Serialize section
         json_value["package"]["section"]["branch"] = dto.package.section.branch;
         json_value["package"]["section"]["repository"] =
             dto.package.section.repository;
         json_value["package"]["section"]["architecture"] =
             dto.package.section.architecture;
 
+        // Serialize pool_entries
+        Json::Value pool_entries_json;
+        for (const auto& [pool_location, pool_entry] :
+             dto.package.pool_entries) {
+            Json::Value entry_json;
+            entry_json["version"] = pool_entry.version;
+            entry_json["hasSignature"] = pool_entry.signature_path.has_value();
+
+            pool_entries_json.append(entry_json);
+        }
+
+        json_value["package"]["pool_entries"] = pool_entries_json;
+        const auto preferred_candidate =
+            Box::PoolManager::select_preferred_value(dto.package.pool_entries);
+
+        json_value["package"]["preferredCandidate"]["version"] =
+            preferred_candidate->version;
+        json_value["package"]["preferredCandidate"]["hasSignature"] =
+            preferred_candidate->signature_path.has_value() ? "true" : "false";
+
+        // Serialize action
         json_value["action"] = [dto] {
             switch (dto.type) {
             case Core::Domain::Add: return "Add";

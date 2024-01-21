@@ -10,9 +10,18 @@
 #include "utilities/alpmdb/Desc.h"
 #include "utilities/box/PoolManager.h"
 
-#include <boost/serialization/optional.hpp>
+#include <filesystem>
+#include <parallel_hashmap/phmap.h>
 
 namespace bxt::Box {
+
+struct PackageDescription {
+    std::filesystem::path filepath;
+    std::optional<std::filesystem::path> signature_path = {};
+    Utilities::AlpmDb::Desc descfile;
+
+};
+
 struct Package {
     friend class boost::serialization::access;
     template<class Archive>
@@ -24,9 +33,8 @@ struct Package {
         ar& description;
     }
     std::string name;
-    std::filesystem::path filepath;
-    boost::optional<std::filesystem::path> signature_path = {};
-    PoolManager::PoolLocation location;
-    Utilities::AlpmDb::Desc description;
+    bool is_any_architecture;
+    phmap::flat_hash_map<PoolManager::PoolLocation, PackageDescription>
+        descriptions;
 };
 } // namespace bxt::Box

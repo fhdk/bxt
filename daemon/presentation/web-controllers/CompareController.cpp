@@ -9,6 +9,7 @@
 #include "core/application/dtos/PackageSectionDTO.h"
 #include "drogon/HttpResponse.h"
 #include "drogon/HttpTypes.h"
+#include "utilities/box/PoolManager.h"
 
 #include "json/value.h"
 #include <vector>
@@ -60,9 +61,10 @@ drogon::Task<drogon::HttpResponsePtr>
         result["sections"].append(section_json);
     }
 
-    for (const auto& comparison : compare_result->compare_table) {
-        result["compare_table"][comparison.first.first]
-              [std::string(comparison.first.second)] = comparison.second;
+    for (const auto& [index, version] : compare_result->compare_table) {
+        auto&& [name, section, location] = index;
+        result["compare_table"][name][std::string(section)]
+              [Box::PoolManager::location_paths.at(location).data()] = version;
     }
 
     co_return drogon::HttpResponse::newHttpJsonResponse(result);

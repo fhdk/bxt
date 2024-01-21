@@ -51,11 +51,6 @@ coro::task<PackageService::Result<void>>
     PackageService::add_package(const PackageDTO package) {
     auto deployed_entity = PackageDTOMapper::to_entity(package);
 
-    if (!deployed_entity.has_value()) {
-        co_return bxt::make_error<CrudError>(
-            CrudError::ErrorType::InvalidArgument);
-    }
-
     auto current_entitites = m_repository.find_by_section(
         SectionDTOMapper::to_entity(package.section));
 
@@ -68,12 +63,12 @@ coro::task<PackageService::Result<void>>
         std::ranges::find(*current_entitites, package.name, &Package::name);
 
     if (current_entity != current_entitites->end()
-        && deployed_entity->version() <= current_entity->version()) {
+        && deployed_entity.version() <= current_entity->version()) {
         co_return bxt::make_error<CrudError>(
             CrudError::ErrorType::EntityAlreadyExists);
     }
 
-    co_await m_repository.add_async(*PackageDTOMapper::to_entity(package));
+    co_await m_repository.add_async(PackageDTOMapper::to_entity(package));
 
     co_return {};
 }

@@ -45,8 +45,7 @@ struct bxt::Utilities::StaticDTOMapper<
 
     static PackageLogEntry to_entity(const PackageLogEntryDTO &from) {
         PackageLogEntry entity(
-            StaticDTOMapper<Package, PackageDTO>::to_entity(from.package)
-                .value(),
+            StaticDTOMapper<Package, PackageDTO>::to_entity(from.package),
             from.type, boost::uuids::string_generator()(from.id),
             std::chrono::system_clock::time_point(
                 std::chrono::milliseconds(from.time)));

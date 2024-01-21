@@ -19,7 +19,9 @@ coro::task<CompareService::Result<CompareService::CompareResult>>
         result.sections.emplace_back(section);
 
         for (const auto& package : *packages) {
-            result.compare_table[{package.name, section}] = package.version;
+            for (const auto& [location, entry] : package.pool_entries)
+                result.compare_table[{package.name, section, location}] =
+                    entry.version;
         }
     }
 

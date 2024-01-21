@@ -10,15 +10,19 @@
 #include "core/domain/entities/AggregateRoot.h"
 #include "core/domain/value_objects/Name.h"
 #include "core/domain/value_objects/PackageArchitecture.h"
+#include "core/domain/value_objects/PackagePoolEntry.h"
 #include "core/domain/value_objects/PackageVersion.h"
-#include "frozen/map.h"
+#include "parallel_hashmap/phmap.h"
 #include "utilities/Error.h"
 #include "utilities/box/PoolManager.h"
 
+#include <bits/ranges_algo.h>
 #include <filesystem>
 #include <nonstd/expected.hpp>
 #include <optional>
 #include <string>
+#include <unordered_map>
+#include <utility>
 
 namespace bxt::Core::Domain {
 
@@ -29,105 +33,69 @@ public:
         Name package_name;
     };
 
+    struct ParseError : public bxt::Error {};
+    BXT_DECLARE_RESULT(ParseError)
+
     const TId id() const { return {m_section, m_name}; }
     const std::string& name() const { return m_name; }
-    const PackageVersion& version() const { return m_version; }
-    const std::string& architecture() const { return m_architecture; }
-    const std::filesystem::path& filepath() const { return m_filepath; }
-    const Box::PoolManager::PoolLocation location() const { return m_location; }
+    const PackageVersion version() const {
+        return Box::PoolManager::select_preferred_value(m_pool_entries)
+            .value()
+            .version();
+    }
+    const std::filesystem::path filepath() const {
+        return Box::PoolManager::select_preferred_value(m_pool_entries)
+            .value()
+            .file_path();
+    }
+    const Box::PoolManager::PoolLocation location() const {
+        return static_cast<Box::PoolManager::PoolLocation>(
+            std::ranges::min_element(m_pool_entries, {}, [](const auto& el) {
+                return static_cast<int>(el.first);
+            })->first);
+    }
 
-    Package(const Section& section,
-            const std::string& name,
-            const PackageVersion& version,
-            const PackageArchitecture& arch,
-            const std::filesystem::path& path,
-            Box::PoolManager::PoolLocation location)
-        : m_section(section),
-          m_name(name),
-          m_version(version),
-          m_architecture(arch),
-          m_filepath(path),
-          m_location(location) {}
+    Package(Section section, const std::string& name, bool is_any)
+        : m_section(std::move(section)), m_name(name), m_is_any_arch(is_any) {}
+
+    static std::optional<std::string>
+        parse_file_name(const std::string& filename);
+
+    static Result<Package> from_file_path(
+        const Section& section,
+        const Box::PoolManager::PoolLocation location,
+        const std::filesystem::path& filepath,
+        const std::optional<std::filesystem::path>& signature_path = {});
 
     virtual ~Package() = default;
 
-    std::string string() const {
-        return fmt::format("{}-{}-{}", name(), version().string(),
-                           architecture());
-    }
-
-    struct ParsingError : public bxt::Error {
-        enum class ErrorCode {
-            InvalidFilename,
-            InvalidVersion,
-            InvalidReleaseTag,
-            InvalidName,
-            InvalidEpoch
-        };
-
-        const ErrorCode error_code;
-
-        static inline const frozen::map<ErrorCode, std::string_view, 5>
-            error_messages = {
-                {ErrorCode::InvalidFilename, "Invalid package filename"},
-                {ErrorCode::InvalidVersion, "Invalid package version"},
-                {ErrorCode::InvalidReleaseTag, "Invalid package release tag"},
-                {ErrorCode::InvalidName, "Invalid package name"},
-                {ErrorCode::InvalidEpoch, "Invalid package epoch"}};
-
-        ParsingError(ErrorCode error_code) : error_code(error_code) {
-            message = error_messages.at(error_code).data();
-        }
-    };
-    using ParseResult = nonstd::expected<Package, ParsingError>;
-
-    static ParseResult from_filename(const Section& section,
-                                     const std::string& filename);
-    static ParseResult from_filepath(
-        const Section& section,
-        const std::filesystem::path& filepath,
-        const std::optional<std::filesystem::path>& signature_path = {});
+    std::string string() const { return fmt::format("{}", name()); }
 
     Section section() const { return m_section; }
 
     void set_name(const std::string& new_name) { m_name = new_name; }
 
-    void set_version(const PackageVersion& new_version) {
-        m_version = new_version;
-    }
-
-    void set_architecture(const std::string& new_architecture) {
-        m_architecture = new_architecture;
-    }
-
-    void set_filepath(const std::filesystem::path& new_filepath) {
-        m_filepath = new_filepath;
-    }
-
     void set_section(const Section& new_section) { m_section = new_section; }
 
-    std::optional<std::filesystem::path> signature_path() const {
-        return m_signature_path;
+    bool is_any_arch() const { return m_is_any_arch; }
+
+    phmap::flat_hash_map<Box::PoolManager::PoolLocation, PackagePoolEntry>&
+        pool_entries() {
+        return m_pool_entries;
     }
 
-    void set_signature_path(
-        const std::optional<std::filesystem::path>& signature_path) {
-        m_signature_path = signature_path;
-    }
-
-    void set_pool_location(Box::PoolManager::PoolLocation location) {
-        m_location = location;
+    phmap::flat_hash_map<Box::PoolManager::PoolLocation, PackagePoolEntry>
+        pool_entries() const {
+        return m_pool_entries;
     }
 
 private:
     Section m_section;
 
     Name m_name;
-    PackageVersion m_version;
-    PackageArchitecture m_architecture;
-    std::filesystem::path m_filepath;
-    std::optional<std::filesystem::path> m_signature_path = {};
-    Box::PoolManager::PoolLocation m_location;
+    bool m_is_any_arch;
+    phmap::flat_hash_map<Box::PoolManager::PoolLocation, PackagePoolEntry>
+        m_pool_entries;
 };
 
 } // namespace bxt::Core::Domain

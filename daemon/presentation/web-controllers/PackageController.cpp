@@ -11,6 +11,7 @@
 #include "core/application/dtos/PackageDTO.h"
 #include "core/application/dtos/PackageSectionDTO.h"
 #include "core/application/services/PackageService.h"
+#include "core/domain/value_objects/PackageVersion.h"
 #include "drogon/HttpResponse.h"
 #include "drogon/HttpTypes.h"
 #include "drogon/utils/FunctionTraits.h"
@@ -32,7 +33,6 @@ drogon::Task<HttpResponsePtr>
 
     co_return HttpResponse::newHttpResponse();
 }
-
 drogon::Task<drogon::HttpResponsePtr>
     PackageController::commit_transaction(drogon::HttpRequestPtr req) {
     MultiPartParser file_upload;
@@ -44,11 +44,11 @@ drogon::Task<drogon::HttpResponsePtr>
     std::map<int, PackageDTO> packages;
 
     for (const auto &[name, file] : files_map) {
-        if (!name.starts_with("package")) { continue; }
+        if (!name.starts_with("package")) continue;
         std::vector<std::string> parts;
         boost::split(parts, name, boost::is_any_of("."));
 
-        if (parts.size() > 2) { continue; }
+        if (parts.size() > 3) continue;
 
         auto file_number_str = parts[0].substr(7);
         const auto file_number = std::stoi(file_number_str);
@@ -59,27 +59,33 @@ drogon::Task<drogon::HttpResponsePtr>
 
         file.save();
 
+        auto location = Box::PoolManager::PoolLocation::Overlay;
+
+        PackagePoolEntryDTO &pool_entry =
+            packages[file_number].pool_entries[location];
+
         if (parts.size() == 1 || parts[1] != "signature") {
-            packages[file_number].filepath =
+            pool_entry.filepath =
                 app().getUploadPath() + "/" + file.getFileName();
+
         } else if (parts[1] == "signature") {
-            packages[file_number].signature_path =
+            pool_entry.signature_path =
                 app().getUploadPath() + "/" + file.getFileName();
         }
     }
 
     for (const auto &[name, param] : params_map) {
-        if (!name.starts_with("package")) { continue; }
+        if (!name.starts_with("package")) continue;
 
         std::vector<std::string> parts;
         boost::split(parts, name, boost::is_any_of("."));
 
-        if (parts.size() != 2) { continue; }
+        if (parts.size() != 2) continue;
 
         auto file_number_str = parts[0].substr(7);
         const auto file_number = std::stoi(file_number_str);
 
-        if (!packages.contains(file_number)) { continue; }
+        if (!packages.contains(file_number)) continue;
 
         if (parts[1] == "branch") {
             packages[file_number].section.branch = param;
@@ -92,7 +98,6 @@ drogon::Task<drogon::HttpResponsePtr>
 
     PackageService::Transaction transaction;
     for (auto &package : packages) {
-        package.second.location = Box::PoolManager::PoolLocation::Overlay;
         transaction.to_add.emplace_back(std::move(package.second));
     }
 
@@ -126,9 +131,31 @@ drogon::Task<drogon::HttpResponsePtr>
         Json::Value package_json;
 
         package_json["name"] = package.name;
-        package_json["filename"] = package.filepath.filename().string();
-        package_json["has_signature"] =
-            package.signature_path.has_value() ? "true" : "false";
+        package_json["section"] = Json::Value();
+        package_json["section"]["branch"] = package.section.branch;
+        package_json["section"]["repository"] = package.section.repository;
+        package_json["section"]["architecture"] = package.section.architecture;
+
+        Json::Value pool_entries_json;
+        for (const auto &[pool_location, pool_entry] : package.pool_entries) {
+            Json::Value entry_json;
+            entry_json["version"] = pool_entry.version;
+            entry_json["hasSignature"] =
+                pool_entry.signature_path.has_value() ? "true" : "false";
+
+            pool_entries_json[Box::PoolManager::location_paths.at(pool_location)
+                                  .data()] = entry_json;
+        }
+
+        package_json["poolEntries"] = pool_entries_json;
+
+        const auto preferred_candidate =
+            Box::PoolManager::select_preferred_value(package.pool_entries);
+
+        package_json["preferredCandidate"]["version"] =
+            preferred_candidate->version;
+        package_json["preferredCandidate"]["hasSignature"] =
+            preferred_candidate->signature_path.has_value() ? "true" : "false";
 
         result.append(package_json);
     }

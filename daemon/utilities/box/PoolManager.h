@@ -14,14 +14,19 @@
 #include "utilities/Error.h"
 #include "utilities/errors/Macro.h"
 
+#include <bits/ranges_algo.h>
+#include <concepts>
 #include <filesystem>
 #include <mutex>
+#include <optional>
 #include <set>
 #include <shared_mutex>
 #include <string>
 #include <system_error>
 #include <vector>
+
 namespace bxt::Box {
+class Package;
 
 class PoolManager {
 public:
@@ -32,21 +37,33 @@ public:
 
     PoolManager(const std::filesystem::path& pool_path,
                 const std::set<std::string> architectures);
-    enum class PoolLocation { Unknown, Sync, Overlay, Automated };
+    enum class PoolLocation { Overlay, Automated, Sync, Unknown };
 
-    Result<std::filesystem::path> move_to(const std::filesystem::path& from,
-                                          PoolLocation location,
-                                          const std::string& arch);
+    Result<Package> move_to(const Package& pkg, const std::string& arch);
 
-    Result<std::vector<std::filesystem::path>>
-        packages(PoolLocation location, const std::string& arch);
+    template<typename TMap>
+    static std::optional<typename TMap::mapped_type>
+        select_preferred_value(const TMap& map) {
+        static_assert(std::same_as<typename TMap::key_type, PoolLocation>,
+                      "Key should be a PoolLocatrion type");
+        if (map.empty()) { return {}; }
+
+        const auto min = std::ranges::min_element(map, {}, [](const auto& el) {
+                             return static_cast<int>(el.first);
+                         })->first;
+
+        return map.at(min);
+    }
+
+    std::string format_target_path(const std::string& filename,
+                                   bxt::Box::PoolManager::PoolLocation location,
+                                   const std::string& arch);
+    constexpr static frozen::unordered_map<PoolLocation, frozen::string, 3>
+        location_paths = {{PoolLocation::Sync, "/sync/"},
+                          {PoolLocation::Overlay, "/overlay/"},
+                          {PoolLocation::Automated, "/automated/"}};
 
 private:
-    constexpr static frozen::unordered_map<PoolLocation, frozen::string, 3>
-        m_location_paths = {{PoolLocation::Sync, "/sync/"},
-                            {PoolLocation::Overlay, "/overlay/"},
-                            {PoolLocation::Automated, "/automated/"}};
-
     std::filesystem::path m_pool_path;
     std::set<std::string> m_architectures;
     std::shared_mutex m_pool_mutex;

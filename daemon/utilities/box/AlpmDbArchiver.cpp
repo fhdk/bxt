@@ -11,6 +11,7 @@
 #include "coro/task_container.hpp"
 #include "utilities/alpmdb/Database.h"
 #include "utilities/box/Database.h"
+#include "utilities/box/PoolManager.h"
 #include "utilities/libarchive/Writer.h"
 #include "utilities/lmdb/Database.h"
 #include "utilities/log/Logging.h"
@@ -94,7 +95,7 @@ coro::task<void> AlpmDbArchiver::writeback_to_disk() {
 
             const auto& [section, name] = *deserialized;
 
-            const auto version = package.description.get("VERSION");
+            const auto version = PoolManager::select_preferred_value(package.descriptions)->descfile.get("VERSION");
 
             if (!version.has_value()) {
                 return Utilities::LMDB::NavigationAction::Next;
@@ -109,7 +110,7 @@ coro::task<void> AlpmDbArchiver::writeback_to_disk() {
 
             Utilities::AlpmDb::DatabaseUtils::write_buffer_to_archive(
                 writers[section], fmt::format("{}-{}/desc", name, *version),
-                package.description.string());
+                PoolManager::select_preferred_value(package.descriptions)->descfile.string());
 
             return Utilities::LMDB::NavigationAction::Next;
         });

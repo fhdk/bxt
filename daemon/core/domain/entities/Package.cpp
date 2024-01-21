@@ -6,16 +6,19 @@
  */
 #include "Package.h"
 
+#include "core/domain/value_objects/PackagePoolEntry.h"
 #include "core/domain/value_objects/PackageVersion.h"
 #include "fmt/core.h"
 #include "scn/tuple_return/tuple_return.h"
 #include "utilities/Error.h"
+#include "utilities/box/PoolManager.h"
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <cctype>
 #include <filesystem>
 #include <fmt/format.h>
+#include <optional>
 #include <ranges>
 #include <stdexcept>
 #include <string>
@@ -35,66 +38,40 @@ bool check_valid_name(std::string_view name) {
 }
 
 namespace bxt::Core::Domain {
-Package::ParseResult Package::from_filename(const Section& section,
-                                            const std::string& filename) {
-    std::vector<std::string> substrings;
 
+std::optional<std::string>
+    Package::parse_file_name(const std::string& filename) {
+    std::vector<std::string> substrings;
     boost::split(substrings, filename, boost::is_any_of("-"));
 
-    auto subsize = substrings.size();
+    if (substrings.size() < 4) { return {}; }
 
-    if (subsize < 4) {
-        return bxt::make_error<ParsingError>(
-            ParsingError::ErrorCode::InvalidFilename);
-    }
+    auto version_pos = filename.find(substrings[substrings.size() - 3]);
+    std::string name = filename.substr(0, version_pos - 1);
 
-    auto release_substr = substrings[subsize - 2];
-    auto version_substr = substrings[subsize - 3];
+    if (!check_valid_name(name)) { return {}; }
 
-    auto version_pos = filename.find(version_substr);
-    auto name = filename.substr(0, version_pos - 1);
-
-    auto valid_name = check_valid_name(name);
-
-    if (!valid_name) {
-        return bxt::make_error<ParsingError>(
-            ParsingError::ErrorCode::InvalidName);
-    }
-
-    auto version = PackageVersion::from_string(
-        fmt::format("{}-{}", version_substr, release_substr));
-
-    if (!version.has_value()) {
-        return bxt::make_error_with_source<ParsingError>(
-            std::move(version.error()),
-            ParsingError::ErrorCode::InvalidVersion);
-    }
-
-    return Package(section, name, *version, PackageArchitecture(), filename,
-                   Box::PoolManager::PoolLocation::Unknown);
+    return name;
 }
-
-Package::ParseResult Package::from_filepath(
+Package::Result<Package> Package::from_file_path(
     const Section& section,
+    const Box::PoolManager::PoolLocation location,
     const std::filesystem::path& filepath,
     const std::optional<std::filesystem::path>& signature_path) {
-    auto result = from_filename(section, filepath.filename());
+    auto pool_entry =
+        PackagePoolEntry::parse_file_path(filepath, signature_path);
 
-    if (!result.has_value()) { return result; }
-
-    result->set_filepath(filepath);
-
-    if (signature_path.has_value()) {
-        result->set_signature_path(signature_path);
-        return result;
+    if (!pool_entry.has_value()) {
+        return bxt::make_error_with_source<ParseError>(
+            std::move(pool_entry.error()));
     }
 
-    const auto deduced_signature_path =
-        fmt::format("{}.sig", filepath.string());
+    auto name = parse_file_name(filepath.filename());
 
-    if (std::filesystem::exists(deduced_signature_path)) {
-        result->set_signature_path(deduced_signature_path);
-    }
+    if (!name.has_value()) { return bxt::make_error<ParseError>(); }
+
+    Package result(section, *name, false);
+    result.pool_entries().emplace(location, *pool_entry);
     return result;
 }
 

@@ -6,6 +6,7 @@
  */
 #include "DeploymentController.h"
 
+#include "core/application/dtos/PackageDTO.h"
 #include "core/application/services/DeploymentService.h"
 #include "drogon/HttpTypes.h"
 
@@ -111,13 +112,18 @@ drogon::Task<drogon::HttpResponsePtr>
 
     const auto name = file->second.getFileName();
 
-    auto dto = PackageDTO {section,
-                           name,
-                           "",
-                           app().getUploadPath() + "/" + name,
-                           app().getUploadPath() + "/"
-                               + signature->second.getFileName(),
-                           Box::PoolManager::PoolLocation::Automated};
+    auto dto = PackageDTO {
+        section,
+        "",
+        false,
+        {{Box::PoolManager::PoolLocation::Automated,
+          {
+              "",
+              app().getUploadPath() + "/" + name,
+              app().getUploadPath() + "/" + signature->second.getFileName(),
+          }}}
+
+    };
 
     const auto push_ok = co_await m_service.deploy_push(dto, session_id);
 

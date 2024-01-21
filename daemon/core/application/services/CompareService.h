@@ -17,6 +17,7 @@
 #include "frozen/unordered_map.h"
 #include "parallel_hashmap/phmap.h"
 #include "utilities/Error.h"
+#include "utilities/box/PoolManager.h"
 #include "utilities/errors/Macro.h"
 
 #include <coro/task.hpp>
@@ -38,7 +39,9 @@ public:
 
     struct CompareResult {
         std::vector<PackageSectionDTO> sections;
-        phmap::flat_hash_map<std::pair<std::string, PackageSectionDTO>,
+        phmap::flat_hash_map<std::tuple<std::string,
+                                        PackageSectionDTO,
+                                        Box::PoolManager::PoolLocation>,
                              std::string>
             compare_table;
     };

@@ -14,6 +14,7 @@
 #include "coro/when_all.hpp"
 #include "httplib.h"
 #include "utilities/alpmdb/Desc.h"
+#include "utilities/box/PoolManager.h"
 #include "utilities/libarchive/Reader.h"
 #include "utilities/log/Logging.h"
 
@@ -43,9 +44,9 @@ coro::task<void> ArchRepoSyncService::sync(const PackageSectionDTO section) {
 
     for (const auto& file_task : files) {
         const auto file = file_task.return_value();
-        auto package_result = Package::from_filepath(
-            SectionDTOMapper::to_entity(file.section()), file.file_path());
-        package_result->set_pool_location(Box::PoolManager::PoolLocation::Sync);
+        auto package_result = Package::from_file_path(
+            SectionDTOMapper::to_entity(file.section()),
+            Box::PoolManager::PoolLocation::Sync, file.file_path());
 
         if (package_result.has_value()) {
             co_await m_package_repository.add_async(*package_result);
