@@ -54,7 +54,7 @@ struct PackageVersion {
     std::string string() const;
 
     Name version;
-    std::optional<int> epoch;
+    std::optional<int> epoch = {};
     std::string release;
 };
 
