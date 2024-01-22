@@ -20,6 +20,7 @@ export default forwardRef<HTMLDialogElement, IConfirmSyncModal>(
                 </Modal.Body>
                 <Modal.Actions>
                     <Button
+                        size="sm"
                         onClick={() => {
                             if (props.onConfirm) props.onConfirm();
                         }}
@@ -29,6 +30,7 @@ export default forwardRef<HTMLDialogElement, IConfirmSyncModal>(
                     </Button>
 
                     <Button
+                        size="sm"
                         color="primary"
                         onClick={() => {
                             if (props.onCancel) props.onCancel();
