@@ -1,3 +1,4 @@
+import { faClone } from "@fortawesome/free-solid-svg-icons";
 import {
     CustomVisibilityState,
     FileAction,
@@ -37,7 +38,8 @@ export const SnapToAction = defineFileAction(
         },
         button: {
             name: "Snap to...",
-            contextMenu: true
+            contextMenu: true,
+            icon: faClone
         }
     } as const,
     ({ reduxDispatch, getReduxState }) => {
