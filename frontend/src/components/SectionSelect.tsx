@@ -1,45 +1,34 @@
-import { Input, Select } from "react-daisyui";
+import Select, {
+    GroupBase,
+    SelectComponentsConfig,
+    StylesConfig,
+    components
+} from "react-select";
+import Control from "react-select";
 import {
     branches,
     reposForBranch,
     architecturesForBranchAndRepo
 } from "../utils/SectionUtils";
-import { useSections } from "../hooks/BxtHooks";
-import React, { HTMLAttributes, useCallback, useEffect, useState } from "react";
+import { CSSProperties, HTMLAttributes, useCallback, useEffect } from "react";
+import {
+    faCodeBranch,
+    faCubes,
+    faMicrochip
+} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import * as daisyui from "react-daisyui";
+import { SelectComponentsGeneric } from "react-select/dist/declarations/src/components";
+import { IconProp } from "@fortawesome/fontawesome-svg-core";
+import { ClassNamesArg } from "@emotion/react";
 
 type ISectionSelectorProps = HTMLAttributes<HTMLDivElement> & {
     sections: ISection[];
     selectedSection?: ISection;
     onSelected?: (section: ISection | undefined) => void;
-    plainTextMode?: boolean;
 };
 
 export default (props: ISectionSelectorProps) => {
-    const [plainTextInput, setPlainTextInput] = useState<string>();
-
-    useEffect(() => {
-        setPlainTextInput(
-            `${props.selectedSection?.branch}/${props.selectedSection?.repository}/${props.selectedSection?.architecture}`
-        );
-    }, [props.selectedSection]);
-
-    const setSectionFromPlainText = useCallback(
-        (plainTextSection: string | undefined) => {
-            if (!plainTextSection) {
-                return;
-            }
-            const section: ISection = {};
-            const parts = plainTextSection.split("/");
-
-            section.branch = parts[0];
-            section.repository = parts[1];
-            section.architecture = parts[2];
-
-            if (props.onSelected) props.onSelected(section);
-        },
-        [props.onSelected]
-    );
-
     const updateSection = useCallback(
         (update: any) => {
             if (props.onSelected)
@@ -56,85 +45,111 @@ export default (props: ISectionSelectorProps) => {
             });
     }, [props.sections]);
 
+    interface IOption {
+        value?: string;
+        label?: string;
+    }
+
+    const makeValue = useCallback(
+        (value: string | undefined): IOption => ({
+            value: value,
+            label: value
+        }),
+        []
+    );
+
+    const makeComponents = useCallback(
+        <TGroup extends GroupBase<IOption>>(
+            icon: IconProp,
+            classNames: ClassNamesArg = ""
+        ): SelectComponentsConfig<IOption, false, TGroup> => ({
+            Control: ({ children, ...rest }) => (
+                <daisyui.Dropdown>
+                    <components.Control
+                        className={
+                            "input input-bordered input-sm bg-base-100 " +
+                            classNames
+                        }
+                        {...rest}
+                    >
+                        <FontAwesomeIcon className="px-2" icon={icon} />
+                        {children}
+                    </components.Control>
+                </daisyui.Dropdown>
+            ),
+            Menu: ({ children, innerProps, ...rest }) => (
+                <daisyui.Dropdown.Menu
+                    className="z-10 fixed bg-base-100 menu-sm"
+                    {...rest}
+                >
+                    <div {...innerProps}>{children}</div>
+                </daisyui.Dropdown.Menu>
+            ),
+            Option: ({ children, innerProps, isSelected, ...rest }) => (
+                <daisyui.Menu.Item {...rest}>
+                    <div className={isSelected ? "active" : ""} {...innerProps}>
+                        {children}
+                    </div>
+                </daisyui.Menu.Item>
+            )
+        }),
+        []
+    );
+
+    const styles: StylesConfig<IOption> = {
+        control: (base) => ({
+            ...base,
+            minHeight: 32
+        }),
+        dropdownIndicator: (base) => ({
+            ...base,
+            paddingTop: 0,
+            paddingBottom: 0
+        }),
+        clearIndicator: (base) => ({
+            ...base,
+            paddingTop: 0,
+            paddingBottom: 0
+        })
+    };
+
     return (
-        <div className="w-72" {...props}>
-            {props.plainTextMode ? (
-                <div className="flex h-[51px] items-end">
-                    <Input
-                        className="inline-block w-full"
-                        size="sm"
-                        value={plainTextInput}
-                        onChange={(e) => setPlainTextInput(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key == "Enter") {
-                                setSectionFromPlainText(plainTextInput);
-                            }
-                        }}
-                    />
-                </div>
-            ) : (
-                <span className="h-[51px] inline-block grid grid-flow-col grid-cols-3 grid-rows-[19px_24px] justify-stretch w-full">
-                    <span className="px-2 text-xs/6 text-base-content/50">
-                        Branch
-                    </span>
-                    <Select
-                        className="rounded-none rounded-l-lg"
-                        value={props.selectedSection?.branch}
-                        size="sm"
-                    >
-                        {branches(props.sections).map((value) => (
-                            <option
-                                onClick={() => updateSection({ branch: value })}
-                            >
-                                {value}
-                            </option>
-                        ))}
-                    </Select>
-                    <span className="px-2 text-xs/6 text-base-content/50">
-                        Repository
-                    </span>
-                    <Select
-                        className="rounded-none"
-                        value={props.selectedSection?.repository}
-                        size="sm"
-                    >
-                        {reposForBranch(
-                            props.sections,
-                            props.selectedSection?.branch
-                        ).map((value) => (
-                            <option
-                                onClick={() =>
-                                    updateSection({ repository: value })
-                                }
-                            >
-                                {value}
-                            </option>
-                        ))}
-                    </Select>
-                    <span className="px-2 text-xs/6 text-base-content/50">
-                        Architecture
-                    </span>
-                    <Select
-                        className="rounded-none rounded-r-lg"
-                        value={props.selectedSection?.architecture}
-                        size="sm"
-                    >
-                        {architecturesForBranchAndRepo(
-                            props.sections,
-                            props.selectedSection?.branch,
-                            props.selectedSection?.repository
-                        ).map((value) => (
-                            <option
-                                onClick={() =>
-                                    updateSection({ architecture: value })
-                                }
-                            >
-                                {value}
-                            </option>
-                        ))}
-                    </Select>
-                </span>
-            )}
-        </div>
+        <span className="flex justify-stretch items-center w-full space-x-1">
+            <Select<IOption>
+                unstyled={true}
+                components={makeComponents(faCodeBranch)}
+                styles={styles}
+                value={makeValue(props.selectedSection?.branch)}
+                options={branches(props.sections).map(makeValue)}
+                onChange={(value) => updateSection({ branch: value?.value })}
+            />
+            <Select<IOption>
+                unstyled={true}
+                components={makeComponents(faCubes)}
+                styles={styles}
+                value={makeValue(props.selectedSection?.repository)}
+                options={reposForBranch(
+                    props.sections,
+                    props.selectedSection?.branch
+                ).map(makeValue)}
+                onChange={(value) =>
+                    updateSection({ repository: value?.value })
+                }
+            />
+            <Select<IOption>
+                unstyled={true}
+                components={makeComponents(faMicrochip)}
+                styles={styles}
+                value={makeValue(props.selectedSection?.architecture)}
+                options={architecturesForBranchAndRepo(
+                    props.sections,
+                    props.selectedSection?.branch,
+                    props.selectedSection?.repository
+                ).map(makeValue)}
+                onChange={(value) =>
+                    updateSection({ architecture: value?.value })
+                }
+            />
+        </span>
     );
 };

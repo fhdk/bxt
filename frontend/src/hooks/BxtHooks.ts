@@ -49,9 +49,14 @@ export interface IGetCompareResults {
     (sections: ISection[]): void;
 }
 
+export interface IResetCompareResults {
+    (): void;
+}
+
 export const useCompareResults = (): [
     ICompareResult | undefined,
-    IGetCompareResults
+    IGetCompareResults,
+    IResetCompareResults
 ] => {
     const [results, setResults] = useState<ICompareResult>();
 
@@ -82,5 +87,5 @@ export const useCompareResults = (): [
         [setResults]
     );
 
-    return [results, updateResults];
+    return [results, updateResults, () => setResults(undefined)];
 };

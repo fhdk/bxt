@@ -8,7 +8,14 @@ import {
     useReactTable
 } from "@tanstack/react-table";
 import { useCompareResults, useSections } from "../hooks/BxtHooks";
-import { Button, Loading, RadialProgress, Select, Table } from "react-daisyui";
+import {
+    Button,
+    Card,
+    Loading,
+    RadialProgress,
+    Select,
+    Table
+} from "react-daisyui";
 import {
     architecturesForBranchAndRepo,
     branches,
@@ -24,14 +31,13 @@ import {
     faPlus,
     faTrash
 } from "@fortawesome/free-solid-svg-icons";
+import SectionLabel from "../components/SectionLabel";
 
 export default (props: any) => {
     const [sections, updateSections] = useSections();
-    const [selectedSections, setSelectedSections] = useState<ISection[]>([]);
-    const [compareResults, getCompareResults] = useCompareResults();
-    const [plainTextSelectorMode, setPlainTextSelectorMode] = useState<
-        Map<ISection, boolean>
-    >(new Map());
+    const [selectedSections, setSelectedSections] = useState<ISection[]>([{}]);
+    const [compareResults, getCompareResults, resetCompareResults] =
+        useCompareResults();
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -93,121 +99,145 @@ export default (props: any) => {
     });
 
     return (
-        <div className="flex flex-col w-full h-full overflow-x-auto">
-            <div className="grow-0 p-3 bg-base-200">
-                <span className="p-5 space-x-2 inline-flex w-full justify-start">
-                    {selectedSections.map((section, index) => (
-                        <div className="flex items-end h-fit" key={index}>
-                            <SectionSelect
-                                sections={sections}
-                                selectedSection={section}
-                                plainTextMode={plainTextSelectorMode?.get(
-                                    section
+        <div className="w-full h-full bg-base-200 overflow-x-auto">
+            {compareResults ? (
+                isLoading ? (
+                    <div className="grow flex w-full justify-center content-center">
+                        <Loading variant="bars" className="w-20" />
+                    </div>
+                ) : (
+                    <Table
+                        zebra={true}
+                        size="xs"
+                        className="w-full bg-base-100 rounded-none"
+                    >
+                        <Table.Head>
+                            {table
+                                .getHeaderGroups()
+                                .flatMap((headerGroup) =>
+                                    headerGroup.headers.map((header) => (
+                                        <span key={header.id}>
+                                            {header.isPlaceholder
+                                                ? null
+                                                : flexRender(
+                                                      header.column.columnDef
+                                                          .header,
+                                                      header.getContext()
+                                                  )}
+                                        </span>
+                                    ))
                                 )}
-                                onSelected={(section) =>
-                                    updateSectionAt(index, section)
-                                }
-                            />
-                            <Button
-                                onClick={(e) => {
-                                    setPlainTextSelectorMode(
-                                        new Map(
-                                            plainTextSelectorMode?.set(
-                                                section,
-                                                !plainTextSelectorMode?.get(
-                                                    section
-                                                )
-                                            )
-                                        )
-                                    );
-                                }}
-                                className="py-2 
-                                    rounded-none 
-                                    rounded-l-lg ml-2"
-                                size="sm"
-                                variant="outline"
-                            >
-                                <FontAwesomeIcon icon={faParagraph} />
-                            </Button>
-                            <Button
-                                className="rounded-none rounded-r-lg"
-                                size="sm"
-                                color="error"
-                                onClick={() =>
-                                    setSelectedSections([
-                                        ...selectedSections.slice(0, index),
-                                        ...selectedSections.slice(index + 1)
-                                    ])
-                                }
-                            >
-                                <FontAwesomeIcon icon={faTrash} />
-                            </Button>
-                        </div>
-                    ))}
-                </span>
-                <div className="w-full flex justify-end space-x-2">
-                    <Button
-                        color="neutral"
-                        onClick={() =>
-                            setSelectedSections([...selectedSections, {}])
-                        }
-                    >
-                        <FontAwesomeIcon className="mr-2" icon={faPlus} />
-                        Add section
-                    </Button>
-                    <Button
-                        color="primary"
-                        onClick={() => {
-                            setIsLoading(true);
-                            getCompareResults(selectedSections);
-                        }}
-                    >
-                        <FontAwesomeIcon
-                            className="mr-2"
-                            icon={faCodeCompare}
-                        />
-                        Compare
-                    </Button>
-                </div>
-            </div>
-            {isLoading ? (
-                <div className="grow flex w-full justify-center content-center">
-                    <Loading variant="bars" className="w-20" />
-                </div>
+                        </Table.Head>
+                        <Table.Body>
+                            {table.getRowModel().rows.map((row) => (
+                                <Table.Row key={row.id}>
+                                    {row.getVisibleCells().map((cell) => (
+                                        <span key={cell.id}>
+                                            {flexRender(
+                                                cell.column.columnDef.cell,
+                                                cell.getContext()
+                                            )}
+                                        </span>
+                                    ))}
+                                </Table.Row>
+                            ))}
+                        </Table.Body>
+                        <Button
+                            color="accent"
+                            className="fixed bottom-6 right-6"
+                            onClick={() => resetCompareResults()}
+                        >
+                            <FontAwesomeIcon icon={faCodeCompare} />
+                            New compare
+                        </Button>
+                    </Table>
+                )
             ) : (
-                <Table zebra={true} size="xs" className="w-full">
-                    <Table.Head>
-                        {table
-                            .getHeaderGroups()
-                            .flatMap((headerGroup) =>
-                                headerGroup.headers.map((header) => (
-                                    <span key={header.id}>
-                                        {header.isPlaceholder
-                                            ? null
-                                            : flexRender(
-                                                  header.column.columnDef
-                                                      .header,
-                                                  header.getContext()
-                                              )}
-                                    </span>
-                                ))
-                            )}
-                    </Table.Head>
-                    <Table.Body>
-                        {table.getRowModel().rows.map((row) => (
-                            <Table.Row key={row.id}>
-                                {row.getVisibleCells().map((cell) => (
-                                    <span key={cell.id}>
-                                        {flexRender(
-                                            cell.column.columnDef.cell,
-                                            cell.getContext()
-                                        )}
-                                    </span>
+                <div className="overflow-y-auto flex h-full w-full justify-center items-center">
+                    <Card
+                        className="m-auto bg-base-100 shadow-sm"
+                        compact={true}
+                    >
+                        <Card.Body>
+                            <Card.Title>Compare sections</Card.Title>
+                            Choose sections you wish to compare.
+                            <span className="pt-2 px-10 space-y-4 flex-col justify-center">
+                                {selectedSections.map((section, index) => (
+                                    <div
+                                        className="flex items-end h-fit -mr-14"
+                                        key={index}
+                                    >
+                                        <SectionSelect
+                                            sections={sections}
+                                            selectedSection={section}
+                                            onSelected={(section) =>
+                                                updateSectionAt(index, section)
+                                            }
+                                        />
+
+                                        <Button
+                                            className={`mx-2 ${
+                                                index + 1 ==
+                                                    selectedSections.length &&
+                                                selectedSections.length > 1
+                                                    ? ""
+                                                    : "invisible"
+                                            }`}
+                                            size="sm"
+                                            color="ghost"
+                                            onClick={() =>
+                                                setSelectedSections([
+                                                    ...selectedSections.slice(
+                                                        0,
+                                                        index
+                                                    ),
+                                                    ...selectedSections.slice(
+                                                        index + 1
+                                                    )
+                                                ])
+                                            }
+                                        >
+                                            <FontAwesomeIcon icon={faTrash} />
+                                        </Button>
+                                    </div>
                                 ))}
-                            </Table.Row>
-                        ))}
-                    </Table.Body>
-                </Table>
+                                <Button
+                                    className="w-full"
+                                    color="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                        setSelectedSections([
+                                            ...selectedSections,
+                                            {}
+                                        ])
+                                    }
+                                >
+                                    <FontAwesomeIcon
+                                        className="mr-2"
+                                        icon={faPlus}
+                                    />
+                                    Add section
+                                </Button>
+                            </span>
+                            <Card.Actions className="justify-end">
+                                <Button
+                                    size="sm"
+                                    color="accent"
+                                    onClick={() => {
+                                        setIsLoading(true);
+                                        getCompareResults(selectedSections);
+                                    }}
+                                >
+                                    <FontAwesomeIcon
+                                        className="mr-2"
+                                        icon={faCodeCompare}
+                                    />
+                                    Compare
+                                </Button>
+                            </Card.Actions>
+                        </Card.Body>
+                    </Card>
+                </div>
             )}
         </div>
     );
