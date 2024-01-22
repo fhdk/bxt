@@ -30,13 +30,13 @@ export default (props: any) => {
     ]);
 
     useEffect(() => {
+        setIsLoading(false);
+    }, [entries]);
+
+    useEffect(() => {
         updateEntries();
         setIsLoading(true);
     }, []);
-
-    useEffect(() => {
-        setIsLoading(false);
-    }, [entries]);
 
     const columnHelper = createColumnHelper<ILogEntry>();
 
