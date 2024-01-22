@@ -1,5 +1,5 @@
 interface ISection {
-  branch?: string;
-  repository?: string;
-  architecture?: string;
+    branch?: string;
+    repository?: string;
+    architecture?: string;
 }

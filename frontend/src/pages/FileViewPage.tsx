@@ -4,7 +4,8 @@ import {
     setChonkyDefaults,
     ChonkyFileActionData,
     ChonkyActions,
-    FileHelper
+    FileHelper,
+    FileData
 } from "chonky";
 import { ChonkyIconFA } from "chonky-icon-fontawesome";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -26,6 +27,8 @@ import {
 } from "../components/SnapshotAction";
 import { OpenFilesPayload } from "chonky/dist/types/action-payloads.types";
 import axios from "axios";
+import PackageModal, { PackageModalProps } from "../components/PackageModal";
+import _ from "lodash";
 
 setChonkyDefaults({ iconComponent: ChonkyIconFA });
 
@@ -49,12 +52,29 @@ const useFolderChainForPath = (path: string[]): FileArray => {
     return result;
 };
 
+const packageFromFilePath = (filePath: string, packages: IPackage[]) => {
+    const parts = filePath.split("/");
+    if (parts.length != 5) return;
+    const section: ISection = {
+        branch: parts[1],
+        repository: parts[2],
+        architecture: parts[3]
+    };
+    const packageName = parts[4];
+
+    return packages.find((value) => {
+        return _.isEqual(value.section, section) && value.name == packageName;
+    });
+};
+
 export const useFileActionHandler = (
     setPath: (path: string[]) => void,
     setSnapshotModalBranches: (
         sourceBranch?: string,
         targetBranch?: string
-    ) => void
+    ) => void,
+    setPackage: (pkg?: IPackage) => void,
+    packages: IPackage[]
 ) => {
     return useCallback(
         (data: ChonkyFileActionData) => {
@@ -67,6 +87,16 @@ export const useFileActionHandler = (
                         const pathToOpen = fileToOpen.id.split("/");
 
                         setPath(pathToOpen);
+                    } else if (
+                        fileToOpen &&
+                        !FileHelper.isDirectory(fileToOpen)
+                    ) {
+                        setPackage(
+                            packageFromFilePath(
+                                (fileToOpen as FileData).id,
+                                packages
+                            )
+                        );
                     }
                     break;
                 case "snap":
@@ -76,7 +106,7 @@ export const useFileActionHandler = (
                     setSnapshotModalBranches(sourceBranch, targetBranch);
             }
         },
-        [setPath, setSnapshotModalBranches]
+        [setPath, setSnapshotModalBranches, setPackage, packages]
     );
 };
 
@@ -112,7 +142,7 @@ const usePushCommitsHandler = (commits: ICommit[], reload: () => void) => {
                 if (pkg.file) {
                     formData.append(`package${index + 1}.filepath`, pkg.file);
                 }
-                if (pkg.hasSignature) {
+                if (pkg.signatureFile !== undefined) {
                     formData.append(
                         `package${index + 1}.signature_path`,
                         `${pkg.file}.sig`
@@ -161,7 +191,7 @@ export default (props: any) => {
 
     useEffect(() => localStorage.setItem("path", JSON.stringify(path)), [path]);
 
-    const [files, updateFiles] = useFilesFromSections(sections, path);
+    const [files, updateFiles, packages] = useFilesFromSections(sections, path);
 
     useEffect(() => updateFiles(sections, path), [sections, path]);
 
@@ -174,9 +204,16 @@ export default (props: any) => {
         useState<boolean>(false);
 
     const snapshotModalRef = useRef<HTMLDialogElement>(null);
+    const packageModalRef = useRef<HTMLDialogElement>(null);
+
     const [snapshotModalProps, setSnapshotModalProps] =
         useState<ISnapshotModalProps>({
             sections: sections
+        });
+
+    const [packageModalProps, setPackageModalProps] =
+        useState<PackageModalProps>({
+            package: undefined
         });
 
     useEffect(() => {
@@ -194,6 +231,10 @@ export default (props: any) => {
         });
     }, [sections]);
 
+    useEffect(() => {
+        console.log(snapshotModalRef.current, packageModalRef.current);
+    }, [snapshotModalRef, packageModalRef]);
+
     const openModalWithCommitHandler = (isNew: boolean) => {
         return (commit: ICommit) => {
             setIsCommitInModalNew(isNew);
@@ -208,8 +249,8 @@ export default (props: any) => {
         commitModalRef.current?.close();
     };
 
-    const openSnapshotModalWithBranchHandler = () => {
-        return (sourceBranch?: string, targetBranch?: string) => {
+    const openSnapshotModalWithBranchHandler = useCallback(
+        (sourceBranch?: string, targetBranch?: string) => {
             if (sourceBranch)
                 setSnapshotModalProps({
                     ...snapshotModalProps,
@@ -222,8 +263,18 @@ export default (props: any) => {
                 });
 
             snapshotModalRef.current?.showModal();
-        };
-    };
+        },
+        [snapshotModalRef, setSnapshotModalProps, snapshotModalProps]
+    );
+
+    const openPackageModal = useCallback(
+        (pkg?: IPackage) => {
+            if (!pkg) return;
+            setPackageModalProps({ ...packageModalProps, package: pkg });
+            packageModalRef.current?.showModal();
+        },
+        [packageModalRef, setPackageModalProps, packageModalProps]
+    );
 
     return (
         <div className="flex w-full h-full items-center justify-center font-sans">
@@ -234,7 +285,7 @@ export default (props: any) => {
                 backdrop={true}
                 commit={modalCommit}
                 onCommitSubmit={(commit) => {
-                    snapshotModalRef.current?.close();
+                    commitModalRef.current?.close();
                     setCommits([...commits, commit]);
                 }}
                 onCommitDelete={deleteCommitById}
@@ -242,6 +293,11 @@ export default (props: any) => {
             <SnapshotModal
                 ref={snapshotModalRef}
                 {...snapshotModalProps}
+                backdrop={true}
+            />
+            <PackageModal
+                ref={packageModalRef}
+                {...packageModalProps}
                 backdrop={true}
             />
 
@@ -255,7 +311,7 @@ export default (props: any) => {
                             htmlFor="my-drawer-2"
                             className="drawer-overlay"
                         ></label>
-                        <Menu className="bg-indigo-900 h-screen p-4 w-100 space-y-4">
+                        <Menu className="h-screen p-4 w-100 space-y-4 bg-sky-700">
                             <li className="text-3xl font-bold text-white">
                                 Pending commits
                             </li>
@@ -273,21 +329,15 @@ export default (props: any) => {
                                 );
                             })}
                             <div className="grow"></div>
-                            <Menu.Item>
-                                <Button
-                                    type="button"
-                                    color="accent"
-                                    onClick={usePushCommitsHandler(
-                                        commits,
-                                        () => {
-                                            setCommits([]);
-                                            updateSections();
-                                        }
-                                    )}
-                                >
-                                    Push commits
-                                </Button>
-                            </Menu.Item>
+                            <Button
+                                color="ghost"
+                                onClick={usePushCommitsHandler(commits, () => {
+                                    setCommits([]);
+                                    updateSections();
+                                })}
+                            >
+                                Push commits
+                            </Button>
                         </Menu>
                     </div>
                 }
@@ -308,7 +358,9 @@ export default (props: any) => {
                                 files={files}
                                 onFileAction={useFileActionHandler(
                                     setPath,
-                                    openSnapshotModalWithBranchHandler()
+                                    openSnapshotModalWithBranchHandler,
+                                    openPackageModal,
+                                    packages ?? []
                                 )}
                                 folderChain={useFolderChainForPath(path)}
                             />

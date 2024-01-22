@@ -1,12 +1,23 @@
-interface IPackage {
-  section: ISection;
-  name: string;
-
-  hasSignature?: boolean;
-  version?: string;
+interface IPackagePoolEntry {
+    version: string;
+    filepath: string;
+    signaturePath?: string;
 }
 
-interface IPackageUpload extends IPackage {
-  file: File;
-  signatureFile?: File;
+interface IPackage {
+    section: ISection;
+    name: string;
+    isAnyArchitecture?: boolean;
+    preferredCandidate?: IPackagePoolEntry;
+    poolEntries?: {
+        [key: string]: IPackagePoolEntry;
+    };
+}
+
+interface IPackageUpload {
+    section: ISection;
+    name: string;
+    version?: string;
+    file: File;
+    signatureFile?: File;
 }

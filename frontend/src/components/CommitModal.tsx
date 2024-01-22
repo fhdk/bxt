@@ -78,7 +78,8 @@ export default forwardRef<HTMLDialogElement, CommitModalProps>(
                                                     icon={faCube}
                                                     className="px-2 max-h-6"
                                                 />
-                                                {value.hasSignature && (
+                                                {value.signatureFile !==
+                                                    undefined && (
                                                     <FontAwesomeIcon
                                                         icon={faSignature}
                                                         color="green"

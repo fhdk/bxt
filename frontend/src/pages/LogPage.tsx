@@ -48,7 +48,7 @@ export default (props: any) => {
             header: "Name"
         }),
 
-        columnHelper.accessor("package.version", {
+        columnHelper.accessor("package.preferredCandidate.version", {
             header: "Version"
         }),
         columnHelper.accessor("package.section.branch", {

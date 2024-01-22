@@ -62,13 +62,17 @@ export default (props: any) => {
                         section.repository &&
                         section.architecture
                     )
-                        return compare[
-                            `${section.branch}/${section.repository}/${section.architecture}`
-                        ];
+                        return Object.values(
+                            compare[
+                                `${section.branch}/${section.repository}/${section.architecture}`
+                            ]
+                        );
                 },
                 {
                     id: `${index + 1}`,
-                    header: `${section.branch}/${section.repository}/${section.architecture}`
+                    header: (props) => (
+                        <SectionLabel {...props} section={section} />
+                    )
                 }
             )
         ) || [])
