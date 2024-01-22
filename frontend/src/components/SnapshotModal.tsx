@@ -1,4 +1,11 @@
-import { forwardRef, useCallback, useEffect, useState } from "react";
+import {
+    forwardRef,
+    useCallback,
+    useEffect,
+    useImperativeHandle,
+    useRef,
+    useState
+} from "react";
 import { Button, Form, Modal, ModalProps, Select } from "react-daisyui";
 import { toast } from "react-toastify";
 import { branches } from "../utils/SectionUtils";
@@ -14,8 +21,14 @@ export type ISnapshotModalProps = ModalProps & {
 };
 
 export default forwardRef<HTMLDialogElement, ISnapshotModalProps>(
-    (props: ISnapshotModalProps, ref) => {
+    (props, ref) => {
         const [sourceBranch, setSourceBranch] = useState(props.sourceBranch);
+
+        const internalRef = useRef<HTMLDialogElement>(null);
+        useImperativeHandle<HTMLDialogElement | null, HTMLDialogElement | null>(
+            ref,
+            () => internalRef.current
+        );
 
         useEffect(() => {
             if (props.sourceBranch) {
@@ -59,13 +72,14 @@ export default forwardRef<HTMLDialogElement, ISnapshotModalProps>(
                                 props.sections[0].architecture
                         }
                     });
+                    internalRef?.current?.close();
                 } catch (error) {}
             },
             [props.repository, props.architecture, props.sections]
         );
 
         return createPortal(
-            <Modal ref={ref} {...props}>
+            <Modal ref={internalRef} {...props}>
                 <h1 className="text-3xl font-bold">Snapshot</h1>
                 <Form>
                     <Form.Label title="Source branch" />
