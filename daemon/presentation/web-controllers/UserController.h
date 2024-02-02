@@ -15,7 +15,7 @@ namespace bxt::Presentation {
 
 class UserController : public drogon::HttpController<UserController, false> {
 public:
-    UserController(Core::Application::UserService& service)
+    explicit UserController(Core::Application::UserService& service)
         : m_service(service) {};
 
     METHOD_LIST_BEGIN
@@ -28,7 +28,7 @@ public:
                           "/api/users/remove",
                           drogon::Post);
 
-    BXT_JWT_ADD_METHOD_TO(UserController::get_users, "/users", drogon::Get);
+    BXT_JWT_ADD_METHOD_TO(UserController::get_users, "/api/users", drogon::Get);
 
     METHOD_LIST_END
 

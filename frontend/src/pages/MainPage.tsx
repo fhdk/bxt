@@ -7,6 +7,7 @@ import LoginPage from "./LoginPage";
 import ComparePage from "./ComparePage";
 import DrawerLayout from "../components/DrawerLayout";
 import axios from "axios";
+import AdminPage from "./AdminPage";
 
 declare module "@uidotdev/usehooks" {
     export function useLocalStorage<T>(
@@ -41,6 +42,10 @@ export default (props: any) => {
                 {
                     path: "compare",
                     element: <ComparePage />
+                },
+                {
+                    path: "admin",
+                    element: <AdminPage />
                 }
             ]
         }

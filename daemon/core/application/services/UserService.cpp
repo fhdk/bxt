@@ -18,17 +18,35 @@ coro::task<UserService::Result<void>>
         co_return bxt::make_error_with_source<CrudError>(
             std::move(result.error()), CrudError::ErrorType::InternalError);
     }
+    auto commit_ok = co_await m_repository.commit_async();
+
+    if (!commit_ok) {
+        co_return bxt::make_error_with_source<CrudError>(
+            std::move(commit_ok.error()), CrudError::ErrorType::InternalError);
+    }
 
     co_return {};
 }
 
 coro::task<UserService::Result<void>>
     UserService::remove_user(const std::string name) {
-    auto result = co_await m_repository.remove_async(std::move(name));
+    if (name == "default") {
+        co_return bxt::make_error<CrudError>(
+            CrudError::ErrorType::InvalidArgument);
+    }
+
+    auto result = co_await m_repository.remove_async(name);
 
     if (!result.has_value()) {
         co_return bxt::make_error_with_source<CrudError>(
             std::move(result.error()), CrudError::ErrorType::InternalError);
+    }
+
+    auto commit_ok = co_await m_repository.commit_async();
+
+    if (!commit_ok) {
+        co_return bxt::make_error_with_source<CrudError>(
+            std::move(commit_ok.error()), CrudError::ErrorType::InternalError);
     }
 
     co_return {};

@@ -7,6 +7,7 @@
 #include "UserController.h"
 
 #include "core/application/dtos/UserDTO.h"
+#include "drogon/HttpTypes.h"
 
 namespace bxt::Presentation {
 
@@ -24,8 +25,10 @@ drogon::Task<drogon::HttpResponsePtr>
 
     if (!add_ok.has_value()) {
         result["status"] = "error";
-        result["message"] = add_ok.error().what();
-        co_return drogon::HttpResponse::newHttpJsonResponse(result);
+        result["error"] = add_ok.error().what();
+        auto response = drogon::HttpResponse::newHttpJsonResponse(result);
+        response->setStatusCode(drogon::k400BadRequest);
+        co_return response;
     }
 
     result["status"] = "ok";
@@ -43,8 +46,10 @@ drogon::Task<drogon::HttpResponsePtr>
 
     if (!remove_ok.has_value()) {
         result["status"] = "error";
-        result["message"] = remove_ok.error().what();
-        co_return drogon::HttpResponse::newHttpJsonResponse(result);
+        result["error"] = remove_ok.error().what();
+        auto response = drogon::HttpResponse::newHttpJsonResponse(result);
+        response->setStatusCode(drogon::k400BadRequest);
+        co_return response;
     }
 
     result["status"] = "ok";
@@ -58,8 +63,10 @@ drogon::Task<drogon::HttpResponsePtr>
 
     if (!users.has_value()) {
         result["status"] = "error";
-        result["message"] = users.error().what();
-        co_return drogon::HttpResponse::newHttpJsonResponse(result);
+        result["error"] = users.error().what();
+        auto response = drogon::HttpResponse::newHttpJsonResponse(result);
+        response->setStatusCode(drogon::k400BadRequest);
+        co_return response;
     }
 
     for (const auto& user : *users) {

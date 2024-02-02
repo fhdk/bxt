@@ -15,8 +15,7 @@ import {
     faFolderTree,
     faListCheck,
     faRightFromBracket,
-    faRotate,
-    faSliders
+    faToolbox
 } from "@fortawesome/free-solid-svg-icons";
 
 const triggerSync = async () => {
@@ -36,7 +35,8 @@ export default () => {
         () => [
             { route: "/", name: "Packages", icon: faFolderTree },
             { route: "/compare", name: "Compare", icon: faCodeCompare },
-            { route: "/logs", name: "Logs", icon: faListCheck }
+            { route: "/logs", name: "Logs", icon: faListCheck },
+            { route: "/admin", name: "Admin", icon: faToolbox }
         ],
         []
     );
