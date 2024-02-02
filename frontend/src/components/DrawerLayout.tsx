@@ -55,7 +55,7 @@ export default () => {
                     >
                         <img
                             id="bxt-logo"
-                            src={`${process.env.PUBLIC_URL}/logo-full.svg`}
+                            src={`${process.env.PUBLIC_URL}/logo-full.png`}
                             className="absolute h-full w-40 object-contain"
                         />
                     </Link>
