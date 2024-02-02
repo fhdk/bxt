@@ -90,6 +90,7 @@ public:
     }
     virtual coro::task<WriteResult<void>> remove_async(const TId id) override {
         m_to_remove.push_back(id);
+        co_return {};
     }
 
     virtual coro::task<UnitOfWorkBase::Result<void>> commit_async() override {
