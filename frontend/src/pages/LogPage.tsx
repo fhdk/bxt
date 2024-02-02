@@ -11,6 +11,7 @@ import {
     SortingState,
     Row
 } from "@tanstack/react-table";
+import SectionLabel from "../components/SectionLabel";
 
 const dateCompare = (a: ILogEntry, b: ILogEntry) => {
     if (a.time < b.time) {
@@ -51,15 +52,11 @@ export default (props: any) => {
         columnHelper.accessor("package.preferredCandidate.version", {
             header: "Version"
         }),
-        columnHelper.accessor("package.section.branch", {
-            header: "Branch"
+        columnHelper.accessor("package.section", {
+            header: "Section",
+            cell: (context) => <SectionLabel section={context.getValue()} />
         }),
-        columnHelper.accessor("package.section.repository", {
-            header: "Repository"
-        }),
-        columnHelper.accessor("package.section.architecture", {
-            header: "Architecture"
-        }),
+
         columnHelper.accessor((entry) => entry.time, {
             header: "Time",
             enableSorting: true,
