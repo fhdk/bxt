@@ -5,7 +5,6 @@ import {
     branches,
     reposForBranch
 } from "../utils/SectionUtils";
-import packages from "./packages.json";
 import axios from "axios";
 
 export interface IUpdateFiles {

@@ -231,10 +231,6 @@ export default (props: any) => {
         });
     }, [sections]);
 
-    useEffect(() => {
-        console.log(snapshotModalRef.current, packageModalRef.current);
-    }, [snapshotModalRef, packageModalRef]);
-
     const openModalWithCommitHandler = (isNew: boolean) => {
         return (commit: ICommit) => {
             setIsCommitInModalNew(isNew);

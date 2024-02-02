@@ -33,7 +33,6 @@ export const SnapToAction = defineFileAction(
     {
         id: "snap_to",
         fileFilter: (file: FileData | null) => {
-            console.log(file?.id);
             return file?.id.split("/").length == 2;
         },
         button: {
