@@ -1,6 +1,6 @@
-<p align="center">
+<div align="center">
     <img src="frontend/public/logo-full.png" alt="drawing" width="200"/>
-</p>
+</div>
 
 #
 
