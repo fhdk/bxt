@@ -29,3 +29,7 @@ code {
 #bxt-logo:hover {
     filter: brightness(80%);
 }
+
+.btn {
+    text-transform: none;
+}
