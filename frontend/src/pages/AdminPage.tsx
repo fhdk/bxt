@@ -1,10 +1,9 @@
-import { faPlus, faSync, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useCallback, useMemo, useRef, useState } from "react";
-import { Table, Button, Card } from "react-daisyui";
+import { useCallback, useRef, useState } from "react";
+import { Table, Button } from "react-daisyui";
 import { useUsers } from "../hooks/AdminHooks";
 import UserModal, { UserModalProps } from "../components/UserModal";
-import { RowSelection } from "@tanstack/react-table";
 import axios from "axios";
 export default () => {
     const [users, reloadUsers] = useUsers();

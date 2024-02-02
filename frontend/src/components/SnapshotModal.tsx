@@ -7,7 +7,6 @@ import {
     useState
 } from "react";
 import { Button, Form, Modal, ModalProps, Select } from "react-daisyui";
-import { toast } from "react-toastify";
 import { branches } from "../utils/SectionUtils";
 import { createPortal } from "react-dom";
 import axios from "axios";

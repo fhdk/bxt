@@ -1,9 +1,3 @@
-import {
-    faCodeBranch,
-    faCubes,
-    faMicrochip
-} from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { forwardRef } from "react";
 import { Badge, Modal, ModalProps, Table } from "react-daisyui";
 import { createPortal } from "react-dom";

@@ -8,8 +8,7 @@ import {
     getPaginationRowModel,
     getSortedRowModel,
     flexRender,
-    SortingState,
-    Row
+    SortingState
 } from "@tanstack/react-table";
 import SectionLabel from "../components/SectionLabel";
 

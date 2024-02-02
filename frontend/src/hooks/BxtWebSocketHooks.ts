@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import useWebSocket from "react-use-websocket";
 
 export const useSyncMessage = () => {

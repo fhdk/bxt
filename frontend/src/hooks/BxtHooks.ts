@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import packages from "./packages.json";
 import axios from "axios";
-import { toast } from "react-toastify";
 
 export interface IUpdateSections {
     (): void;

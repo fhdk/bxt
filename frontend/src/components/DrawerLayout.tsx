@@ -1,15 +1,12 @@
 import { Drawer, Menu, Button, Progress } from "react-daisyui";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import ConfirmSyncModal from "./ConfirmSyncModal";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { useLocalStorage } from "@uidotdev/usehooks";
-import { createPortal } from "react-dom";
-import { ProgressBar } from "react-toastify/dist/components";
 import axios from "axios";
 import { useSyncMessage } from "../hooks/BxtWebSocketHooks";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-    faBug,
     faCircleDown,
     faCodeCompare,
     faFolderTree,

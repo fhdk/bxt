@@ -1,8 +1,7 @@
 import { useLocalStorage } from "@uidotdev/usehooks";
 import axios from "axios";
-import { info } from "console";
-import { useCallback, useEffect, useState } from "react";
-import { Hero, Button, Card, Form, Input, Toggle } from "react-daisyui";
+import { useCallback, useState } from "react";
+import { Hero, Button, Card, Form, Input } from "react-daisyui";
 import { toast } from "react-toastify";
 
 export default (props: any) => {

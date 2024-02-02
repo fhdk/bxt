@@ -8,7 +8,6 @@ import {
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import * as uuid from "uuid";
-
 import { forwardRef, useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import SectionSelect from "./SectionSelect";

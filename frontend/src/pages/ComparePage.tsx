@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
     createColumnHelper,
     flexRender,
@@ -8,26 +8,11 @@ import {
     useReactTable
 } from "@tanstack/react-table";
 import { useCompareResults, useSections } from "../hooks/BxtHooks";
-import {
-    Button,
-    Card,
-    Loading,
-    RadialProgress,
-    Select,
-    Table
-} from "react-daisyui";
-import {
-    architecturesForBranchAndRepo,
-    branches,
-    reposForBranch
-} from "../utils/SectionUtils";
+import { Button, Card, Loading, Table } from "react-daisyui";
 import SectionSelect from "../components/SectionSelect";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     faCodeCompare,
-    faFileText,
-    faKeyboard,
-    faParagraph,
     faPlus,
     faTrash
 } from "@fortawesome/free-solid-svg-icons";

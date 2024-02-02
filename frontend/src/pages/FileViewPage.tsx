@@ -9,12 +9,12 @@ import {
 } from "chonky";
 import { ChonkyIconFA } from "chonky-icon-fontawesome";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { IUpdateSections, useSections } from "../hooks/BxtHooks";
+import { useSections } from "../hooks/BxtHooks";
 import Dropzone from "react-dropzone";
 import CommitModal from "../components/CommitModal";
 import { Button, Drawer, Menu } from "react-daisyui";
 import CommitCard from "../components/CommitCard";
-import { IUpdateFiles, useFilesFromSections } from "../hooks/BxtFsHooks";
+import { useFilesFromSections } from "../hooks/BxtFsHooks";
 import * as uuid from "uuid";
 import { toast } from "react-toastify";
 import SnapshotModal, {

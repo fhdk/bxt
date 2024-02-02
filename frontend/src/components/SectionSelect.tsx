@@ -4,13 +4,12 @@ import Select, {
     StylesConfig,
     components
 } from "react-select";
-import Control from "react-select";
 import {
     branches,
     reposForBranch,
     architecturesForBranchAndRepo
 } from "../utils/SectionUtils";
-import { CSSProperties, HTMLAttributes, useCallback, useEffect } from "react";
+import { HTMLAttributes, useCallback, useEffect } from "react";
 import {
     faCodeBranch,
     faCubes,
@@ -18,7 +17,6 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import * as daisyui from "react-daisyui";
-import { SelectComponentsGeneric } from "react-select/dist/declarations/src/components";
 import { IconProp } from "@fortawesome/fontawesome-svg-core";
 import { ClassNamesArg } from "@emotion/react";
 

@@ -1,18 +1,8 @@
 import { faClone } from "@fortawesome/free-solid-svg-icons";
 import {
-    CustomVisibilityState,
-    FileAction,
-    FileActionButton,
-    FileActionEffect,
-    FileSelectionTransform,
     defineFileAction,
     FileData,
     thunkRequestFileAction,
-    ChonkyActions,
-    FileHelper,
-    selectParentFolder,
-    selectCurrentFolder,
-    selectFileData,
     selectSelectedFiles
 } from "chonky";
 
