@@ -159,16 +159,16 @@ public:
 
     Iterator end() { return Iterator(m_archive.get()); }
 
-private:
-    static Result<void> deleter(struct archive* a) {
-        int status = archive_read_free(a);
-        if (status != ARCHIVE_OK) {
-            return nonstd::make_unexpected(LibArchiveError(a));
+    Result<void> close() {
+        if (archive_read_close(m_archive.get()) != ARCHIVE_OK) {
+            return bxt::make_error<LibArchiveError>(m_archive.get());
         }
         return {};
     }
-    std::unique_ptr<struct archive, decltype(&deleter)> m_archive {
-        archive_read_new(), &deleter};
+
+private:
+    std::unique_ptr<struct archive, decltype(&archive_read_free)> m_archive {
+        archive_read_new(), archive_read_free};
 };
 
 } // namespace Archive
