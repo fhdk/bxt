@@ -53,8 +53,6 @@ coro::task<void> ArchRepoSyncService::sync(const PackageSectionDTO section) {
         }
     }
 
-    co_await m_package_repository.commit_async();
-
     co_return;
 }
 
@@ -70,6 +68,8 @@ coro::task<void> ArchRepoSyncService::sync_all() {
         std::make_shared<SyncEvent>(true));
 
     co_await coro::when_all(std::move(tasks));
+
+    co_await m_package_repository.commit_async();
 
     co_await m_dispatcher.dispatch_single_async<IntegrationEventPtr>(
         std::make_shared<SyncEvent>(false));
