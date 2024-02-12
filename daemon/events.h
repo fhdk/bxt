@@ -37,6 +37,7 @@ static inline std::unordered_map<std::type_index, eventbus_visitor> event_map {
     to_eventbus_visitor<PackageAdded, EventBase>(),
     to_eventbus_visitor<PackageRemoved, EventBase>(),
     to_eventbus_visitor<PackageUpdated, EventBase>(),
-    to_eventbus_visitor<SyncEvent, IntegrationEventBase>()};
+    to_eventbus_visitor<SyncStarted, IntegrationEventBase>(),
+    to_eventbus_visitor<SyncFinished, IntegrationEventBase>()};
 
 } // namespace bxt::events

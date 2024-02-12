@@ -10,6 +10,7 @@
 #include "boost/uuid/uuid_io.hpp"
 #include "core/application/events/IntegrationEventBase.h"
 #include "core/application/events/SyncEvent.h"
+#include "core/domain/entities/Package.h"
 #include "coro/sync_wait.hpp"
 #include "coro/when_all.hpp"
 #include "httplib.h"
@@ -20,38 +21,23 @@
 
 #include <coro/thread_pool.hpp>
 #include <initializer_list>
+#include <iterator>
+#include <vector>
 
 namespace bxt::Infrastructure {
 
 coro::task<void> ArchRepoSyncService::sync(const PackageSectionDTO section) {
-    if (!m_options.sources.contains(section)) { co_return; }
-    const auto remote_packages = co_await get_available_packages(section);
+    using namespace Core::Application::Events;
 
-    std::vector<coro::task<PackageFile>> tasks;
+    co_await m_dispatcher.dispatch_single_async<IntegrationEventPtr>(
+        std::make_shared<SyncStarted>());
 
-    const auto uuid = boost::uuids::random_generator()();
+    auto all_packages = co_await sync_section(section);
 
-    auto task = [this, section,
-                 uuid](const auto& pkgname) -> coro::task<PackageFile> {
-        co_return co_await download_package(section, pkgname, uuid);
-    };
+    co_await m_package_repository.commit_async();
 
-    for (const auto& pkgname : remote_packages) {
-        tasks.emplace_back(task(pkgname));
-    }
-
-    const auto files = co_await coro::when_all(std::move(tasks));
-
-    for (const auto& file_task : files) {
-        const auto file = file_task.return_value();
-        auto package_result = Package::from_file_path(
-            SectionDTOMapper::to_entity(file.section()),
-            Box::PoolManager::PoolLocation::Sync, file.file_path());
-
-        if (package_result.has_value()) {
-            co_await m_package_repository.add_async(*package_result);
-        }
-    }
+    co_await m_dispatcher.dispatch_single_async<IntegrationEventPtr>(
+        std::make_shared<SyncFinished>(std::move(all_packages)));
 
     co_return;
 }
@@ -59,22 +45,70 @@ coro::task<void> ArchRepoSyncService::sync(const PackageSectionDTO section) {
 coro::task<void> ArchRepoSyncService::sync_all() {
     using namespace Core::Application::Events;
 
-    std::vector<coro::task<void>> tasks;
+    std::vector<coro::task<std::vector<Package>>> tasks;
     for (const auto& src : m_options.sources) {
-        tasks.emplace_back(sync(src.first));
+        tasks.emplace_back(sync_section(src.first));
     }
 
     co_await m_dispatcher.dispatch_single_async<IntegrationEventPtr>(
-        std::make_shared<SyncEvent>(true));
+        std::make_shared<SyncStarted>());
 
-    co_await coro::when_all(std::move(tasks));
+    auto package_lists = co_await coro::when_all(std::move(tasks));
+
+    if (package_lists.empty()) { co_return; }
+
+    auto& all_packages = package_lists[0].return_value();
+
+    for (auto it = package_lists.begin() + 1; it != package_lists.end(); ++it) {
+        auto& package_list = it->return_value();
+
+        all_packages.insert(all_packages.end(),
+                            std::make_move_iterator(package_list.begin()),
+                            std::make_move_iterator(package_list.end()));
+    }
 
     co_await m_package_repository.commit_async();
 
     co_await m_dispatcher.dispatch_single_async<IntegrationEventPtr>(
-        std::make_shared<SyncEvent>(false));
+        std::make_shared<SyncFinished>(std::move(all_packages)));
 
     co_return;
+}
+
+coro::task<std::vector<Package>>
+    ArchRepoSyncService::sync_section(const PackageSectionDTO section) {
+    if (!m_options.sources.contains(section)) { co_return {}; }
+    const auto remote_packages = co_await get_available_packages(section);
+
+    std::vector<coro::task<void>> tasks;
+
+    const auto uuid = boost::uuids::random_generator()();
+    std::vector<Package> packages;
+    packages.reserve(remote_packages.size());
+
+    auto task = [this, section, uuid,
+                 &packages](const auto pkgname) -> coro::task<void> {
+        const auto package_file =
+            co_await download_package(section, pkgname, uuid);
+
+        auto package_result = Package::from_file_path(
+            SectionDTOMapper::to_entity(package_file.section()),
+            Box::PoolManager::PoolLocation::Sync, package_file.file_path());
+
+        if (package_result.has_value()) {
+            packages.emplace_back(std::move(*package_result));
+        }
+    };
+
+    for (const auto& pkgname : remote_packages) {
+        tasks.emplace_back(task(pkgname));
+    }
+
+    co_await coro::when_all(std::move(tasks));
+
+    co_await m_package_repository.add_async(packages);
+
+    co_return packages;
 }
 
 coro::task<std::vector<std::string>>

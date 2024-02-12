@@ -8,17 +8,19 @@
 
 #include "core/application/dtos/PackageDTO.h"
 #include "core/application/dtos/PackageLogEntryDTO.h"
+#include "core/application/events/SyncEvent.h"
 #include "core/domain/events/PackageEvents.h"
 
 namespace bxt::Core::Application {
 
 void PackageLogEntryService::init() {
-    m_listener.listen<bxt::Core::Domain::Events::PackageAdded>(
-        [this](const Domain::Events::PackageAdded &added) {
-            Domain::PackageLogEntry entry(added.package,
-                                          Domain::LogEntryType::Add);
+    m_listener.listen<bxt::Core::Application::Events::SyncFinished>(
+        [this](const Application::Events::SyncFinished &sync_event) {
+            for (const auto &synced_package : sync_event.packages_synced) {
+                m_repository.add(Domain::PackageLogEntry {
+                    synced_package, Domain::LogEntryType::Add});
+            }
 
-            m_repository.add(entry);
             coro::sync_wait(m_repository.commit_async());
         });
     //    listener.listen<bxt::Core::Domain::Events::PackageRemoved>(

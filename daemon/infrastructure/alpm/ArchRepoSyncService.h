@@ -35,6 +35,9 @@ public:
     virtual coro::task<void> sync_all() override;
 
 protected:
+    coro::task<std::vector<Package>>
+        sync_section(const PackageSectionDTO section);
+
     coro::task<std::vector<std::string>>
         get_available_packages(const PackageSectionDTO section);
     coro::task<PackageFile> download_package(const PackageSectionDTO& section,

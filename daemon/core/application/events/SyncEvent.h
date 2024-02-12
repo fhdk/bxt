@@ -1,25 +1,33 @@
 /* === This file is part of bxt ===
  *
- *   SPDX-FileCopyrightText: %YEAR% Artem Grinev <agrinev@manjaro.org>
+ *   SPDX-FileCopyrightText: 2023 Artem Grinev <agrinev@manjaro.org>
  *   SPDX-License-Identifier: GPL-3.0-or-later
  *
  */
 #pragma once
 
 #include "core/application/events/IntegrationEventBase.h"
+#include "core/domain/entities/Package.h"
 
 #include <fmt/format.h>
+#include <vector>
 
 namespace bxt::Core::Application::Events {
 
-struct SyncEvent : public IntegrationEventBase {
-    SyncEvent() = default;
-    SyncEvent(bool started) : started(started) {};
-    bool started = false;
+struct SyncStarted : public IntegrationEventBase {
+    SyncStarted() = default;
 
-    virtual std::string message() const {
-        return fmt::format("Sync {}", started ? "started" : "stopped");
-    }
+    virtual std::string message() const { return "Sync started"; }
+};
+
+struct SyncFinished : public IntegrationEventBase {
+    SyncFinished() = default;
+    SyncFinished(std::vector<bxt::Core::Domain::Package>&& packages)
+        : packages_synced(std::move(packages)) {}
+
+    std::vector<bxt::Core::Domain::Package> packages_synced;
+
+    virtual std::string message() const { return "Sync finished"; }
 };
 
 } // namespace bxt::Core::Application::Events

@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "core/application/events/IntegrationEventBase.h"
 #include "core/application/events/SyncEvent.h"
 #include "core/application/notifications/NotificationDispatcherBase.h"
 #include "dexode/EventBus.hpp"
@@ -27,8 +28,8 @@ struct SyncHandler : public HandlerBase {
         Json::Value event_json;
 
         event_json["type"] = "sync";
-        event_json["when"] = fmt::format("{}", m_last_event.when);
-        event_json["started"] = m_last_event.started;
+        event_json["when"] = fmt::format("{}", m_when);
+        event_json["started"] = m_sync_started;
 
         return event_json;
     }
@@ -37,21 +38,37 @@ struct SyncHandler : public HandlerBase {
 
 private:
     void init() {
-        m_listener.listen<Core::Application::Events::SyncEvent>(
+        m_listener.listen<Core::Application::Events::SyncStarted>(
             [this](const auto& event) {
-                m_last_event = event;
+                m_sync_started = true;
+                m_when = event.when;
 
                 Json::Value event_json;
 
                 event_json["type"] = "sync";
                 event_json["when"] = fmt::format("{}", event.when);
-                event_json["started"] = event.started;
+                event_json["started"] = true;
+
+                m_callback(event_json);
+            });
+
+        m_listener.listen<Core::Application::Events::SyncFinished>(
+            [this](const auto& event) {
+                m_sync_started = false;
+                m_when = event.when;
+
+                Json::Value event_json;
+
+                event_json["type"] = "sync";
+                event_json["when"] = fmt::format("{}", event.when);
+                event_json["started"] = false;
 
                 m_callback(event_json);
             });
     }
     dexode::EventBus::Listener m_listener;
-    Core::Application::Events::SyncEvent m_last_event;
+    bool m_sync_started = false;
+    std::chrono::time_point<std::chrono::system_clock> m_when;
 };
 
 } // namespace bxt::Infrastructure
