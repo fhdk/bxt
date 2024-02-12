@@ -51,7 +51,10 @@ export default (props: any) => {
                     if (
                         section.branch &&
                         section.repository &&
-                        section.architecture
+                        section.architecture &&
+                        compare[
+                            `${section.branch}/${section.repository}/${section.architecture}`
+                        ]
                     )
                         return Object.values(
                             compare[
