@@ -27,7 +27,7 @@ coro::task<AuthService::Result<void>> AuthService::auth(std::string name,
 }
 
 coro::task<AuthService::Result<void>>
-    AuthService::verify(const std::string &token) const {
+    AuthService::verify(const std::string token) const {
 }
 
 } // namespace bxt::Core::Application

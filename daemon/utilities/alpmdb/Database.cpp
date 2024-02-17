@@ -32,7 +32,7 @@ constexpr static frozen::set<frozen::string, 3> supported_package_extensions = {
     "pkg.tar.gz", "pkg.tar.xz", "pkg.tar.zst"};
 
 coro::task<Result<phmap::parallel_flat_hash_map<std::string, Desc>>>
-    parse_packages(const std::set<std::string>& packages) {
+    parse_packages(const std::set<std::string> packages) {
     phmap::parallel_flat_hash_map<std::string, Desc> descriptions;
 
     coro::latch latch {static_cast<ptrdiff_t>(packages.size())};

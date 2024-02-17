@@ -187,10 +187,9 @@ coro::task<std::vector<std::string>>
 }
 
 coro::task<PackageFile>
-    ArchRepoSyncService::download_package(const PackageSectionDTO& section,
-                                          const std::string& package_filename,
-                                          const boost::uuids::uuid& id) {
-    auto client = co_await get_client(m_options.sources[section].repo_url);
+    ArchRepoSyncService::download_package(PackageSectionDTO section,
+                                          std::string package_filename,
+                                          boost::uuids::uuid id) {
 
     auto repository_name =
         m_options.sources[section].repo_name.value_or(section.repository);
@@ -230,7 +229,7 @@ coro::task<PackageFile>
 }
 
 coro::task<std::unique_ptr<httplib::SSLClient>>
-    ArchRepoSyncService::get_client(const std::string& url) {
+    ArchRepoSyncService::get_client(const std::string url) {
     co_await tp.schedule();
 
     auto client_ptr = std::make_unique<httplib::SSLClient>(url);

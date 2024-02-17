@@ -24,16 +24,16 @@ public:
                       Core::Domain::PermissionMatcher& matcher)
         : m_repository(repository), m_matcher(matcher) {}
 
-    coro::task<Result<void>> add(const std::string& user_name,
-                                 const std::string& permission);
-    coro::task<Result<void>> remove(const std::string& user_name,
-                                    const std::string& permission);
+    coro::task<Result<void>> add(const std::string user_name,
+                                 const std::string permission);
+    coro::task<Result<void>> remove(const std::string user_name,
+                                    const std::string permission);
 
     coro::task<Result<std::vector<std::string>>>
-        get(const std::string& user_name);
+        get(const std::string user_name);
 
     coro::task<bool> check(const std::string_view permission,
-                           const std::string& user_name);
+                           const std::string user_name);
 
 private:
     Core::Domain::UserRepository& m_repository;

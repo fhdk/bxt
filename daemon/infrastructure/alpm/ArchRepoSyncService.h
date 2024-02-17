@@ -40,12 +40,12 @@ protected:
 
     coro::task<std::vector<std::string>>
         get_available_packages(const PackageSectionDTO section);
-    coro::task<PackageFile> download_package(const PackageSectionDTO& section,
-                                             const std::string& name,
-                                             const boost::uuids::uuid& id);
+    coro::task<PackageFile> download_package(PackageSectionDTO section,
+                                             std::string package_filename,
+                                             boost::uuids::uuid id);
 
     coro::task<std::unique_ptr<httplib::SSLClient>>
-        get_client(const std::string& url);
+        get_client(const std::string url);
 
 private:
     Utilities::EventBusDispatcher& m_dispatcher;

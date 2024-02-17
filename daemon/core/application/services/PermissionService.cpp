@@ -9,8 +9,8 @@
 namespace bxt::Core::Application {
 
 coro::task<PermissionService::Result<void>>
-    PermissionService::add(const std::string &user_name,
-                           const std::string &permission) {
+    PermissionService::add(const std::string user_name,
+                           const std::string permission) {
     auto user = co_await m_repository.find_by_id_async(user_name);
 
     if (!user.has_value()) {
@@ -36,8 +36,8 @@ coro::task<PermissionService::Result<void>>
     co_return {};
 }
 coro::task<PermissionService::Result<void>>
-    PermissionService::remove(const std::string &user_name,
-                              const std::string &permission) {
+    PermissionService::remove(const std::string user_name,
+                              const std::string permission) {
     auto user = co_await m_repository.find_by_id_async(user_name);
 
     if (!user.has_value()) {
@@ -63,7 +63,7 @@ coro::task<PermissionService::Result<void>>
 }
 
 coro::task<PermissionService::Result<std::vector<std::string>>>
-    PermissionService::get(const std::string &user_name) {
+    PermissionService::get(const std::string user_name) {
     auto user = co_await m_repository.find_by_id_async(user_name);
 
     if (!user.has_value()) {
@@ -83,7 +83,7 @@ coro::task<PermissionService::Result<std::vector<std::string>>>
 
 coro::task<bool>
     PermissionService::check(const std::string_view target_permission,
-                             const std::string &user_name) {
+                             const std::string user_name) {
     auto user = co_await m_repository.find_by_id_async(user_name);
 
     if (!user) { co_return {}; }

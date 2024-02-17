@@ -26,7 +26,7 @@ public:
 
     coro::task<Result<void>> auth(std::string name, std::string password);
 
-    coro::task<Result<void>> verify(const std::string& token) const;
+    coro::task<Result<void>> verify(const std::string token) const;
 
 private:
     Domain::UserRepository& m_user_repository;
