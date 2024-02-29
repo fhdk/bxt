@@ -33,13 +33,7 @@ struct PoolOptions : public Utilities::RepoSchema::Extension {
             const auto template_string =
                 pool_options["template"].as<std::string>();
 
-            if (key.IsScalar()) {
-                templates.emplace(key.as<std::string>(), template_string);
-            } else if (key.IsSequence()) {
-                for (const auto el : key) {
-                    templates.emplace(el.as<std::string>(), template_string);
-                }
-            }
+            templates.emplace(architecture, template_string);
         }
     }
 };
