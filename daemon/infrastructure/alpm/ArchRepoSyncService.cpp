@@ -190,6 +190,8 @@ coro::task<PackageFile>
     ArchRepoSyncService::download_package(PackageSectionDTO section,
                                           std::string package_filename,
                                           boost::uuids::uuid id) {
+    const auto client =
+        co_await get_client(m_options.sources[section].repo_url);
 
     auto repository_name =
         m_options.sources[section].repo_name.value_or(section.repository);
