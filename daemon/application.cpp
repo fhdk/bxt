@@ -59,10 +59,13 @@ void setup_di_container(kgr::container& ctr) {
     ctr.service<di::Utilities::EventBusDispatcher>();
 
     ctr.invoke<di::Utilities::RepoSchema::Parser,
-               di::Infrastructure::ArchRepoOptions>(
+               di::Infrastructure::ArchRepoOptions,
+               di::Persistence::Box::PoolOptions>(
         [](bxt::Utilities::RepoSchema::Parser& parser,
-           bxt::Infrastructure::ArchRepoOptions& options) {
+           bxt::Infrastructure::ArchRepoOptions& options,
+           bxt::Persistence::Box::PoolOptions& pool_options) {
             parser.extend(&options);
+            parser.extend(&pool_options);
 
             parser.parse("./box.yml");
         });

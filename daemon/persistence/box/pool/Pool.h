@@ -20,7 +20,7 @@ class PackageRecord;
 
 class Pool : public PoolBase {
 public:
-    Pool(PoolOptions options,
+    Pool(PoolOptions& options,
          ReadOnlyRepositoryBase<Section>& section_repository,
          const std::filesystem::path pool_path);
 
@@ -35,7 +35,7 @@ private:
 
     std::filesystem::path m_pool_path;
     std::set<std::string> m_architectures;
-    PoolOptions m_options;
+    PoolOptions& m_options;
 };
 
 } // namespace bxt::Persistence::Box

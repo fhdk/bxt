@@ -53,7 +53,7 @@ std::string
                              const std::optional<std::string>& filename) {
     std::string template_string = "{location}/{arch}";
 
-    if (m_options.templates.contains(arch)) {
+    if (m_options.templates.contains({arch})) {
         template_string = m_options.templates[arch];
     }
 
@@ -73,10 +73,10 @@ std::string
     }
 }
 
-Pool::Pool(PoolOptions options,
+Pool::Pool(PoolOptions& options,
            ReadOnlyRepositoryBase<Section>& section_repository,
            const std::filesystem::path pool_path)
-    : m_pool_path(std::move(pool_path)), m_options(std::move(options)) {
+    : m_pool_path(std::move(pool_path)), m_options(options) {
     const auto& sections = coro::sync_wait(section_repository.all_async());
 
     if (!sections.has_value()) {
