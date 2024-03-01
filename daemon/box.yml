@@ -1,16 +1,19 @@
-branches: [edge, fresh, steady]
+branches: [unstable, testing, stable]
 (alpm.sync):
-    sync-branches: [edge]
+  sync-branches: [unstable]
 repositories:
-    [core]:
-        architecture: x86_64
-        (alpm.sync):
-            repo-url: "cloudflaremirrors.com"
-            repo-structure-template: "/archlinux/{repository}/os/{architecture}"
+  [core]:
+    architecture: x86_64
+    (alpm.sync):
+      repo-url: "cloudflaremirrors.com"
+      repo-structure-template: "/archlinux/{repository}/os/{architecture}"
+    (box.pool):
+      template: "/{location}/"
 
-    [core-arm]:
-        architecture: aarch64
-        (alpm.sync):
-            repo-url: "de3.mirror.archlinuxarm.org"
-            repo-structure-template: "/{architecture}/{repository}"
-            repo-names: [core]
+  [core]:
+    architecture: aarch64
+    (alpm.sync):
+      repo-url: "de3.mirror.archlinuxarm.org"
+      repo-structure-template: "/{architecture}/{repository}"
+    (box.pool):
+      template: "/{location}-arm/"
