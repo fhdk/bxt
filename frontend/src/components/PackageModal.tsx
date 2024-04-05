@@ -35,7 +35,7 @@ export default forwardRef<HTMLDialogElement, PackageModalProps>(
                         {Object.entries(props.package?.poolEntries ?? []).map(
                             ([key, value]) => (
                                 <Table.Row>
-                                    <span>{key.slice(1, -1)}</span>
+                                    <span>{key}</span>
                                     <span>{value.version}</span>
                                 </Table.Row>
                             )
