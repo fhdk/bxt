@@ -125,12 +125,17 @@ public:
         {
             auto cursor = lmdb::cursor::open(rotxn, m_dbi);
 
-            std::string_view key = prefix, value;
+            std::string_view key = prefix;
+            std::string_view value;
 
             MDB_cursor_op operation =
                 prefix.empty() ? MDB_FIRST : MDB_SET_RANGE;
 
-            if (!cursor.get(key, value, operation) && key.starts_with(prefix)) {
+            // If operation == MDB_SET_RANGE cursor.get will return the first
+            // value >= key. We need to check the key to actually have our
+            // prefix otherwise there are no found values
+            if (!cursor.get(key, value, operation)
+                || !key.starts_with(prefix)) {
                 co_return {};
             }
 
