@@ -240,7 +240,7 @@ drogon::Task<drogon::HttpResponsePtr>
     const auto snap_ok =
         co_await m_package_service.snap(source_branch, target_branch);
 
-    if (snap_ok.has_value()) {
+    if (!snap_ok.has_value()) {
         result["error"] = "Snap failed";
         result["status"] = "error";
 
