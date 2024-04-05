@@ -170,10 +170,10 @@ coro::task<UnitOfWorkBase::Result<void>> BoxRepository::commit_async() {
 
     m_exporter.add_dirty_sections(std::move(added_sections));
 
-    co_await m_scheduler.schedule([this]() -> coro::task<void> {
-        co_await m_exporter.export_to_disk();
+    co_await m_scheduler.schedule([](auto *self) -> coro::task<void> {
+        co_await self->m_exporter.export_to_disk();
         co_return;
-    }());
+    }(this));
 
     m_to_add.clear();
     m_to_remove.clear();
