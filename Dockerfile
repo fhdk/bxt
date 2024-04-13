@@ -8,7 +8,7 @@ RUN apt-get update --yes && apt-get install --yes ca-certificates curl gnupg \
     && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
     && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
     && apt-get update --yes \
-    && apt-get install --yes build-essential git cmake libssl-dev pip ninja-build lldb-17 clangd-17 clang-format-17 clang-17 libc++-17-dev libc++-17-dev libc++abi-17-dev nodejs zstd \
+    && apt-get install --yes build-essential git cmake libssl-dev pip ninja-build lldb-17 clangd-17 clang-format-17 clang-17 libc++-17-dev libc++abi-17-dev nodejs zstd \
     && rm -rf /var/lib/apt/lists/*
 
 RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-17 100 && \
@@ -52,7 +52,10 @@ RUN cmake -B/build -S/src -DCMAKE_BUILD_TYPE=Release -G Ninja \
 FROM ubuntu:22.04 as production
 
 RUN apt-get update --yes \
-    && apt-get install --yes ca-certificates curl gnupg zstd \
+    && apt-get install --yes ca-certificates curl gnupg \
+   	&& echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main" > /etc/apt/sources.list.d/llvm.list \
+    && curl --silent --location https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - \
+    && apt-get update && apt-get install --yes zstd libc++1-17 libc++abi1-17 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=production-build /build/bin /app
