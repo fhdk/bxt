@@ -57,7 +57,7 @@ RUN apt-get update --yes \
     && apt-get install --yes ca-certificates curl gnupg \
    	&& echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main" > /etc/apt/sources.list.d/llvm.list \
     && curl --silent --location https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - \
-    && apt-get update && apt-get install --yes zstd libc++1-17 libc++abi1-17 \
+    && apt-get update && apt-get install --yes bzip2 xz-utils zlib1g liblz4-1 zstd libc++1-17 libc++abi1-17 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=production-build /build/bin /app
