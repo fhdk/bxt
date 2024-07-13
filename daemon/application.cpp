@@ -110,8 +110,8 @@ void setup_di_container(kgr::container& container) {
     container.invoke<di::Utilities::LMDB::Environment,
                      di::Utilities::LMDB::LMDBOptions>(
         [](auto lmdbenv, auto& options) {
-            lmdbenv->env().set_mapsize(1UL * 1024UL * 1024UL * 1024UL);
-            lmdbenv->env().set_max_dbs(10);
+            lmdbenv->env().set_mapsize(50UL * 1024UL * 1024UL * 1024UL);
+            lmdbenv->env().set_max_dbs(128);
 
             std::error_code ec;
             if (std::filesystem::create_directories(options.lmdb_path, ec);
