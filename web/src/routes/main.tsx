@@ -45,15 +45,18 @@ const useLocalStoredCommits = () => {
         }
         return value;
     };
-
-    const commitsState = useCommits(() =>
-        localStorage.getItem("commits")
-            ? new Map(
-                  JSON.parse(localStorage.getItem("commits") || "", reviver)
-              )
-            : new Map()
-    );
-
+    const commitsState = useCommits(() => {
+        const storedCommits = localStorage.getItem("commits");
+        if (!storedCommits) {
+            return new Map();
+        }
+        try {
+            return new Map(JSON.parse(storedCommits, reviver)) || new Map();
+        } catch (error) {
+            console.error("Error parsing commits from localStorage:", error);
+            return new Map();
+        }
+    });
     const { commits } = commitsState;
 
     useEffect(() => {
