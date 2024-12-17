@@ -1,6 +1,11 @@
 services:
   development:
     image: bxt_development:latest
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
     build:
       context: .
       target: development
@@ -13,6 +18,11 @@ services:
 
   production:
     image: anydistro/bxt:latest
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
     build:
       context: .
       target: production
